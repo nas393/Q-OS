@@ -101,3 +101,5 @@ i.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}i.bad,i.red{background:va
  .sg-tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 14px;border-radius:14px;font-size:10px;color:var(--muted)}
  .sg-tabs a.on{color:var(--gold2);background:#C9A35B1f}
 }
+@media(max-width:760px){.sg-hero-top{padding-top:calc(16px + env(safe-area-inset-top))}.sg-hero{height:calc(250px + env(safe-area-inset-top))}}
+@media(display-mode:standalone){.sg{-webkit-user-select:none;user-select:none}.sg a,.sg button{-webkit-tap-highlight-color:transparent}}
