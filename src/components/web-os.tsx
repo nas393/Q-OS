@@ -10,7 +10,6 @@ const marks=["Q","C","د","L","▶","X","N","R"];
 const types=["Personal HQ / AI","Education / Certification","Business Directory","Media / Mindset","Creator Tools","Trading / Markets","Branding / Marketing","Media / Audio"];
 const nav=[["⌂","Command Center","/dashboard"],["▱","Projects","/projects"],["▥","Business Intelligence","/projects"],["⌁","Trading HQ","/projects"],["◈","AI Studio","/chat"],["▷","Media & Content","/projects"],["▤","Operations","/projects"],["◷","Analytics","/projects"],["▣","Resources","/projects"]];
 const nice=(s:string)=>s.replaceAll("_"," ");
-const donutColors=["#f32b3d","#73777e","#c89a5b","#d8d9dd","#34363d"];
 const arrow=(t?:string)=>t==="up"?"▲":t==="down"?"▼":"■";
 const tone=(t?:string)=>t==="up"?"positive":t==="down"?"negative":"";
 const ago=(iso:string)=>{const h=Math.round((Date.now()-new Date(iso).getTime())/36e5);return h<1?"just now":h<48?`${h}h ago`:`${Math.round(h/24)}d ago`;};
@@ -37,10 +36,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   ...projects.filter(p=>(p.openIssues??0)>0).map(p=>({title:`${p.name} — ${p.openIssues} open issue${p.openIssues===1?"":"s"}`,level:"amber" as const}))
  ];
  const alerts=[...liveAlerts,...(metrics.alerts?.value??[])];
- const {kpis,revenueTrend:rev,channelMix:mix,factory,insights,agenda,xauusd:gold}=metrics;
- const revMax=rev?Math.max(...rev.value.points.map(p=>p.value),1):1;
+ const {kpis,insights,agenda,xauusd:gold}=metrics;
  const goldPath=gold?(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return "M"+s.map((v,i)=>`${(i/(s.length-1)*320).toFixed(1)} ${(104-(v-lo)/r*100).toFixed(1)}`).join(" L");})():"";
- let acc=0;const conic=mix?mix.value.items.map((it,i)=>{const a=acc;acc+=it.pct;return `${donutColors[i]} ${a}% ${acc}%`;}).join(",")+(acc<100?`,#22232a ${acc}% 100%`:""):"";
  const date=clock.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
  const time=clock.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
  const stateClass=(p:Project)=>p.deployment?.state==="READY"?"ready":p.deployment?.state==="ERROR"?"failed":"unknown";
@@ -61,7 +58,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      {kpis?.value.length?kpis.value.map(k=><article key={k.label}><small>{k.label.toUpperCase()}</small><strong>{k.value}</strong>{k.progress!==undefined?<div className="q-kpi-progress"><i style={{width:k.progress+"%"}}/></div>:k.delta?<em className={tone(k.trend)}>{arrow(k.trend)} {k.delta}</em>:null}</article>)
       :[["LIVE DEPLOYS",data?`${ready}/${projects.length}`:"—"],["FAILED BUILDS",data?String(failed):"—"],["UNVERIFIED",data?String(unresolved):"—"],["Q CONVERSATIONS",String(conversationCount)],["ACTIVITY (24H)",String(activityCount)]].map(([l,v])=><article key={l}><small>{l}</small><strong>{v}</strong><em>system · live</em></article>)}
     </section>
-    {kpis?<Stamp entry={kpis}/>:<small className="q-stamp">Business KPIs not pushed yet — showing system KPIs.</small>}
+    {kpis&&<Stamp entry={kpis}/>}
     <section className="q-dashboard-grid">
      <article className="q-panel q-portfolio"><header><div><small>EXECUTION / 01</small><h3>Project Portfolio <b>({data?String(projects.length).padStart(2,"0"):"—"})</b></h3></div><div className="q-filters"><span>READY {data?ready:"—"}</span><span>FAILED {data?failed:"—"}</span><span>UNVERIFIED {data?unresolved:"—"}</span></div></header>
       {error&&<div className="q-inline-error">{error}</div>}
@@ -81,11 +78,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       {alerts.length?alerts.slice(0,7).map((a,i)=>a.href?<a key={i} href={a.href} target="_blank" rel="noreferrer"><p><i className={a.level}/>{a.title} <span>›</span></p></a>:<p key={i}><i className={a.level}/>{a.title}</p>):<p>{loading?"Checking projects…":data?"No alerts. All linked projects verified.":"Project telemetry unavailable — alerts cannot be checked."}</p>}
      </article>
     </section>
-    <section className="q-bottom-grid">
-     <article className="q-panel q-revenue"><header><div><small>PERFORMANCE / 06</small><h3>Revenue Trend</h3></div><Stamp entry={rev}/></header>{rev?<><div className="q-chart-total"><strong>{rev.value.total}</strong>{rev.value.delta&&<em className={tone(rev.value.trend)}>{rev.value.delta}</em>}</div><div className="q-bars">{rev.value.points.map(p=><div key={p.label} title={String(p.value)}><i style={{height:Math.max(2,p.value/revMax*100)+"%"}}/><small>{p.label}</small></div>)}</div></>:<Empty k="revenueTrend"/>}</article>
-     <article className="q-panel q-channel"><header><div><small>COMMERCIAL / 07</small><h3>Channel Mix (Sales)</h3></div><Stamp entry={mix}/></header>{mix?<div className="q-donut-wrap"><div className="q-donut" style={{background:`conic-gradient(${conic})`}}><strong>{mix.value.total}</strong></div><div className="q-legend">{mix.value.items.map(it=><p key={it.label}><i/>{it.label} <b>{it.pct}%</b></p>)}</div></div>:<Empty k="channelMix"/>}</article>
+    <section className="q-bottom-grid q-bottom-single">
      <article className="q-panel q-trading"><header><div><small>MARKETS / 08</small><h3>Trading – XAU/USD</h3></div><Stamp entry={gold}/></header>{gold?<><div className="q-price"><strong>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><em className={gold.value.changePct>=0?"positive":"negative"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}%</em></div><svg className="q-spark" viewBox="0 0 320 112" preserveAspectRatio="none" role="img" aria-label="XAU USD price series"><path d={goldPath} fill="none" stroke={gold.value.changePct>=0?"#35df82":"#f33e50"} strokeWidth="2.5"/></svg>{gold.value.timeframe&&<div className="q-timeframes"><b>{gold.value.timeframe}</b></div>}</>:<Empty k="xauusd"/>}</article>
-     <article className="q-panel q-factory"><header><div><small>OPERATIONS / 09</small><h3>Factory Utilization</h3></div><Stamp entry={factory}/></header>{factory?<><div className="q-factory-total"><strong>{factory.value.overall}%</strong><span>Overall</span></div>{factory.value.items.map(it=><div className="q-factory-row" key={it.label}><span>{it.label}</span><div><i style={{width:it.pct+"%"}}/></div><b>{it.pct}%</b></div>)}</>:<Empty k="factory"/>}</article>
     </section>
     <section className="q-panel q-apps"><header><div><small>LAUNCHPAD / 10</small><h3>Apps & Links</h3></div><span className="q-live">{apps?`${apps.filter(a=>a.url).length} LIVE`:appsError?"OFFLINE":"SYNCING"}</span></header>
      {appsError&&<div className="q-inline-error">{appsError}</div>}
