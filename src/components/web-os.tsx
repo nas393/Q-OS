@@ -37,6 +37,18 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  ];
  const alerts=[...liveAlerts,...(metrics.alerts?.value??[])];
  const {kpis,insights,agenda,xauusd:gold}=metrics;
+ // Live insights derived only from verified project telemetry (no pushed data needed).
+ const days=(d?:string)=>d?Math.floor((Date.now()-new Date(d).getTime())/864e5):null;
+ const withCommit=projects.filter(p=>p.lastCommit?.date).sort((a,b)=>new Date(b.lastCommit!.date).getTime()-new Date(a.lastCommit!.date).getTime());
+ const stale=withCommit.filter(p=>(days(p.lastCommit!.date)??0)>30);
+ const issues=projects.reduce((n,p)=>n+(p.openIssues??0),0);
+ const derived:{title:string;detail?:string;trend?:"up"|"down"|"flat"}[]=data?[
+  {title:`${ready} of ${projects.length} projects live`,detail:failed?`${failed} with a failed latest deploy`:"No failed deploys",trend:failed?"down":"up"},
+  ...(withCommit[0]?[{title:`Latest work: ${withCommit[0].name.replace(" / Q","")}`,detail:`${days(withCommit[0].lastCommit!.date)===0?"today":days(withCommit[0].lastCommit!.date)+"d ago"} · ${withCommit[0].lastCommit!.message}`.slice(0,110),trend:"up" as const}]:[]),
+  stale.length?{title:`${stale.length} project${stale.length>1?"s":""} idle 30+ days`,detail:stale.map(p=>p.name.replace(" / Q","")).join(", ").slice(0,110),trend:"flat" as const}:{title:"No idle projects",detail:"Every tracked repo had a commit in the last 30 days",trend:"up" as const},
+  {title:`${issues} open GitHub issue${issues===1?"":"s"}`,detail:unresolved?`${unresolved} project(s) not fully verified`:"All tracked projects verified",trend:issues?"flat":"up"}
+ ]:[];
+ const shownInsights=[...(insights?.value??[]),...derived].slice(0,4);
  const goldPath=gold?(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return "M"+s.map((v,i)=>`${(i/(s.length-1)*320).toFixed(1)} ${(104-(v-lo)/r*100).toFixed(1)}`).join(" L");})():"";
  const date=clock.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
  const time=clock.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
@@ -66,8 +78,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <div className="q-portfolio-foot"><span>{loading?"SYNCHRONIZING PORTFOLIO":data?`UPDATED ${new Date(data.updatedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:"LIVE DATA UNAVAILABLE"}</span><button onClick={refresh}>↻ REFRESH DATA</button><Link href="/projects">OPEN PROJECT WORKSPACE ↗</Link></div>
      </article>
      <div className="q-side-stack">
-      <article className="q-panel q-intelligence"><header><div><small>DECISION SUPPORT / 02</small><h3>Q Intelligence</h3></div><Stamp entry={insights}/></header>
-       {insights?.value.length?insights.value.map(x=><div className="q-insight" key={x.title}><b>{x.trend==="up"?"↗":x.trend==="down"?"↘":"◎"}</b><span><strong>{x.title}</strong>{x.detail&&<small>{x.detail}</small>}</span></div>):<Empty k="insights"/>}
+      <article className="q-panel q-intelligence"><header><div><small>DECISION SUPPORT / 02</small><h3>Q Intelligence</h3></div>{insights?<Stamp entry={insights}/>:<span className="q-live">{data?"LIVE":"—"}</span>}</header>
+       {shownInsights.length?shownInsights.map(x=><div className="q-insight" key={x.title}><b>{x.trend==="up"?"↗":x.trend==="down"?"↘":"◎"}</b><span><strong>{x.title}</strong>{x.detail&&<small>{x.detail}</small>}</span></div>):<p className="q-stamp">{loading?"Reading project telemetry…":"Project telemetry unavailable"}</p>}
       </article>
       <article className="q-panel q-actions"><header><div><small>WORKSPACE / 03</small><h3>Quick Actions</h3></div></header><div className="q-action-grid"><Link href="/projects"><b>▱</b><span>Projects</span></Link><Link href="/chat"><b>✧</b><span>Q Assistant</span></Link><Link href="/projects"><b>↗</b><span>Deployments</span></Link><Link href="/projects"><b>▥</b><span>Reports</span></Link></div></article>
      </div>
