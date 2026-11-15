@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { NMark } from "@/components/brand";
 import "./lock.css";
 
 export default function LoginForm({ initialError = "" }: { initialError?: string }) {
@@ -38,8 +37,8 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
     <main className="lk">
       <div className="lk-bg" aria-hidden="true"/>
       <section className="lk-core">
-        <NMark size={92}/>
-        <p className="lk-name">NASSIM WATFA</p>
+        <img src="/os/n-mark.png" alt="" width={110} height={100} className="nmark"/>
+        <p className="lk-name">NASSIM <span style={{color:"#E5132B"}}>OS</span></p>
         <h1><small>The Restless</small>Architect</h1>
         <p className="lk-roles">Builder · Strategist · Creator · Explorer</p>
         <form className="lk-form" method="post" action="/api/auth/login" onSubmit={submit}>
