@@ -109,3 +109,38 @@
 @media(display-mode:standalone){.ra a,.ra button{-webkit-tap-highlight-color:transparent}}
 @media(prefers-reduced-motion:reduce){.ra-flash{animation:none}}
 @media(max-width:420px){.ra-roles{letter-spacing:2px;font-size:10px}.ra-roles i{padding:0 3px}}
+.ra-verdict{display:flex;align-items:center;gap:10px;margin-top:16px;max-width:560px;width:100%;padding:10px 14px 10px 10px;border:1px solid #ffffff22;background:rgba(8,13,24,.62);backdrop-filter:blur(12px);color:var(--ivory);font:500 13px/1.35 Inter,sans-serif;text-align:left;cursor:pointer;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%)}
+.ra-verdict.hot{border-color:#FF3B5566;box-shadow:inset 3px 0 0 var(--crim2)}
+.ra-q{flex:0 0 30px;height:30px;display:grid;place-items:center;font:600 14px Cinzel,serif;color:#fff;background:linear-gradient(140deg,#FF3B55,#7E0A1C)}
+/* ---------- Mobile-first: one thumb, act first ---------- */
+@media(max-width:760px){
+ .ra-hero{height:calc(330px + env(safe-area-inset-top))}
+ .ra-copy{bottom:22px}
+ .ra-hero h1{font-size:46px}.ra-hero h1 span{font-size:13px;letter-spacing:4px}
+ .ra-roles{display:none}
+ .ra-narr{font-size:10px;letter-spacing:2px;margin-top:8px}
+ .ra-verdict{margin-top:14px;font-size:13px;min-height:52px}
+ .ra-body{margin-top:-4px}
+ .ra-pulse{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:42%;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -14px;padding:0 14px 4px;scrollbar-width:none}
+ .ra-pulse::-webkit-scrollbar{display:none}
+ .ra-pulse article{scroll-snap-align:start;padding:12px 14px}
+ .ra-pulse strong{font-size:26px;margin:6px 0 2px}
+ .ra-grid,.ra-stack{display:contents}
+ .ra-needs{order:1}.ra-empire{order:2}.ra-vision{order:3}.ra-markets{order:4}.ra-launch{order:5}.ra-foot{order:9}
+ .ra-ventures{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:64%;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}
+ .ra-ventures::-webkit-scrollbar{display:none}
+ .ra-venture{scroll-snap-align:start}
+ .ra-cover{height:96px}
+ .ra-card>header{margin-bottom:10px}.ra-card h2{font-size:13px;letter-spacing:2.5px}
+ .ra-card header button{width:44px;height:44px}
+ .ra-alert{padding:12px 0;font-size:13px;min-height:44px}
+ .ra-ins{padding:11px 0}
+ .ra-price strong{font-size:34px}.ra-sym{display:none}
+ .ra-chart{height:120px}
+ .ra-app{padding:12px}.ra-app-head{min-height:44px}
+ .ra-pages a{padding:8px 12px;font-size:11px}
+ .ra-tabs a{min-width:64px;min-height:48px;justify-content:center}
+ .ra-foot p{font-size:9px;letter-spacing:3px}
+}
+.ra-body{grid-template-columns:minmax(0,1fr)}.ra-body>*,.ra-card{min-width:0}
+@media(max-width:760px){.ra-main{overflow-x:hidden}.ra-empire,.ra-needs,.ra-vision,.ra-markets,.ra-launch{min-width:0;max-width:100%}}

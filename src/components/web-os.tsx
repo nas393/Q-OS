@@ -46,6 +46,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   stale.length?{title:`${stale.length} idle 30+ days`,detail:stale.map(p=>clean(p.name)).join(", ").slice(0,96),trend:"flat"}:{title:"No idle projects",detail:"Every tracked repo moved in the last 30 days",trend:"up"},
   {title:`${issues} open GitHub issue${issues===1?"":"s"}`,detail:unresolved?`${unresolved} project(s) not fully verified`:"All tracked projects verified",trend:issues?"flat":"up"}
  ] as Insight[]:[])].slice(0,4);
+ const verdict=!data?(loading?"Reading your empire…":"Live data unavailable — tap refresh."):alerts.length?`${alerts.length} ${alerts.length===1?"thing needs":"things need"} you — ${alerts[0].title}`:failed?`${failed} build${failed>1?"s":""} failed. Check The Empire.`:"All clear. Every tracked venture is live.";
  const gold=metrics.xauusd;
  const goldPts=gold?gold.value.series:[];
  const lo=goldPts.length?Math.min(...goldPts):0,hi=goldPts.length?Math.max(...goldPts):1,rg=hi-lo||1;
@@ -70,6 +71,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <h1><span>The Restless</span>Architect</h1>
      <p className="ra-roles">Builder <i>|</i> Strategist <i>|</i> Creator <i>|</i> Explorer</p>
      <p className="ra-narr"><b>/</b>{dayPick(narrative)}</p>
+     <button type="button" onClick={()=>document.getElementById(alerts.length?"needs":"empire")?.scrollIntoView({behavior:"smooth"})} className={`ra-verdict${data&&alerts.length?" hot":""}`}><span className="ra-q">Q</span><span>{verdict}</span></button>
     </div>
    </header>
    <div className="ra-body">
@@ -81,7 +83,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <article><span>Q activity</span><strong>{activityCount}</strong><small>{conversationCount} chats · 24h</small></article>
     </section>
     <section className="ra-grid">
-     <article className="ra-card" id="empire">
+     <article className="ra-card ra-empire" id="empire">
       <header><h2><b>/</b>The Empire</h2><button onClick={refresh} aria-label="Refresh"><Ico d={I.refresh}/></button></header>
       <div className="ra-ventures">{(projects.length?projects:Array.from({length:6},(_,i)=>({id:String(i),name:"…",area:"",priority:"",deployment:null,lastCommit:null} as unknown as Project))).map((p,i)=>{
        const d=days(p.lastCommit?.date);const act=d===null?0:Math.max(6,100-d*3);
@@ -97,7 +99,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <article className="ra-card ra-vision"><header><h2><b>/</b>Sixth Vision</h2><span className="ra-eye" aria-hidden="true"/></header>
        {insights.length?insights.map(x=><div className="ra-ins" key={x.title}><b className={x.trend==="down"?"bad":x.trend==="flat"?"warn":"ok"}>{x.trend==="down"?"↘":x.trend==="flat"?"◆":"↗"}</b><span><strong>{x.title}</strong>{x.detail&&<small>{x.detail}</small>}</span></div>):<p className="ra-muted">{loading?"Reading the field…":"Telemetry unavailable"}</p>}
       </article>
-      <article className="ra-card"><header><h2><b>/</b>Needs You</h2><b className="ra-count">{data?alerts.length:"—"}</b></header>
+      <article className="ra-card ra-needs" id="needs"><header><h2><b>/</b>Needs You</h2><b className="ra-count">{data?alerts.length:"—"}</b></header>
        {alerts.length?alerts.slice(0,6).map((a,i)=><p className="ra-alert" key={i}><i className={a.level}/>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:a.title}</p>):<p className="ra-muted">{loading?"Checking…":data?"All clear.":"Signals unavailable."}</p>}
       </article>
      </div>
@@ -109,7 +111,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
        <polygon points={`0,160 ${line} 600,160`} fill="url(#rafill)"/><polyline points={line} fill="none" stroke="#F2C979" strokeWidth="2"/></svg>
       <small className="ra-muted">48 hourly closes · Counter-Trader</small></>:<div className="ra-empty">Waiting for the next Counter-Trader push.</div>}
     </section>
-    <section className="ra-card" id="launchpad">
+    <section className="ra-card ra-launch" id="launchpad">
      <header><h2><b>/</b>Launchpad</h2><span className="ra-live">{apps?`${liveApps} live`:appsError?"offline":"syncing"}</span></header>
      {appsError&&<div className="ra-error">{appsError}</div>}
      <div className="ra-apps">{(apps??[]).map((a,i)=><div key={a.id} className={`ra-app${a.url?"":" off"}`}>
