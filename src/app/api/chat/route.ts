@@ -89,10 +89,10 @@ export async function POST(request:Request){
   const turns=history.rows.reverse().map((row:{role:"user"|"assistant";content:string})=>({role:row.role,content:row.content}));
   if(parsed.data.portfolioContext?.trim()){
    const latestUser=[...turns].reverse().find(turn=>turn.role==="user");
-   if(latestUser)latestUser.content=`CURRENT VERIFIED PROJECT PORTFOLIO (use this data; do not claim you cannot access the project list):\n${parsed.data.portfolioContext.trim()}\n\nUSER REQUEST:\n${latestUser.content}`;
+   if(latestUser)latestUser.content=`LIVE SNAPSHOT (source of truth; answer from it):\n${parsed.data.portfolioContext.trim()}\n\nUSER REQUEST:\n${latestUser.content}`;
   }
   console.error("q_chat_stage","history_loaded",{turns:turns.length,portfolioContext:!!parsed.data.portfolioContext});
-  const isPortfolioReview=/review.*(all|active).*projects|portfolio review|rank.*top three|top three.*projects/i.test(parsed.data.message);
+  const isPortfolioReview=/^\/review\b/i.test(parsed.data.message);
   const deterministicReview=isPortfolioReview&&parsed.data.portfolioContext?buildPortfolioReview(parsed.data.portfolioContext):null;
   if(deterministicReview){
    const answer=deterministicReview;

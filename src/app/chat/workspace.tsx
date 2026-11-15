@@ -1,47 +1,73 @@
 "use client";
 import Link from "next/link";
-import {useCallback,useEffect,useMemo,useRef,useState} from "react";
-type Project={id:string;name:string;priority:string;next:string;area:string;repo:string|null;vercel:string|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;sourceRepo?:string|null;sourceMatches?:boolean|null}|null;openIssues:number|null;lastCommit:{message:string;date:string}|null;integration?:{github:boolean;vercel:boolean};githubDataStatus?:string;vercelDataStatus?:string;issuesDataStatus?:string;commitDataStatus?:string;deploymentDataStatus?:string;issuesError?:string|null;commitError?:string|null;deploymentError?:string|null;};
-type Task={id:string;text:string;done:boolean;created:number};
-type Message={role:"user"|"assistant";content:string};
-const starter=["Review all active projects and identify the biggest risks.","Prepare my top priorities for today.","Check deployment health across my projects.","Analyse CERTIGO and recommend the next five actions."];
-export default function ChatWorkspace(){
- const [projects,setProjects]=useState<Project[]>([]),[syncing,setSyncing]=useState(true),[syncError,setSyncError]=useState("");
- const [tasks,setTasks]=useState<Task[]>([]),[taskDraft,setTaskDraft]=useState("");
- const [prompt,setPrompt]=useState(""),[messages,setMessages]=useState<Message[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState("");
- const bottom=useRef<HTMLDivElement>(null);
- const refresh=useCallback(async()=>{setSyncing(true);setSyncError("");try{const r=await fetch("/api/projects",{cache:"no-store"});if(!r.ok)throw new Error("Project intelligence is unavailable ("+r.status+").");const d=await r.json();setProjects(d.projects??[]);}catch(e){setSyncError(e instanceof Error?e.message:"Unable to sync project data.");}finally{setSyncing(false);}},[]);
- useEffect(()=>{refresh();const t=window.setInterval(refresh,300000);return()=>window.clearInterval(t)},[refresh]);
- useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem("q-command-tasks")||"[]");if(Array.isArray(saved))setTasks(saved)}catch{}},[]);
- useEffect(()=>{localStorage.setItem("q-command-tasks",JSON.stringify(tasks))},[tasks]);
- useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth"})},[messages]);
- const failed=projects.filter(p=>p.deployment?.state==="ERROR").length;
- const verifiedDeployments=projects.filter(p=>p.deploymentDataStatus==="VERIFIED").length;
- const ready=projects.filter(p=>p.deploymentDataStatus==="VERIFIED"&&p.deployment?.state==="READY").length;
- const priority=projects.filter(p=>p.priority==="P1");
- const openTasks=tasks.filter(t=>!t.done).length;
- const recent=useMemo(()=>projects.slice(0,8),[projects]);
- async function send(value=prompt){
-  const text=value.trim();if(!text||busy)return;setPrompt("");setError("");setBusy(true);setMessages(old=>[...old,{role:"user",content:text},{role:"assistant",content:""}]);let answer="";
-  try{const portfolioContext=JSON.stringify({portfolioUpdatedAt:new Date().toISOString(),projects:projects.map(p=>({name:p.name,registryPriority:p.priority,area:p.area,recordedNextAction:p.next,repositoryLinked:!!p.repo,vercelProjectLinked:!!p.vercel,githubIntegrationConfigured:!!p.integration?.github,vercelIntegrationConfigured:!!p.integration?.vercel,githubDataStatus:p.githubDataStatus??"UNKNOWN",vercelDataStatus:p.vercelDataStatus??"UNKNOWN",deploymentState:p.deployment?.state??"UNKNOWN",deploymentTarget:p.deployment?.target??"UNKNOWN",deploymentCreatedAt:p.deployment?.created??null,deploymentSourceRepo:p.deployment?.sourceRepo??null,deploymentSourceMatches:p.deployment?.sourceMatches??null,openGitHubIssues:p.openIssues,issuesDataStatus:p.openIssues===null?(p.issuesError?"FETCH_ERROR":"UNKNOWN"):"VERIFIED",lastCommit:p.lastCommit?{message:p.lastCommit.message,date:p.lastCommit.date}:"UNKNOWN",commitDataStatus:p.lastCommit?"VERIFIED":p.commitError?"FETCH_ERROR":"UNKNOWN",deploymentDataStatus:p.deployment?"VERIFIED":p.deploymentError?"FETCH_ERROR":"UNKNOWN"}))});const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,portfolioContext})});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error??"Q request failed.");}const reader=r.body?.getReader();if(!reader)throw new Error("Response stream unavailable.");const decoder=new TextDecoder();let buffer="";while(true){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const chunks=buffer.split("\n\n");buffer=chunks.pop()??"";for(const chunk of chunks){const line=chunk.split("\n").find(x=>x.startsWith("data:"));if(!line)continue;const d=JSON.parse(line.slice(5).trim());if(d.error)throw new Error(d.error);if(d.delta){answer+=d.delta;setMessages(old=>{const next=[...old];next[next.length-1]={role:"assistant",content:answer};return next;});}}}if(!answer)throw new Error("Q returned an empty response.");}
-  catch(e){const msg=e instanceof Error?e.message:"Something went wrong.";setError(msg);setMessages(old=>{const next=[...old];next[next.length-1]={role:"assistant",content:"I couldn't complete that command. "+msg};return next;});}
-  finally{setBusy(false);}
- }
- function addTask(){const text=taskDraft.trim();if(!text)return;setTasks(old=>[{id:crypto.randomUUID(),text,done:false,created:Date.now()},...old]);setTaskDraft("")}
- return <main className="q-command">
-  <header className="q-command-top"><a href="/dashboard" className="q-command-brand">Q<span>◆</span></a><div className="q-command-crumb">PERSONAL OPERATING SYSTEM <i>/</i> COMMAND CENTRE</div><div className="q-command-health"><i/> CORE ONLINE <button onClick={refresh} disabled={syncing}>{syncing?"SYNCING":"↻ SYNC"}</button></div></header>
-  <div className="q-command-wrap">
-   <section className="q-command-hero"><div><span className="q-kicker"><i/> Q INTELLIGENCE / COMMAND INTERFACE</span><h1>Make it <em>happen.</em></h1><p>Your projects, priorities and execution — in one place.</p></div><div className="q-hero-stamp"><b>Q</b><small>COMMAND<br/>CENTRE</small></div></section>
-   <section className="q-command-input"><div className="q-input-label"><span>Q:// COMMAND INPUT</span><span>AI ENGINE · GROQ PRIMARY</span></div><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Tell Q what needs to be done..." rows={2}/><div className="q-input-actions"><small>Enter to execute · Shift + Enter for a new line</small><button onClick={()=>send()} disabled={busy||!prompt.trim()}>{busy?"PROCESSING…":"EXECUTE COMMAND ↗"}</button></div></section>
-   <section className="q-suggestions">{starter.map(s=><button key={s} onClick={()=>send(s)} disabled={busy}>{s}<span>↗</span></button>)}</section>
-   {messages.length>0&&<section className="q-response"><div className="q-section-head"><div><small>LIVE SESSION</small><h2>Q <em>RESPONSE</em></h2></div><button onClick={()=>setMessages([])}>CLEAR SESSION ×</button></div><div className="q-response-list">{messages.map((m,i)=><article key={i} className={m.role}><b>{m.role==="assistant"?"Q":"YOU"}</b><p>{m.content||"Processing…"}</p></article>)}<div ref={bottom}/></div>{error&&<p className="q-error">{error}</p>}</section>}
-   <section className="q-metrics"><div><small>ACTIVE PROJECTS</small><strong>{projects.length.toString().padStart(2,"0")}</strong><span>REGISTERED ASSETS</span></div><div><small>P1 PRIORITIES</small><strong>{priority.length.toString().padStart(2,"0")}</strong><span>HIGH PRIORITY PROJECTS</span></div><div><small>DEPLOYMENTS READY</small><strong className="green">{ready.toString().padStart(2,"0")} / {verifiedDeployments}</strong><span>{failed} BUILD FAILURES OBSERVED</span></div><div><small>OPEN ACTIONS</small><strong>{openTasks.toString().padStart(2,"0")}</strong><span>PERSONAL TASK QUEUE</span></div></section>
-   <section className="q-command-grid">
-    <div className="q-panel q-project-panel"><div className="q-section-head"><div><small>01 / PORTFOLIO INTELLIGENCE</small><h2>PROJECT <em>FLEET</em></h2></div><Link href="/projects">FULL VIEW ↗</Link></div>{syncError&&<p className="q-error">{syncError}</p>}{recent.map(p=><div className="q-project-row" key={p.id}><div className="q-project-mark">{p.name.slice(0,1)}</div><div className="q-project-name"><b>{p.name}</b><small>{p.area} · {p.priority}</small></div><span className={"q-project-state "+(p.deployment?.state==="READY"?"ready":p.deployment?.state==="ERROR"?"failed":"")}>{p.deployment?.state??(p.deploymentDataStatus==="NOT_CONFIGURED"?"TOKEN REQUIRED":p.deploymentDataStatus==="AUTH_REQUIRED"?"AUTH REQUIRED":p.vercel?"NO DATA":"NOT LINKED")}</span></div>)}{!syncing&&!projects.length&&!syncError&&<p className="q-empty">No projects registered.</p>}</div>
-    <div className="q-panel q-task-panel"><div className="q-section-head"><div><small>02 / PERSONAL EXECUTION</small><h2>PRIORITY <em>QUEUE</em></h2></div><span className="q-count">{openTasks} OPEN</span></div><form className="q-task-add" onSubmit={e=>{e.preventDefault();addTask()}}><input value={taskDraft} onChange={e=>setTaskDraft(e.target.value)} placeholder="Add an action or reminder…"/><button disabled={!taskDraft.trim()}>＋</button></form><div className="q-task-list">{tasks.map(t=><label key={t.id} className={t.done?"completed":""}><input type="checkbox" checked={t.done} onChange={e=>setTasks(old=>old.map(x=>x.id===t.id?{...x,done:e.target.checked}:x))}/><span>{t.text}</span><button type="button" onClick={()=>setTasks(old=>old.filter(x=>x.id!==t.id))} aria-label="Delete task">×</button></label>)}{tasks.length===0&&<p className="q-empty">Your action queue is clear. Add your next priority above.</p>}</div></div>
-    <div className="q-panel q-watch-panel"><div className="q-section-head"><div><small>03 / SYSTEM OVERSIGHT</small><h2>EXECUTION <em>WATCH</em></h2></div><span className="q-live">● LIVE</span></div><div className="q-watch-row"><span>PROJECT DATA</span><b>{syncing?"SYNCING":syncError?"ATTENTION":"CONNECTED"}</b></div><div className="q-watch-row"><span>GITHUB / VERCEL</span><b>{projects.some(p=>p.githubDataStatus==="VERIFIED")?"GITHUB PUBLIC DATA VERIFIED":"GITHUB TOKEN REQUIRED"} · {projects.some(p=>p.deploymentDataStatus==="VERIFIED")?"VERCEL VERIFIED":"VERCEL TOKEN REQUIRED"}</b></div><div className="q-watch-row"><span>BUILD FAILURES</span><b className={failed?"warn":""}>{failed} OBSERVED</b></div><div className="q-watch-row"><span>LAST REFRESH</span><b>{new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</b></div><p className="q-watch-note">Q reports execution outcomes. Repository changes and production deployments remain approval-gated.</p></div>
+import { useCallback, useEffect, useRef, useState } from "react";
+import QMd from "@/components/q-md";
+import { buildQContext } from "@/lib/q-context";
+import "./chat.css";
+
+type Conv={id:string;title:string;updated_at?:string};
+type Msg={role:"user"|"assistant";content:string};
+type Gold={price:number;changePct:number;updatedAt:string}|null;
+const QUICK:[string,string][]=[
+ ["Status update","Status update on all my ventures: live status, blocker and next action for each."],
+ ["Business analysis","Business analysis of my ecosystem: what works, what doesn't, and the single highest-value move."],
+ ["Today's priorities","What are my top 3 priorities today, and why?"],
+ ["Market intelligence","Gold (XAU/USD) read for this week: drivers, risks, what to watch. Say what you can't verify live."],
+ ["Content plan","Plan this week's content for LUMERIS and NOVAÉ: one strong idea per day."],
+ ["Devil's Advocate","Act as Devil's Advocate on my most important current decision: assumptions, strongest counterargument, failure scenarios, missing evidence, verdict (approve / approve with conditions / reconsider / postpone / reject)."]];
+
+export default function ChatWorkspace({gold}:{gold:Gold}){
+ const [convs,setConvs]=useState<Conv[]>([]),[convId,setConvId]=useState<string|undefined>(),[msgs,setMsgs]=useState<Msg[]>([]),[input,setInput]=useState(""),[busy,setBusy]=useState(false);
+ const [status,setStatus]=useState<"checking"|"online"|"offline">("checking"),[hist,setHist]=useState(false),[err,setErr]=useState("");
+ const [ctx,setCtx]=useState<{projects:Parameters<typeof buildQContext>[0]["projects"];tasks:Parameters<typeof buildQContext>[0]["tasks"]}>({projects:[],tasks:[]});
+ const end=useRef<HTMLDivElement>(null),box=useRef<HTMLTextAreaElement>(null);
+ const loadConvs=useCallback(async()=>{try{const r=await fetch("/api/chat",{cache:"no-store"});if(!r.ok)throw 0;setStatus("online");setConvs((await r.json()).conversations??[]);}catch{setStatus("offline");}},[]);
+ useEffect(()=>{loadConvs();
+  Promise.all([fetch("/api/projects",{cache:"no-store"}).then(r=>r.ok?r.json():{projects:[]}),fetch("/api/tasks",{cache:"no-store"}).then(r=>r.ok?r.json():{tasks:[]})]).then(([p,t])=>setCtx({projects:p.projects??[],tasks:t.tasks??[]})).catch(()=>{});
+ },[loadConvs]);
+ useEffect(()=>{end.current?.scrollIntoView({behavior:"smooth"})},[msgs]);
+ async function openConv(id:string){setHist(false);setErr("");try{const r=await fetch(`/api/chat/${id}`,{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error);setConvId(id);setMsgs((j.messages??[]).map((m:{role:string;content:string})=>({role:m.role==="user"?"user":"assistant",content:m.content})));}catch(e){setErr(e instanceof Error&&e.message?e.message:"Could not open conversation");}}
+ function newChat(){setConvId(undefined);setMsgs([]);setHist(false);box.current?.focus();}
+ async function send(text:string){const m=text.trim();if(!m||busy)return;setInput("");setErr("");setBusy(true);setMsgs(x=>[...x,{role:"user",content:m},{role:"assistant",content:""}]);
+  const alerts=ctx.projects.filter(p=>p.deployment?.state==="ERROR").map(p=>({title:`${p.name} deploy failed`}));
+  try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m,portfolioContext:buildQContext({projects:ctx.projects,tasks:ctx.tasks,alerts,gold}),...(convId?{conversationId:convId}:{})})});
+   if(!r.ok||!r.body){const j=await r.json().catch(()=>({}));throw new Error(j.error??`Q returned ${r.status}`);}
+   setStatus("online");const rd=r.body.getReader(),dec=new TextDecoder();let buf="";
+   for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});const parts=buf.split("\n\n");buf=parts.pop()??"";
+    for(const part of parts){let ev:{delta?:string;conversationId?:string;error?:string};try{ev=JSON.parse(part.replace(/^data: /,""));}catch{continue;}
+     if(ev.error)throw new Error(ev.error);if(ev.conversationId)setConvId(ev.conversationId);if(ev.delta)setMsgs(x=>{const c=[...x];c[c.length-1]={role:"assistant",content:c[c.length-1].content+ev.delta};return c;});}}
+   loadConvs();
+  }catch(e){setStatus("offline");setMsgs(x=>{const c=[...x];c[c.length-1]={role:"assistant",content:`⚠ ${e instanceof Error?e.message:"Q is unavailable"}`};return c;});}
+  finally{setBusy(false);}}
+
+ return <main className="qc">
+  <header className="qc-top">
+   <Link href="/dashboard" className="qc-back" aria-label="Back to Command Center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg></Link>
+   <img src="/os/q-emblem.png" alt="" width={40} height={40} className="qc-emblem"/>
+   <div className="qc-title"><b>Q</b><small><i className={status}/>{status==="online"?"Online":status==="offline"?"Offline":"Checking"} · Your Strategic Assistant</small></div>
+   <button className="qc-btn" onClick={()=>setHist(h=>!h)} aria-label="History"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg></button>
+   <button className="qc-btn" onClick={newChat} aria-label="New chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  </header>
+  <div className="qc-body">
+   <aside className={`qc-hist${hist?" open":""}`}>
+    <button className="qc-new" onClick={newChat}>+ New conversation</button>
+    {convs.length?convs.map(c=><button key={c.id} className={`qc-conv${c.id===convId?" on":""}`} onClick={()=>openConv(c.id)}><span>{c.title}</span>{c.updated_at&&<small>{new Date(c.updated_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</small>}</button>):<p className="qc-muted">No conversations yet.</p>}
+   </aside>
+   <section className="qc-main">
+    <div className="qc-thread">
+     {!msgs.length&&<div className="qc-hello"><img src="/os/n-mark.svg" alt="" width={70} height={64}/><h1>What do you need, Nassim?</h1><p>I read your live ventures, tasks, alerts and gold feed before I answer.</p></div>}
+     {msgs.map((m,i)=><div key={i} className={`qc-msg ${m.role}`}>{m.role==="assistant"?(m.content?<QMd text={m.content}/>:<span className="qc-typing"><i/><i/><i/></span>):m.content}</div>)}
+     {err&&<p className="qc-err">{err}</p>}
+     <div ref={end}/>
+    </div>
+    <div className="qc-dock">
+     <div className="qc-quick">{QUICK.map(([l,p])=><button key={l} onClick={()=>send(p)} disabled={busy} className={l==="Devil's Advocate"?"da":""}>{l}</button>)}</div>
+     <form className="qc-ask" onSubmit={e=>{e.preventDefault();send(input)}}>
+      <textarea ref={box} rows={1} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(input)}}} placeholder="How can I help you today?" maxLength={6000}/>
+      <button type="submit" disabled={busy||!input.trim()} aria-label="Send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+     </form>
+    </div>
    </section>
-   <footer className="q-command-footer"><span>Q / PERSONAL COMMAND CENTRE</span><span>PRIVATE NODE · MATRIX OS</span><span>PREVIEW BUILD · STAGE 1</span></footer>
   </div>
- </main>
+ </main>;
 }

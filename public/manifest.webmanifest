@@ -1,13 +1,13 @@
 {
-  "name": "Nassim Watfa · Q",
-  "short_name": "Q",
+  "name": "NASSIM OS",
+  "short_name": "NASSIM OS",
   "description": "Private command center",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#05070C",
-  "theme_color": "#05070C",
+  "background_color": "#070708",
+  "theme_color": "#070708",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

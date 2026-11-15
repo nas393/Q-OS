@@ -3,6 +3,8 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./web-os.css";
 import type { MetricsMap } from "@/lib/metrics";
+import { buildQContext } from "@/lib/q-context";
+import QMd from "@/components/q-md";
 
 type Project={id:string;name:string;repo:string|null;vercel:string|null;priority:string;next:string;area:string;openIssues:number|null;lastCommit:{message:string;date:string;url:string}|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;inspectorUrl:string|null;sourceMatches?:boolean|null}|null;deploymentDataStatus?:string;githubDataStatus?:string};
 type Telemetry={updatedAt:string;projects:Project[]};
@@ -72,7 +74,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  async function addT(e:FormEvent){e.preventDefault();if(!newTask.trim())return;const r=await fetch("/api/tasks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:newTask.trim(),...(newDue?{due:newDue}:{})})});if(r.ok){setNewTask("");setNewDue("");loadTasks();}else setTaskErr((await r.json().catch(()=>({}))).error??"Could not save");}
  async function toggleT(t:Task){setTasks(ts=>ts?.map(x=>x.id===t.id?{...x,done:!x.done}:x)??null);const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:t.id,done:!t.done})});if(!r.ok)loadTasks();}
  async function askQ(text:string){const msg=text.trim();if(!msg||qBusy)return;setQBusy(true);setQInput("");setQMsgs(m=>[...m,{role:"user",text:msg},{role:"q",text:""}]);
-  try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg,...(qConv?{conversationId:qConv}:{})})});
+  try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg,portfolioContext:buildQContext({projects,tasks,alerts,gold:gold?{price:gold.value.price,changePct:gold.value.changePct,updatedAt:gold.updatedAt}:null}),...(qConv?{conversationId:qConv}:{})})});
    if(!r.ok||!r.body){const j=await r.json().catch(()=>({}));throw new Error(j.error??`Q returned ${r.status}`);}
    setQState("online");const rd=r.body.getReader(),dec=new TextDecoder();let buf="";
    for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});const parts=buf.split("\n\n");buf=parts.pop()??"";
@@ -84,14 +86,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  return <main className="os">
   <aside className="os-side">
-   <div className="os-brand"><img src="/os/n-mark.png" alt="" width={84} height={76}/><b>NASSIM <i>OS</i></b><small>Personal Ecosystem</small></div>
+   <div className="os-brand"><img src="/os/n-mark.svg" alt="" width={84} height={76}/><b>NASSIM <i>OS</i></b><small>Personal Ecosystem</small></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
    <div className="os-side-art" aria-hidden="true"/>
   </aside>
 
   <div className="os-center">
    <header className="os-top">
-    <div className="os-mbrand"><img src="/os/n-mark.png" alt="" width={34} height={31}/><b>NASSIM <i>OS</i></b></div>
+    <div className="os-mbrand"><img src="/os/n-mark.svg" alt="" width={34} height={31}/><b>NASSIM <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
      <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
@@ -105,7 +107,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <section className="os-hero">
     <div className="os-hero-l" aria-hidden="true"/><div className="os-hero-r" aria-hidden="true"/>
     <div className="os-hero-c">
-     <img src="/os/n-mark.png" alt="" width={74} height={67} className="os-hero-n"/>
+     <img src="/os/n-mark.svg" alt="" width={74} height={67} className="os-hero-n"/>
      <h1>NASSIM</h1>
      <p className="os-sub"><i/>The Restless Architect<i/></p>
      <p className="os-eco-l">My Ecosystem</p>
@@ -176,7 +178,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   <aside className="os-right">
    <section className="os-q" id="q">
     <div className="os-qhead"><img src="/os/q-emblem.png" alt="" width={88} height={88}/><div><b>Q</b><span>Your Strategic Assistant</span><em className={qState}><i/>{qState==="online"?"Online":qState==="offline"?"Offline":"Checking"}</em></div></div>
-    {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=><p key={i} className={m.role}>{m.text||(qBusy&&i===qMsgs.length-1?"Thinking…":"")}</p>)}</div>}
+    {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=><div key={i} className={`os-msg ${m.role}`}>{m.text?(m.role==="q"?<QMd text={m.text}/>:m.text):(qBusy&&i===qMsgs.length-1?"Thinking…":"")}</div>)}</div>}
     <form className="os-ask" onSubmit={e=>{e.preventDefault();askQ(qInput)}}><input value={qInput} onChange={e=>setQInput(e.target.value)} placeholder="How can I help you today?" maxLength={2000}/><button type="submit" disabled={qBusy||!qInput.trim()} aria-label="Send"><Ico d="M5 12h14M13 6l6 6-6 6"/></button></form>
     <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
    </section>
@@ -187,6 +189,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   </aside>
 
   <nav className="os-tabs">{NAV.filter(n=>n.tab).map(n=><a key={n.label} href={n.href} className={n.label==="Command Center"?"on":""}><Ico d={n.icon} s={20}/>{n.label==="AI Assistant (Q)"?"Q":n.label.split(" ")[0]}</a>)}<button onClick={()=>setDrawer(true)}><Ico d="M4 6h16M4 12h16M4 18h16" s={20}/>More</button></nav>
-  {drawer&&<div className="os-drawer" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.png" alt="" width={60} height={54}/><b>NASSIM <i>OS</i></b><small>The Restless Architect</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
+  {drawer&&<div className="os-drawer" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.svg" alt="" width={60} height={54}/><b>NASSIM <i>OS</i></b><small>The Restless Architect</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
  </main>;
 }
