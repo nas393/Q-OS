@@ -18,8 +18,8 @@ Authorization: Bearer <INGEST_TOKEN>
 Content-Type: application/json
 
 {
-  "source": "angoalissar-hub",
-  "metrics": { "kpis": [ ... ], "revenueTrend": { ... } }
+  "source": "counter-trader",
+  "metrics": { "xauusd": { ... }, "links": [ ... ] }
 }
 ```
 
@@ -30,15 +30,12 @@ Send any subset of keys. Each key replaces the previous value for that key. `sou
 | Key | Shape | Panel |
 |---|---|---|
 | `kpis` | `[{label, value, delta?, trend?: "up"\|"down"\|"flat", progress?: 0-100}]` max 5 | Top KPI strip (falls back to live system KPIs) |
-| `revenueTrend` | `{total, delta?, trend?, points:[{label, value}]}` max 12 points | Revenue Trend |
-| `channelMix` | `{total, items:[{label, pct}]}` max 5 | Channel Mix |
-| `factory` | `{overall, items:[{label, pct}]}` max 6 | Factory Utilization |
 | `insights` | `[{title, detail?, trend?}]` max 4 | Q Intelligence |
 | `alerts` | `[{title, level: "red"\|"amber", href?}]` max 6 | Alerts (added to live project alerts) |
 | `agenda` | `[{time: "HH:MM", title}]` max 8 | Today's Agenda |
 | `xauusd` | `{price, changePct, series:[numbers], timeframe?}` | Trading – XAU/USD |
 
-Suggested sources: Angoalissar commercial tools → `kpis`, `revenueTrend`, `channelMix`, `insights`, `alerts`; Lactiangol → `factory`; Counter-Trader → `xauusd`.
+Live source today: Counter-Trader → `xauusd`, `links`.
 
 ## Security
 

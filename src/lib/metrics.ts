@@ -12,9 +12,6 @@ const trend=z.enum(["up","down","flat"]).optional();
 
 export const metricSchemas={
   kpis:z.array(z.object({label:text,value:z.string().trim().min(1).max(24),delta:z.string().max(40).optional(),trend,progress:pct.optional()})).max(5),
-  revenueTrend:z.object({total:z.string().max(24),delta:z.string().max(40).optional(),trend,points:z.array(z.object({label:z.string().max(8),value:z.number().min(0)})).min(1).max(12)}),
-  channelMix:z.object({total:z.string().max(24),items:z.array(z.object({label:text,pct})).min(1).max(5)}),
-  factory:z.object({overall:pct,items:z.array(z.object({label:text,pct})).min(1).max(6)}),
   insights:z.array(z.object({title:text,detail:z.string().max(120).optional(),trend})).max(4),
   alerts:z.array(z.object({title:text,level:z.enum(["red","amber"]),href:z.string().url().optional()})).max(6),
   agenda:z.array(z.object({time:z.string().regex(/^\d{2}:\d{2}$/),title:text})).max(8),
