@@ -124,12 +124,13 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-eco-h"><h2>My Projects Ecosystem</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
     <div className="os-grid">
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
-      return <Link key={p.id} href={`/projects/${p.id}`} className="os-card">
+      const href=apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
+      return <a key={p.id} href={href} target="_blank" rel="noreferrer" className="os-card">
        <div className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt={clean(p.name)}/>:<span className="os-word">{clean(p.name)}</span>}</div>
        {LOGOS[p.name]&&p.name==="NASSIM AI HQ / Q"&&<strong>NASSIM AI HQ</strong>}
        <small>{p.area}</small>
        <em className={st}><i/>{st==="ok"?"Active":st==="bad"?"Failed":"Unverified"}</em>
-      </Link>;})}
+      </a>;})}
      {!data&&loading&&Array.from({length:7},(_,i)=><div key={i} className="os-card ghost"/>)}
      {data&&!filtered.length&&<p className="os-muted">No project matches “{search}”.</p>}
     </div>
