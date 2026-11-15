@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { NMark } from "@/components/brand";
+import "./lock.css";
 
 export default function LoginForm({ initialError = "" }: { initialError?: string }) {
   const [passkey, setPasskey] = useState("");
@@ -33,18 +35,22 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
   }
 
   return (
-    <main className="login-shell">
-      <section className="login-card">
-        <div className="brand-mark">Q<span>◆</span></div>
-        <h1>Welcome back</h1>
-        <form className="login-form" method="post" action="/api/auth/login" onSubmit={submit}>
-          <label>Passkey
-            <input type="password" name="passkey" autoComplete="current-password" required maxLength={256} autoFocus value={passkey} onChange={event => setPasskey(event.target.value)} />
+    <main className="lk">
+      <div className="lk-bg" aria-hidden="true"/>
+      <section className="lk-core">
+        <NMark size={92}/>
+        <p className="lk-name">NASSIM WATFA</p>
+        <h1><small>The Restless</small>Architect</h1>
+        <p className="lk-roles">Builder · Strategist · Creator · Explorer</p>
+        <form className="lk-form" method="post" action="/api/auth/login" onSubmit={submit}>
+          <label className="lk-field"><span className="sr">Passkey</span>
+            <input type="password" name="passkey" autoComplete="current-password" required maxLength={256} autoFocus placeholder="Passkey" value={passkey} onChange={event => setPasskey(event.target.value)} />
+            <button type="submit" disabled={busy || !passkey} aria-label="Enter">{busy ? <i className="lk-spin"/> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}</button>
           </label>
-          {error && <p className="form-error" role="alert" aria-live="polite">{error}</p>}
-          <button type="submit" disabled={busy || !passkey}>{busy ? "Unlocking…" : "Enter"}</button>
+          {error && <p className="lk-error" role="alert" aria-live="polite">{error}</p>}
         </form>
       </section>
+      <footer className="lk-foot">Think beyond · Build with purpose · Leave a legacy</footer>
     </main>
   );
 }
