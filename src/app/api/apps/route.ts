@@ -1,5 +1,6 @@
 import {NextResponse} from "next/server";
 import {readSession} from "@/lib/session";
+import {appPages} from "@/lib/app-pages";
 
 export const dynamic="force-dynamic";
 const TEAM_ID="team_sWS7qi1gaGUI9lifKbbjERXj";
@@ -26,7 +27,7 @@ export async function GET(){
     const r=await fetch(url,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});
     if(!r.ok)return NextResponse.json({error:`Vercel API returned ${r.status}`,apps:[]},{status:502,headers:{"Cache-Control":"no-store"}});
     const body=await r.json() as {projects?:VercelProject[]};
-    const apps=(body.projects??[]).map(p=>({id:p.id,name:p.name,url:pickProductionUrl(p),state:p.targets?.production?.readyState??null,updatedAt:p.updatedAt??null}))
+    const apps=(body.projects??[]).map(p=>{const url=pickProductionUrl(p);return {id:p.id,name:p.name,url,pages:url?(appPages[p.name]??[]).map(x=>({label:x.label,url:url+x.path})):[],state:p.targets?.production?.readyState??null,updatedAt:p.updatedAt??null};})
       .sort((a,b)=>(b.url?1:0)-(a.url?1:0)||(b.updatedAt??0)-(a.updatedAt??0));
     return NextResponse.json({updatedAt:new Date().toISOString(),apps},{headers:{"Cache-Control":"no-store"}});
   }catch(e){

@@ -16,7 +16,7 @@ const tone=(t?:string)=>t==="up"?"positive":t==="down"?"negative":"";
 const ago=(iso:string)=>{const h=Math.round((Date.now()-new Date(iso).getTime())/36e5);return h<1?"just now":h<48?`${h}h ago`:`${Math.round(h/24)}d ago`;};
 function Stamp({entry}:{entry?:{source:string;updatedAt:string}}){return entry?<small className="q-stamp" title={new Date(entry.updatedAt).toLocaleString()}>{entry.source} · {ago(entry.updatedAt)}</small>:null;}
 function Empty({k}:{k:string}){return <div className="q-empty"><b>NO DATA YET</b><span>Push <code>{k}</code> to /api/ingest from the source project.</span></div>;}
-type AppLink={id:string;name:string;url:string|null;state:string|null};
+type AppLink={id:string;name:string;url:string|null;state:string|null;pages?:{label:string;url:string}[]};
 type Alert={title:string;level:"red"|"amber";href?:string};
 export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null}){
  const [clock,setClock]=useState(new Date()),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[query,setQuery]=useState(""),[searchOpen,setSearchOpen]=useState(false),[active,setActive]=useState("Command Center"),[apps,setApps]=useState<AppLink[]|null>(null),[appsError,setAppsError]=useState("");
@@ -89,8 +89,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     </section>
     <section className="q-panel q-apps"><header><div><small>LAUNCHPAD / 10</small><h3>Apps & Links</h3></div><span className="q-live">{apps?`${apps.filter(a=>a.url).length} LIVE`:appsError?"OFFLINE":"SYNCING"}</span></header>
      {appsError&&<div className="q-inline-error">{appsError}</div>}
-     <div className="q-app-grid">{(apps??[]).map(a=>a.url?<a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="q-app"><b>{a.name.slice(0,1).toUpperCase()}</b><span>{a.name}</span><small>{a.url.replace("https://","")}</small></a>:<div key={a.id} className="q-app off"><b>{a.name.slice(0,1).toUpperCase()}</b><span>{a.name}</span><small>no production deploy</small></div>)}</div>
-     {metrics.links?.length?metrics.links.map(g=><div className="q-link-group" key={g.source}><h4>{g.source}<Stamp entry={g}/></h4><div>{g.value.map(l=><a key={l.url} href={l.url} target="_blank" rel="noreferrer" title={l.note}>{l.label} ↗</a>)}</div></div>):<Empty k="links"/>}
+     <div className="q-app-grid">{(apps??[]).map(a=>a.url?<div key={a.id} className="q-app-wrap"><a href={a.url} target="_blank" rel="noreferrer" className="q-app"><b>{a.name.slice(0,1).toUpperCase()}</b><span>{a.name}</span><small>{a.url.replace("https://","")}</small></a>{a.pages?.length?<div className="q-app-pages">{a.pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</div>:null}</div>:<div key={a.id} className="q-app off"><b>{a.name.slice(0,1).toUpperCase()}</b><span>{a.name}</span><small>no production deploy</small></div>)}</div>
+     {metrics.links?.length?metrics.links.filter(g=>g.source!=="counter-trader").map(g=><div className="q-link-group" key={g.source}><h4>{g.source}<Stamp entry={g}/></h4><div>{g.value.map(l=><a key={l.url} href={l.url} target="_blank" rel="noreferrer" title={l.note}>{l.label} ↗</a>)}</div></div>):null}
     </section>
     <footer className="q-footer"><span>Q OS · EXECUTIVE COMMAND CENTER</span><span>PRIVATE PORTFOLIO ENVIRONMENT · LUANDA</span></footer>
    </div>

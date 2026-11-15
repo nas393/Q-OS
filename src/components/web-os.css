@@ -71,3 +71,8 @@
 .q-link-group div{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
 .q-link-group a{padding:5px 9px;border:1px solid var(--line);border-radius:5px;color:var(--white);text-decoration:none;font-size:9px}
 .q-link-group a:hover{border-color:var(--red)}
+.q-app-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.q-app-wrap{display:grid;gap:5px;align-content:start;min-width:0}
+.q-app-pages{display:flex;flex-wrap:wrap;gap:4px}
+.q-app-pages a{padding:3px 7px;border:1px solid var(--line);border-radius:4px;color:#d0cbd0;text-decoration:none;font-size:8px}
+.q-app-pages a:hover{border-color:var(--red);color:#fff}
