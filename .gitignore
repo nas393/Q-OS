@@ -9,3 +9,8 @@ coverage
 .vercel
 *.log
 .DS_Store
+
+# local build artifacts
+next-env.d.ts
+tsconfig.tsbuildinfo
+package-lock.json
