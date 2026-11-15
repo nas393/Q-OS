@@ -3,6 +3,7 @@ import {getDb} from "@/lib/db";
 import {listProjects,pickProductionUrl,vercelGet} from "@/lib/vercel";
 import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
+import {externalApps} from "@/lib/external-apps";
 
 /*
  * NASSIM OS alerts. Checks run at most every 10 minutes, triggered after each Counter-Trader push
@@ -86,7 +87,7 @@ async function checkSite(url:string){
 }
 
 async function checkUptime(out:string[]){
-  const projects=(await listProjects()).map(p=>({p,url:pickProductionUrl(p)})).filter(x=>x.url);
+  const projects=[...(await listProjects()).map(p=>({p:{id:p.id,name:p.name},url:pickProductionUrl(p)})),...externalApps.map(x=>({p:{id:x.id,name:x.name},url:x.url as string|null}))].filter(x=>x.url);
   await Promise.all(projects.map(async({p,url})=>{
     let up=await checkSite(url!);
     if(!up){await new Promise(r=>setTimeout(r,3000));up=await checkSite(url!);} // retry once to avoid false alarms

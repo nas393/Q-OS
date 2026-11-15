@@ -13,6 +13,7 @@ const projects = [
   { id:"lumeris", name:"LUMERIS", repo:"lumeris", repoVisibility:"private", vercel:"prj_9en6kfMm515bnbkmAgXSpEumh88r", priority:"P1", next:"One site live (home, guide, welcome, posts, studio). Next: Instagram stats into Q.", area:"Media" },
   { id:"xauusd", name:"XAU/USD TRADING HQ", repo:"counter-trader", repoVisibility:"private", vercel:"prj_Yj88nFe9nAEY97iUndUUZs42zAhs", priority:"P2", next:"Validate market data, chart interactions, signal integrity and risk controls.", area:"Trading" },
   { id:"novae", name:"NOVAÉ", repo:"novae-site", repoVisibility:"public", vercel:"prj_Vkri4LKQpL3r24l9FpAIfoWBpx38", priority:"P2", next:"Maintain the agency platform and revisit growth work after P1 delivery.", area:"Agency" },
+  { id:"lep", name:"LUANDA EDGE PULSE", repo:null, repoVisibility:null, vercel:null, url:"https://luanda-edge-pulse.base44.app", priority:"P2", next:"Angola market intelligence (Base44). Keep live; review data sources and Devil's Advocate.", area:"Intelligence" },
   { id:"radio", name:"RADIO CEDARS", repo:"Radio-Cedars-", repoVisibility:"public", vercel:"prj_QRS67OXbiBMasOqgG2zVcrdHYJOR", priority:"P3", next:"Review the roadmap and define the next release milestone.", area:"Media" }
 ];
 
@@ -47,6 +48,12 @@ async function vercel(projectId:string, token?:string):Promise<ApiResult<{deploy
   }
 }
 
+/* For apps outside Vercel: a live HTTP check stands in for the deployment state. */
+async function liveCheck(url:string):Promise<ApiResult<{deployments?:Array<{state?:string;url?:string;created?:number;target?:string|null;inspectorUrl?:string;meta?:Record<string,string>}>}>>{
+  try{const r=await fetch(url,{cache:"no-store",redirect:"manual",signal:AbortSignal.timeout(8000)});
+    return {data:{deployments:[{state:r.status<500?"READY":"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
+  catch(e){return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
+}
 export async function GET() {
   if(!await readSession())return NextResponse.json({error:"Unauthorized"},{status:401,headers:{"Cache-Control":"no-store"}});
   const ghToken=process.env.GITHUB_TOKEN;
@@ -60,7 +67,8 @@ export async function GET() {
       !project.repo?Promise.resolve({data:null,error:"No repository mapped",status:"NOT_LINKED"} as const):
       !canReadRepo?Promise.resolve({data:null,error:"Private repository requires GITHUB_TOKEN in this Preview environment",status:"AUTH_REQUIRED"} as const):
       github<Array<{commit?:{message?:string;author?:{date?:string}};html_url?:string}>>(`repos/nas393/${project.repo}/commits?per_page=1`,ghToken),
-      project.vercel?vercel(project.vercel,vToken):Promise.resolve({data:null,error:"No Vercel project mapped",status:"NOT_LINKED"} as const)
+      project.vercel?vercel(project.vercel,vToken):
+      "url" in project&&project.url?liveCheck(project.url):Promise.resolve({data:null,error:"No Vercel project mapped",status:"NOT_LINKED"} as const)
     ]);
     const latest=deployment.data?.deployments?.[0]??null;
     const sourceRepo=latest?.meta?.githubRepo??null;

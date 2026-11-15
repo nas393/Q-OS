@@ -7,7 +7,7 @@ import type { MetricsMap } from "@/lib/metrics";
 import { buildQContext } from "@/lib/q-context";
 import QMd from "@/components/q-md";
 
-type Project={id:string;name:string;repo:string|null;vercel:string|null;priority:string;next:string;area:string;openIssues:number|null;lastCommit:{message:string;date:string;url:string}|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;inspectorUrl:string|null;sourceMatches?:boolean|null}|null;deploymentDataStatus?:string;githubDataStatus?:string};
+type Project={id:string;name:string;url?:string;repo:string|null;vercel:string|null;priority:string;next:string;area:string;openIssues:number|null;lastCommit:{message:string;date:string;url:string}|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;inspectorUrl:string|null;sourceMatches?:boolean|null}|null;deploymentDataStatus?:string;githubDataStatus?:string};
 type Telemetry={updatedAt:string;projects:Project[]};
 type AppLink={id:string;name:string;url:string|null;state:string|null;pages?:{label:string;url:string}[]};
 type Alert={title:string;level:"red"|"amber"};
@@ -125,7 +125,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-eco-h"><h2>My Projects Ecosystem</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
     <div className="os-grid">
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
-      const href=apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
+      const href=p.url??apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
       return <a key={p.id} href={href} target="_blank" rel="noreferrer" className="os-card">
        <div className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt={clean(p.name)}/>:<span className="os-word">{clean(p.name)}</span>}</div>
        {LOGOS[p.name]&&p.name==="NASSIM AI HQ / Q"&&<strong>NASSIM AI HQ</strong>}

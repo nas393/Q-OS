@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {readSession} from "@/lib/session";
 import {appPages} from "@/lib/app-pages";
+import {externalApps} from "@/lib/external-apps";
 import {TEAM_ID,pickProductionUrl,type VercelProject} from "@/lib/vercel";
 
 export const dynamic="force-dynamic";
@@ -17,6 +18,7 @@ export async function GET(){
     const body=await r.json() as {projects?:VercelProject[]};
     const apps=(body.projects??[]).map(p=>{const url=pickProductionUrl(p);return {id:p.id,name:p.name,url,pages:url?(appPages[p.name]??[]).map(x=>({label:x.label,url:url+x.path})):[],state:p.targets?.production?.readyState??null,updatedAt:p.updatedAt??null};})
       .sort((a,b)=>(b.url?1:0)-(a.url?1:0)||(b.updatedAt??0)-(a.updatedAt??0));
+    apps.push(...externalApps.map(x=>({id:x.id,name:x.name,url:x.url,pages:[],state:"EXTERNAL",updatedAt:null})));
     return NextResponse.json({updatedAt:new Date().toISOString(),apps},{headers:{"Cache-Control":"no-store"}});
   }catch(e){
     return NextResponse.json({error:e instanceof Error?e.message:"Vercel request failed",apps:[]},{status:502,headers:{"Cache-Control":"no-store"}});
