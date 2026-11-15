@@ -46,3 +46,9 @@ Suggested sources: Angoalissar commercial tools → `kpis`, `revenueTrend`, `cha
 - Token compared in constant time; failed attempts are written to `activity_logs`.
 - Payloads are validated with zod; body limit 64 KB.
 - Data is stored in table `command_metrics` (created automatically; see `database/migrations/0002_command_metrics.sql`).
+
+## Links (`links`)
+
+`[{label, url (https), note?}]` max 12. Shown under **Apps & Links**. Unlike other keys, links are stored **per source**, so each app keeps its own group. Push an empty array to remove an app's group.
+
+The app tiles above the links come from the Vercel team (`GET /api/apps`, owner-only, read-only) and need no push.
