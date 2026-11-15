@@ -5,7 +5,7 @@
 .os-side,.os-center,.os-right,.os-panels{display:contents}
 .os-side{display:none}
 /* ---------- order on phone: Q first after the hero ---------- */
-.os-top{order:1}.os-hero{order:2}.os-q{order:3}.os-err{order:3}.os-kpis{order:4}.os-eco{order:5}.os-focus{order:6}.os-agenda{order:7}.os-metrics{order:8}.os-activity{order:9}.os-markets{order:10}.os-launch{order:11}
+.os-top{order:1}.os-hero{order:2}.os-q{order:3}.os-err{order:3}.os-kpis{order:4}.os-eco{order:5}.os-focus{order:6}.os-agenda{order:7}.os-alerts{order:7}.os-metrics{order:8}.os-activity{order:9}.os-markets{order:10}.os-launch{order:11}
 /* top bar */
 .os-top{position:sticky;top:0;z-index:15;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:rgba(7,7,8,.86);backdrop-filter:blur(14px);border-bottom:1px solid #ffffff0d}
 .os-mbrand{display:flex;align-items:center;gap:8px;margin-right:auto}.os-mbrand b,.os-brand b{font:600 14px Montserrat;letter-spacing:3px}.os-mbrand i,.os-brand i{font-style:normal;color:var(--red)}
@@ -140,7 +140,7 @@
  .os-tabs{display:none}
 }
 @media(prefers-reduced-motion:reduce){.os-card,.os-card.ghost{transition:none;animation:none}}
-@media(min-width:1100px){.os-top,.os-hero,.os-q,.os-err,.os-kpis,.os-eco,.os-focus,.os-agenda,.os-metrics,.os-activity,.os-markets,.os-launch{order:0}}
+@media(min-width:1100px){.os-top,.os-hero,.os-q,.os-err,.os-kpis,.os-eco,.os-focus,.os-agenda,.os-metrics,.os-activity,.os-markets,.os-launch,.os-alerts{order:0}}
 .os-eco-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.os-eco-h h2{margin:0}
 .os-newbtn{min-height:40px;padding:0 14px;border:1px solid #E5132B77;border-radius:10px;background:#1a0709;font:600 12px Montserrat;color:#fff}
 .os-newbtn:hover{background:#2a0a0f}
@@ -153,3 +153,20 @@
 .qmd-li{display:block;position:relative;padding-left:14px;margin:3px 0}.qmd-li::before{content:"";position:absolute;left:2px;top:.6em;width:5px;height:5px;background:#E5132B;border-radius:50%}
 .qmd-li.n::before{display:none}.qmd-li.n{padding-left:20px}.qmd-li.n em{position:absolute;left:0;font-style:normal;color:#E5132B;font-weight:700}
 .os-msg strong,.qmd-li strong,.qmd-p strong{color:#fff;font-weight:700}
+
+/* Alerts panel */
+.os-alerts{display:flex;flex-direction:column;gap:12px}
+.os-al-row{display:flex;align-items:center;gap:8px}.os-al-row>span{flex:1;display:flex;flex-direction:column}
+.os-al-row b{font:600 13px Montserrat;color:var(--sub)}.os-al-row b.on{color:#4ade80}.os-al-row small{font-size:11px;color:var(--sub)}
+.os-al-row button,.os-al-check{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;background:var(--panel2);font:600 12px Montserrat;color:var(--txt)}
+.os-al-row button.red{border-color:#E5132B88;background:linear-gradient(140deg,#ff2d45,#a10b1d);color:#fff}
+.os-al-gold>small{display:block;margin-bottom:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--sub)}
+.os-al-gold>div{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.os-al-gold span{display:inline-flex;align-items:center;gap:4px;padding:4px 4px 4px 10px;border:1px solid #E5132B55;border-radius:8px;font:600 12px Montserrat}
+.os-al-gold span.off{opacity:.5;border-color:var(--line2)}.os-al-gold span button{width:28px;height:28px;border:0;background:none;color:var(--sub);font-size:16px}
+.os-al-gold .os-add{margin-top:0}
+.os-al-gold select{flex:0 0 96px;height:44px;padding:0 8px;border:1px solid var(--line2);border-radius:10px;background:#0a0a0c;color:var(--txt);font:500 13px Montserrat}
+.os-al-list{list-style:none;margin:0;padding:0}.os-al-list li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff0a}
+.os-al-list li>i{flex:0 0 9px;height:9px;margin-top:5px;border-radius:50%;background:#55555c}.os-al-list li>i.red{background:var(--red);box-shadow:0 0 8px var(--red)}.os-al-list li>i.amber{background:#f5b142}.os-al-list li>i.info{background:#4ade80}
+.os-al-list span{flex:1;display:flex;flex-direction:column;min-width:0}.os-al-list b{font:600 12.5px Montserrat}.os-al-list small{font-size:11.5px;color:var(--sub);overflow-wrap:anywhere}
+.os-al-list time{font-size:11px;color:var(--sub)}.os-al-err{margin:0;color:#ff9aa6;font-size:12px}

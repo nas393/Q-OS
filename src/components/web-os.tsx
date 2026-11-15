@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import {AlertsPanel} from "@/components/alerts-panel";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./web-os.css";
 import type { MetricsMap } from "@/lib/metrics";
@@ -90,7 +91,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
      <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
-     <a aria-label="Alerts" href="#agenda" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
+     <a aria-label="Alerts" href="#alerts" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
      <a aria-label="Launchpad" href="#launchpad"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></a>
     </div>
     {weather&&<div className="os-weather"><Ico d={weather.code<3?"M12 4v2M12 18v2M4 12H2M22 12h-2M6 6l1.5 1.5M16.5 16.5L18 18M6 18l1.5-1.5M16.5 7.5L18 6M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z":"M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3 3 0 0 0 7 18z"} s={22}/><span><small>Luanda, AO</small>{weather.t}°C</span></div>}
@@ -180,6 +181,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today&apos;s Agenda</h3>
     {agenda.length?<ul>{agenda.map(a=><li key={a.id}><i className={a.hot?"hot":""}/><span>{a.title}</span><time>{a.time}</time></li>)}</ul>:<p className="os-muted">{tasks?"Nothing due today. Add focus items with a date.":"Loading…"}</p>}
    </section>
+   <AlertsPanel goldPrice={gold?.value.price}/>
   </aside>
 
   <nav className="os-tabs">{NAV.filter(n=>n.tab).map(n=><a key={n.label} href={n.href} className={n.label==="Command Center"?"on":""}><Ico d={n.icon} s={20}/>{n.label==="AI Assistant (Q)"?"Q":n.label.split(" ")[0]}</a>)}<button onClick={()=>setDrawer(true)}><Ico d="M4 6h16M4 12h16M4 18h16" s={20}/>More</button></nav>

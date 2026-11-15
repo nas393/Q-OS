@@ -1,10 +1,11 @@
-import {NextResponse} from "next/server";
+import {NextResponse,after} from "next/server";
+import {runChecks} from "@/lib/alerts";
 import {timingSafeEqual,createHash} from "node:crypto";
 import {ingestSchema,saveMetrics} from "@/lib/metrics";
 import {writeAudit} from "@/lib/audit";
 import {jsonError} from "@/lib/http";
 
-export const runtime="nodejs",dynamic="force-dynamic";
+export const runtime="nodejs",dynamic="force-dynamic",maxDuration=60;
 
 /* Push endpoint for other projects. Auth: Authorization: Bearer <INGEST_TOKEN>. Write-only: never returns stored data. */
 function tokenOk(header:string|null){
@@ -26,6 +27,7 @@ export async function POST(request:Request){
   try{
     const saved=await saveMetrics(parsed.data.source,parsed.data.metrics);
     await writeAudit({action:"metrics.ingest",outcome:"succeeded",details:{source:parsed.data.source,keys:saved}});
+    after(()=>runChecks().catch(e=>console.error("alert_checks_failed",{error:e instanceof Error?e.name:"unknown"}))); // alerts ride on the 15-min push
     return NextResponse.json({ok:true,saved},{headers:{"Cache-Control":"no-store"}});
   }catch(e){
     console.error("metrics_ingest_failed",{error:e instanceof Error?e.name:"unknown"});
