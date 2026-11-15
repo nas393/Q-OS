@@ -17,15 +17,8 @@ const LOGOS:Record<string,string>={"NASSIM AI HQ / Q":"/os/logo-q.png","CERTIGO"
 const NAV:{label:string;href?:string;icon:string;tab?:boolean}[]=[
  {label:"Command Center",href:"/dashboard",icon:"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",tab:true},
  {label:"Projects",href:"#ecosystem",icon:"M12 3l9 5-9 5-9-5zM3 13l9 5 9-5",tab:true},
- {label:"Business",icon:"M4 20V10M10 20V4M16 20v-7M22 20H2"},
  {label:"Markets & Trading",href:"#markets",icon:"M3 17l6-6 4 4 8-8M15 7h6v6",tab:true},
- {label:"AI Assistant (Q)",href:"#q",icon:"M12 21a9 9 0 1 1 6.4-2.6L21 21M15 15l3 3",tab:true},
- {label:"Content & Media",icon:"M4 4h16v16H4zM10 9l5 3-5 3z"},
- {label:"Knowledge (Certigo)",icon:"M12 3l9 5-9 5-9-5zM7 10.5V16c0 1 2.2 3 5 3s5-2 5-3v-5.5"},
- {label:"Operations",icon:"M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM3 12h2M19 12h2M12 3v2M12 19v2"},
- {label:"Personal",icon:"M12 21s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"},
- {label:"Resources",icon:"M4 5h6v14H4zM14 5h6v14h-6z"},
- {label:"Settings",icon:"M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19 12l2-1-1-3-2 .5-1.5-1.5.5-2-3-1-1 2h-2l-1-2-3 1 .5 2L6 8.5 4 8l-1 3 2 1v1l-2 1 1 3 2-.5 1.5 1.5-.5 2 3 1 1-2h2l1 2 3-1-.5-2 1.5-1.5 2 .5 1-3-2-1z"}];
+ {label:"AI Assistant (Q)",href:"/chat",icon:"M12 21a9 9 0 1 1 6.4-2.6L21 21M15 15l3 3",tab:true},];
 const QUICK:[string,string,string][]=[
  ["Business Analysis","M4 20V10M10 20V4M16 20v-7","Give me a business analysis of my ecosystem: what is working, what is not, and the single highest-value next move."],
  ["Project Update","M12 3l9 5-9 5-9-5zM3 13l9 5 9-5","Give me a status update on all my projects: live status, blockers and the next action for each."],
