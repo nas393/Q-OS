@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./web-os.css";
+import type { MetricsMap } from "@/lib/metrics";
 
 type Project={id:string;name:string;repo:string|null;vercel:string|null;priority:string;next:string;area:string;openIssues:number|null;lastCommit:{message:string;date:string;url:string}|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;inspectorUrl:string|null;sourceRepo?:string|null;sourceMatches?:boolean|null}|null;deploymentError?:string|null;issuesError?:string|null;commitError?:string|null;issuesDataStatus?:string;commitDataStatus?:string;deploymentDataStatus?:string;githubDataStatus?:string;integration:{github:boolean;vercel:boolean}};
 type Telemetry={updatedAt:string;integrations:{github:boolean;githubTokenConfigured:boolean;vercel:boolean};projects:Project[]};
@@ -9,7 +10,14 @@ const marks=["Q","C","د","L","▶","X","N","R"];
 const types=["Personal HQ / AI","Education / Certification","Business Directory","Media / Mindset","Creator Tools","Trading / Markets","Branding / Marketing","Media / Audio"];
 const nav=[["⌂","Command Center","/dashboard"],["▱","Projects","/projects"],["▥","Business Intelligence","/projects"],["⌁","Trading HQ","/projects"],["◈","AI Studio","/chat"],["▷","Media & Content","/projects"],["▤","Operations","/projects"],["◷","Analytics","/projects"],["▣","Resources","/projects"]];
 const nice=(s:string)=>s.replaceAll("_"," ");
-export default function WebOS({conversationCount=0,activityCount=0}:{conversationCount?:number;activityCount?:number}){
+const donutColors=["#f32b3d","#73777e","#c89a5b","#d8d9dd","#34363d"];
+const arrow=(t?:string)=>t==="up"?"▲":t==="down"?"▼":"■";
+const tone=(t?:string)=>t==="up"?"positive":t==="down"?"negative":"";
+const ago=(iso:string)=>{const h=Math.round((Date.now()-new Date(iso).getTime())/36e5);return h<1?"just now":h<48?`${h}h ago`:`${Math.round(h/24)}d ago`;};
+function Stamp({entry}:{entry?:{source:string;updatedAt:string}}){return entry?<small className="q-stamp" title={new Date(entry.updatedAt).toLocaleString()}>{entry.source} · {ago(entry.updatedAt)}</small>:null;}
+function Empty({k}:{k:string}){return <div className="q-empty"><b>NO DATA YET</b><span>Push <code>{k}</code> to /api/ingest from the source project.</span></div>;}
+type Alert={title:string;level:"red"|"amber";href?:string};
+export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null}){
  const [clock,setClock]=useState(new Date()),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[query,setQuery]=useState(""),[searchOpen,setSearchOpen]=useState(false),[active,setActive]=useState("Command Center");
  const refresh=useCallback(async()=>{setLoading(true);setError("");try{const r=await fetch("/api/projects",{cache:"no-store"});if(!r.ok)throw new Error(r.status===401?"Sign in to load live project telemetry":`Portfolio API returned ${r.status}`);setData(await r.json());}catch(e){setError(e instanceof Error?e.message:"Telemetry unavailable");}finally{setLoading(false)}},[]);
  useEffect(()=>{const t=window.setInterval(()=>setClock(new Date()),1000);return()=>window.clearInterval(t)},[]);
@@ -19,8 +27,18 @@ export default function WebOS({conversationCount=0,activityCount=0}:{conversatio
  const ready=projects.filter(p=>p.deployment?.state==="READY").length,failed=projects.filter(p=>p.deployment?.state==="ERROR").length;
  const vercelVerified=projects.filter(p=>p.deploymentDataStatus==="VERIFIED").length;
  const githubVerified=projects.filter(p=>p.githubDataStatus==="VERIFIED").length;
- const issueTotal=projects.reduce((n,p)=>n+(p.openIssues??0),0);
  const unresolved=projects.filter(p=>p.githubDataStatus!=="VERIFIED"||p.deploymentDataStatus!=="VERIFIED").length;
+ const liveAlerts:Alert[]=[
+  ...projects.filter(p=>p.deployment?.state==="ERROR").map(p=>({title:`${p.name} — latest deploy FAILED`,level:"red" as const})),
+  ...projects.filter(p=>!p.vercel||!p.repo).map(p=>({title:`${p.name} — ${!p.repo?"no GitHub repo linked":"no Vercel project linked"}`,level:"amber" as const})),
+  ...projects.filter(p=>p.deployment?.sourceMatches===false).map(p=>({title:`${p.name} — deploy source ≠ mapped repo`,level:"amber" as const})),
+  ...projects.filter(p=>(p.openIssues??0)>0).map(p=>({title:`${p.name} — ${p.openIssues} open issue${p.openIssues===1?"":"s"}`,level:"amber" as const}))
+ ];
+ const alerts=[...liveAlerts,...(metrics.alerts?.value??[])];
+ const {kpis,revenueTrend:rev,channelMix:mix,factory,insights,agenda,xauusd:gold}=metrics;
+ const revMax=rev?Math.max(...rev.value.points.map(p=>p.value),1):1;
+ const goldPath=gold?(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return "M"+s.map((v,i)=>`${(i/(s.length-1)*320).toFixed(1)} ${(104-(v-lo)/r*100).toFixed(1)}`).join(" L");})():"";
+ let acc=0;const conic=mix?mix.value.items.map((it,i)=>{const a=acc;acc+=it.pct;return `${donutColors[i]} ${a}% ${acc}%`;}).join(",")+(acc<100?`,#22232a ${acc}% 100%`:""):"";
  const date=clock.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
  const time=clock.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
  const stateClass=(p:Project)=>p.deployment?.state==="READY"?"ready":p.deployment?.state==="ERROR"?"failed":"unknown";
@@ -36,40 +54,36 @@ export default function WebOS({conversationCount=0,activityCount=0}:{conversatio
    <div className="q-content">
     {searchOpen&&<div className="q-global-search"><span>⌕</span><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search projects, repositories and workspaces…"/><button onClick={()=>{setQuery("");setSearchOpen(false)}}>CLOSE</button></div>}
     <section className="q-hero"><div className="q-hero-copy"><small>Q OS / EXECUTIVE COMMAND ENVIRONMENT</small><h2>Build. Operate. <em>Grow.</em></h2><p>Projects&nbsp; | &nbsp;Business&nbsp; | &nbsp;Markets&nbsp; | &nbsp;Content&nbsp; | &nbsp;AI</p></div><div className="q-hero-scene"><div className="q-skyline"/><div className="q-globe"><span>AFRICA</span></div><b>ANGOLA</b></div></section>
+    {metricsError&&<div className="q-inline-error">{metricsError}</div>}
     <section className="q-kpis">
-     <article><small>PORTFOLIO VALUE</small><strong>$18.5M</strong><em className="positive">▲ +19.2% YoY</em></article>
-     <article><small>REVENUE (YTD)</small><strong>$11.50M</strong><em className="negative">▼ −3.0% vs Bdg</em></article>
-     <article><small>GROSS MARGIN</small><strong>18.0%</strong><em className="negative">▼ −6.0 pp YoY</em></article>
-     <article><small>EBITDA</small><strong>3.0%</strong><em className="negative">▼ −4.0 pp YoY</em></article>
-     <article><small>FACTORY UTILIZATION</small><strong>40%</strong><div className="q-kpi-progress"><i/></div></article>
+     {kpis?.value.length?kpis.value.map(k=><article key={k.label}><small>{k.label.toUpperCase()}</small><strong>{k.value}</strong>{k.progress!==undefined?<div className="q-kpi-progress"><i style={{width:k.progress+"%"}}/></div>:k.delta?<em className={tone(k.trend)}>{arrow(k.trend)} {k.delta}</em>:null}</article>)
+      :[["LIVE DEPLOYS",data?`${ready}/${projects.length}`:"—"],["FAILED BUILDS",data?String(failed):"—"],["UNVERIFIED",data?String(unresolved):"—"],["Q CONVERSATIONS",String(conversationCount)],["ACTIVITY (24H)",String(activityCount)]].map(([l,v])=><article key={l}><small>{l}</small><strong>{v}</strong><em>system · live</em></article>)}
     </section>
+    {kpis?<Stamp entry={kpis}/>:<small className="q-stamp">Business KPIs not pushed yet — showing system KPIs.</small>}
     <section className="q-dashboard-grid">
-     <article className="q-panel q-portfolio"><header><div><small>EXECUTION / 01</small><h3>Project Portfolio <b>(08)</b></h3></div><div className="q-filters"><span>ALL 08</span><span>READY {data?ready:"—"}</span><span>RISK {data?failed:"—"}</span></div></header>
+     <article className="q-panel q-portfolio"><header><div><small>EXECUTION / 01</small><h3>Project Portfolio <b>({data?String(projects.length).padStart(2,"0"):"—"})</b></h3></div><div className="q-filters"><span>READY {data?ready:"—"}</span><span>FAILED {data?failed:"—"}</span><span>UNVERIFIED {data?unresolved:"—"}</span></div></header>
       {error&&<div className="q-inline-error">{error}</div>}
-      <div className="q-project-grid">{(query?filtered:projects.length?projects: Array.from({length:8},(_,i)=>({id:String(i),name:["NASSIM AI HQ","CERTIGO","DALIL AL-BAZOURIEH","LUMERIS","LUMERIS REEL MAKER","XAU/USD TRADING HQ","NOVAÉ","RADIO CEDARS"][i],area:"Project workspace",priority:"—",repo:null,vercel:null,next:"",openIssues:null,lastCommit:null,deployment:null,integration:{github:false,vercel:false}} as Project))).map((p)=>{const i=Math.max(0,projects.findIndex(x=>x.id===p.id));const href=`/projects/${p.id}`;return <Link className="q-project-card" key={p.id} href={href}><div className={`q-project-art art-${i}`}><b>{marks[i]}</b><span>{String(i+1).padStart(2,"0")}</span></div><strong>{p.name.replace(" / Q","")}</strong><small>{types[i]??p.area}</small><footer><i className={stateClass(p)}/><span>{p.deployment?nice(p.deployment.state):loading?"SYNCING":nice(p.deploymentDataStatus??"UNVERIFIED")}</span><em>{p.priority}</em></footer></Link>})}</div>
+      <div className="q-project-grid">{(query?filtered:projects.length?projects: Array.from({length:8},(_,i)=>({id:String(i),name:["NASSIM AI HQ","CERTIGO","DALIL AL-BAZOURIEH","LUMERIS","LUMERIS REEL MAKER","XAU/USD TRADING HQ","NOVAÉ","RADIO CEDARS"][i],area:"Project workspace",priority:"—",repo:null,vercel:null,next:"",openIssues:null,lastCommit:null,deployment:null,integration:{github:false,vercel:false}} as Project))).map((p,idx)=>{const f=projects.findIndex(x=>x.id===p.id);const i=f>=0?f:idx;const href=`/projects/${p.id}`;return <Link className="q-project-card" key={p.id} href={href}><div className={`q-project-art art-${i}`}><b>{marks[i]}</b><span>{String(i+1).padStart(2,"0")}</span></div><strong>{p.name.replace(" / Q","")}</strong><small>{types[i]??p.area}</small><footer><i className={stateClass(p)}/><span>{p.deployment?nice(p.deployment.state):loading?"SYNCING":nice(p.deploymentDataStatus??"UNVERIFIED")}</span><em>{p.priority}</em></footer></Link>})}</div>
       <div className="q-portfolio-foot"><span>{loading?"SYNCHRONIZING PORTFOLIO":data?`UPDATED ${new Date(data.updatedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:"LIVE DATA UNAVAILABLE"}</span><button onClick={refresh}>↻ REFRESH DATA</button><Link href="/projects">OPEN PROJECT WORKSPACE ↗</Link></div>
      </article>
      <div className="q-side-stack">
-      <article className="q-panel q-intelligence"><header><div><small>DECISION SUPPORT / 02</small><h3>Q Intelligence</h3></div><span className="q-live">{loading?"SYNCING":data?"LIVE DATA":"OFFLINE"}</span></header>
-       <div className="q-insight"><b>↗</b><span><strong>Flour volume +12.6% YoY</strong><small>Bakeries +34.8% (1,069)</small></span></div>
-       <div className="q-insight"><b>↘</b><span><strong>Gross margin 0.1%</strong><small>Action: pricing & cost review</small></span></div>
-       <div className="q-insight"><b>▥</b><span><strong>Factory utilization 40%</strong><small>Focus: UHT (25%), Butter (10%)</small></span></div>
-       <div className="q-insight"><b>◎</b><span><strong>LUMERIS engagement +18%</strong><small>Next: 3 reels (mindset, discipline, power)</small></span></div>
+      <article className="q-panel q-intelligence"><header><div><small>DECISION SUPPORT / 02</small><h3>Q Intelligence</h3></div><Stamp entry={insights}/></header>
+       {insights?.value.length?insights.value.map(x=><div className="q-insight" key={x.title}><b>{x.trend==="up"?"↗":x.trend==="down"?"↘":"◎"}</b><span><strong>{x.title}</strong>{x.detail&&<small>{x.detail}</small>}</span></div>):<Empty k="insights"/>}
       </article>
-      <article className="q-panel q-actions"><header><div><small>WORKSPACE / 03</small><h3>Quick Actions</h3></div></header><div className="q-action-grid"><Link href="/projects"><b>＋</b><span>Projects</span></Link><Link href="/chat"><b>✧</b><span>Q Assistant</span></Link><Link href="/projects"><b>↗</b><span>Deployments</span></Link><Link href="/projects"><b>▥</b><span>Reports</span></Link></div></article>
+      <article className="q-panel q-actions"><header><div><small>WORKSPACE / 03</small><h3>Quick Actions</h3></div></header><div className="q-action-grid"><Link href="/projects"><b>▱</b><span>Projects</span></Link><Link href="/chat"><b>✧</b><span>Q Assistant</span></Link><Link href="/projects"><b>↗</b><span>Deployments</span></Link><Link href="/projects"><b>▥</b><span>Reports</span></Link></div></article>
      </div>
-     <article className="q-panel q-agenda"><header><div><small>OPERATING RHYTHM / 04</small><h3>Today’s Agenda</h3></div><span>LUANDA · GMT+1</span></header>
-      <div className="q-agenda-list"><p><time>08:00</time><span><b>Training</b></span></p><p><time>10:00</time><span><b>Portfolio Review (Q Projects)</b></span></p><p><time>14:00</time><span><b>Commercial Update</b></span></p><p><time>16:00</time><span><b>CERTIGO – Lesson Reader QA</b></span></p><p><time>18:30</time><span><b>Content – LUMERIS (3 Reels)</b></span></p></div>
+     <article className="q-panel q-agenda"><header><div><small>OPERATING RHYTHM / 04</small><h3>Today’s Agenda</h3></div><Stamp entry={agenda}/></header>
+      {agenda?.value.length?<div className="q-agenda-list">{agenda.value.map(a=><p key={a.time+a.title}><time>{a.time}</time><span><b>{a.title}</b></span></p>)}</div>:<Empty k="agenda"/>}
      </article>
-     <article className="q-panel q-alerts"><header><div><small>ATTENTION REQUIRED / 05</small><h3>Alerts & Watchlist</h3></div><b className="q-alert-count">{data?failed:"—"}</b></header>
-      <p><i className="red"/>Wheat Flour margin at 0.1% <span>›</span></p><p><i className="amber"/>Packaging – YA 200ml (delay) <span>›</span></p><p><i className="amber"/>XAU/USD – High volatility (⚠) <span>›</span></p>
+     <article className="q-panel q-alerts"><header><div><small>ATTENTION REQUIRED / 05</small><h3>Alerts & Watchlist</h3></div><b className="q-alert-count">{data||metrics.alerts?alerts.length:"—"}</b></header>
+      {alerts.length?alerts.slice(0,7).map((a,i)=>a.href?<a key={i} href={a.href} target="_blank" rel="noreferrer"><p><i className={a.level}/>{a.title} <span>›</span></p></a>:<p key={i}><i className={a.level}/>{a.title}</p>):<p>{loading?"Checking projects…":data?"No alerts. All linked projects verified.":"Project telemetry unavailable — alerts cannot be checked."}</p>}
      </article>
     </section>
     <section className="q-bottom-grid">
-     <article className="q-panel q-revenue"><header><div><small>PERFORMANCE / 06</small><h3>Revenue Trend</h3></div></header><div className="q-chart-total"><strong>$11.50M</strong><span>YTD</span><em>−3.0% vs Bdg</em></div><div className="q-bars">{[42,46,48,55,62,73,88,94].map((v,i)=><div key={i}><i style={{height:v+"%"}}/><small>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"][i]}</small></div>)}</div><div className="q-axis"><span>0.0</span><span>0.5</span><span>1.0</span><span>1.5</span><span>2.0</span></div></article>
-     <article className="q-panel q-channel"><header><div><small>COMMERCIAL / 07</small><h3>Channel Mix (Sales)</h3></div></header><div className="q-donut-wrap"><div className="q-donut"><strong>$11.50M<small>YTD</small></strong></div><div className="q-legend"><p><i/>Modern Trade <b>45%</b></p><p><i/>Traditional <b>23%</b></p><p><i/>Institutions <b>27%</b></p><p><i/>Horeca <b>1%</b></p><p><i/>E-Commerce <b>1%</b></p></div></div></article>
-     <article className="q-panel q-trading"><header><div><small>MARKETS / 08</small><h3>Trading – XAU/USD</h3></div></header><div className="q-price"><strong>2,063.40</strong><em>▲ +0.82%</em></div><svg className="q-spark" viewBox="0 0 320 112" preserveAspectRatio="none" role="img" aria-label="Illustrative XAU USD market chart"><path d="M0 89 L12 80 22 85 34 62 46 73 58 52 70 58 82 41 94 51 106 35 118 43 130 24 142 33 154 51 166 39 178 48 190 30 202 43 214 19 226 27 238 15 250 34 262 18 274 24 286 8 298 18 310 2" fill="none" stroke="#35df82" strokeWidth="2.5"/><path d="M0 105H320" stroke="#555" strokeWidth="1" strokeDasharray="3 4"/></svg><div className="q-timeframes"><span>15m</span><b>1H</b><span>4H</span><span>1D</span></div></article>
-     <article className="q-panel q-factory"><header><div><small>OPERATIONS / 09</small><h3>Factory Utilization</h3></div></header><div className="q-factory-total"><strong>40%</strong><span>Overall</span></div>{[["UHT Milk",25],["Margarine",80],["Butter",10],["Milk Powder",1]].map(([name,value])=><div className="q-factory-row" key={name as string}><span>{name}</span><div><i style={{width:value+"%"}}/></div><b>{value}%</b></div>)}</article>
+     <article className="q-panel q-revenue"><header><div><small>PERFORMANCE / 06</small><h3>Revenue Trend</h3></div><Stamp entry={rev}/></header>{rev?<><div className="q-chart-total"><strong>{rev.value.total}</strong>{rev.value.delta&&<em className={tone(rev.value.trend)}>{rev.value.delta}</em>}</div><div className="q-bars">{rev.value.points.map(p=><div key={p.label} title={String(p.value)}><i style={{height:Math.max(2,p.value/revMax*100)+"%"}}/><small>{p.label}</small></div>)}</div></>:<Empty k="revenueTrend"/>}</article>
+     <article className="q-panel q-channel"><header><div><small>COMMERCIAL / 07</small><h3>Channel Mix (Sales)</h3></div><Stamp entry={mix}/></header>{mix?<div className="q-donut-wrap"><div className="q-donut" style={{background:`conic-gradient(${conic})`}}><strong>{mix.value.total}</strong></div><div className="q-legend">{mix.value.items.map(it=><p key={it.label}><i/>{it.label} <b>{it.pct}%</b></p>)}</div></div>:<Empty k="channelMix"/>}</article>
+     <article className="q-panel q-trading"><header><div><small>MARKETS / 08</small><h3>Trading – XAU/USD</h3></div><Stamp entry={gold}/></header>{gold?<><div className="q-price"><strong>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><em className={gold.value.changePct>=0?"positive":"negative"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}%</em></div><svg className="q-spark" viewBox="0 0 320 112" preserveAspectRatio="none" role="img" aria-label="XAU USD price series"><path d={goldPath} fill="none" stroke={gold.value.changePct>=0?"#35df82":"#f33e50"} strokeWidth="2.5"/></svg>{gold.value.timeframe&&<div className="q-timeframes"><b>{gold.value.timeframe}</b></div>}</>:<Empty k="xauusd"/>}</article>
+     <article className="q-panel q-factory"><header><div><small>OPERATIONS / 09</small><h3>Factory Utilization</h3></div><Stamp entry={factory}/></header>{factory?<><div className="q-factory-total"><strong>{factory.value.overall}%</strong><span>Overall</span></div>{factory.value.items.map(it=><div className="q-factory-row" key={it.label}><span>{it.label}</span><div><i style={{width:it.pct+"%"}}/></div><b>{it.pct}%</b></div>)}</>:<Empty k="factory"/>}</article>
     </section>
     <footer className="q-footer"><span>Q OS · EXECUTIVE COMMAND CENTER</span><span>PRIVATE PORTFOLIO ENVIRONMENT · LUANDA</span></footer>
    </div>
