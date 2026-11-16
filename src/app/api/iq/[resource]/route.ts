@@ -9,7 +9,7 @@ import {generateJSON} from "@/lib/iq/ai";
 import * as P from "@/lib/iq/prompts";
 import {tradeFor,osmImport} from "@/lib/iq/geo-trade";
 
-export const runtime="nodejs",dynamic="force-dynamic",maxDuration=60;
+export const runtime="nodejs",dynamic="force-dynamic",maxDuration=90;
 const ok=(b:unknown)=>NextResponse.json(b,{headers:{"Cache-Control":"no-store"}});
 type Ctx={params:Promise<{resource:string}>};
 const uuid=z.string().uuid();

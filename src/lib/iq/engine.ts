@@ -44,13 +44,19 @@ async function getJSON<T>(url:string,init?:RequestInit):Promise<T>{const r=await
 
 /* --- Providers --- */
 const WB=[["NY.GDP.MKTP.KD.ZG","GDP growth","% annual"],["FP.CPI.TOTL.ZG","Inflation","% annual"],["SP.POP.TOTL","Population","people"],["SL.UEM.TOTL.ZS","Unemployment","% labour force"],["NY.GDP.MKTP.CD","GDP","current US$"],["NE.IMP.GNFS.ZS","Imports","% of GDP"],["NE.EXP.GNFS.ZS","Exports","% of GDP"]];
+/* World Bank is slow: fetch all indicators in parallel with a longer timeout; keep whatever succeeds. */
 async function worldBank(){
- const db=await iqDb();let n=0;
- for(const [code,name,unit] of WB){
-  const url=`https://api.worldbank.org/v2/country/AGO/indicator/${code}?format=json&per_page=12`;
-  const j=await getJSON<[unknown,Array<{date:string;value:number|null}>|null]>(url);
-  for(const r of (j[1]??[]).filter(r=>r.value!==null)){await db.query("INSERT INTO iq_obs (indicator,value,unit,period,source_id,source_url,meta) VALUES ($1,$2,$3,$4,'worldbank',$5,$6) ON CONFLICT (indicator,period,geography,source_id) DO UPDATE SET value=EXCLUDED.value,retrieved_at=now()",[name,r.value,unit,r.date,url,JSON.stringify({code})]);n++;}
- }
+ const db=await iqDb();let n=0;const errors:string[]=[];
+ await Promise.all(WB.map(async([code,name,unit])=>{
+  const url=`https://api.worldbank.org/v2/country/AGO/indicator/${code}?format=json&mrnev=8`;
+  try{
+   const r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(40000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});
+   if(!r.ok)throw new Error(`HTTP ${r.status}`);
+   const j=await r.json() as [unknown,Array<{date:string;value:number|null}>|null];
+   for(const row of (j[1]??[]).filter(x=>x.value!==null)){await db.query("INSERT INTO iq_obs (indicator,value,unit,period,source_id,source_url,meta) VALUES ($1,$2,$3,$4,'worldbank',$5,$6) ON CONFLICT (indicator,period,geography,source_id) DO UPDATE SET value=EXCLUDED.value,retrieved_at=now()",[name,row.value,unit,row.date,url,JSON.stringify({code})]);n++;}
+  }catch(e){errors.push(`${name}: ${e instanceof Error&&e.name==="TimeoutError"?"timeout":e instanceof Error?e.message:"failed"}`);}
+ }));
+ if(!n)throw new Error(errors.join("; ")||"no data");
  return n;
 }
 async function fx(){
@@ -121,7 +127,7 @@ export async function runIqJobs(force=false,only?:string){
   const {rows}=await db.query("SELECT last_run FROM iq_jobs WHERE name=$1",[j.name]);
   if(!force&&rows[0]?.last_run&&Date.now()-Date.parse(rows[0].last_run)<j.every*60_000)continue;
   let ok=true,msg="";
-  try{const n=await j.run();msg=n<0?"not configured":`${n} records`;if(n>=0)await setSource(j.source,true);}catch(e){ok=false;msg=e instanceof Error?e.message:"failed";await setSource(j.source,false,msg);}
+  try{const n=await j.run();if(n<0){ok=false;msg="not configured (add FRED_API_KEY)";}else{msg=`${n} records`;await setSource(j.source,true);}}catch(e){ok=false;msg=e instanceof Error?e.message:"failed";await setSource(j.source,false,msg);}
   await db.query(`UPDATE iq_jobs SET last_run=now(),runs=runs+1,last_ok=CASE WHEN $2::boolean THEN now() ELSE last_ok END,last_error=CASE WHEN $2::boolean THEN NULL ELSE $3::text END,history=(SELECT coalesce(jsonb_agg(e),'[]'::jsonb) FROM (SELECT e FROM jsonb_array_elements(jsonb_build_array(jsonb_build_object('at',now(),'ok',$2::boolean,'msg',$3::text))||history) e LIMIT 10) s) WHERE name=$1`,[j.name,ok,msg]);
   out[j.name]=ok?msg:`error: ${msg}`;
  }
