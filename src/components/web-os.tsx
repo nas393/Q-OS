@@ -19,6 +19,7 @@ const NAV:{label:string;href?:string;icon:string;tab?:boolean}[]=[
  {label:"Command Center",href:"/dashboard",icon:"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",tab:true},
  {label:"Projects",href:"#ecosystem",icon:"M12 3l9 5-9 5-9-5zM3 13l9 5 9-5",tab:true},
  {label:"Markets & Trading",href:"#markets",icon:"M3 17l6-6 4 4 8-8M15 7h6v6",tab:true},
+ {label:"AngolaIQ",href:"/iq",icon:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18",tab:true},
  {label:"AI Assistant (Q)",href:"/chat",icon:"M12 21a9 9 0 1 1 6.4-2.6L21 21M15 15l3 3",tab:true},];
 const QUICK:[string,string,string][]=[
  ["Business Analysis","M4 20V10M10 20V4M16 20v-7","Give me a business analysis of my ecosystem: what is working, what is not, and the single highest-value next move."],

@@ -4,6 +4,7 @@ import {listProjects,pickProductionUrl,vercelGet} from "@/lib/vercel";
 import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
 import {externalApps} from "@/lib/external-apps";
+import {runIqJobs} from "@/lib/iq/engine";
 
 /*
  * NASSIM OS alerts. Checks run at most every 10 minutes, triggered after each Counter-Trader push
@@ -147,7 +148,7 @@ export async function runChecks(force=false){
   if(!force&&Date.now()-last<10*60_000)return {skipped:true,events:[] as string[]};
   await kvSet("last_check",Date.now());
   const out:string[]=[],errors:string[]=[];
-  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out,last||Date.now()-3600_000)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)]] as const){
+  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out,last||Date.now()-3600_000)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
     try{await fn();}catch(e){errors.push(`${name}: ${e instanceof Error?e.message:"failed"}`);}
   }
   await kvSet("last_check_result",{at:Date.now(),events:out,errors});
