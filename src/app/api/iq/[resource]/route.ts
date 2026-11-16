@@ -15,7 +15,7 @@ type Ctx={params:Promise<{resource:string}>};
 const uuid=z.string().uuid();
 
 async function guard(req:Request,write=false){if(!await readSession())return jsonError(401,"Unauthorized");if(write&&!requestOriginAllowed(req))return jsonError(403,"Request origin rejected");return null;}
-const fail=(e:unknown)=>{console.error("iq_api_failed",{error:e instanceof Error?e.message.slice(0,200):"unknown"});return jsonError(500,e instanceof Error&&/AI |not configured|HTTP|Comtrade|Overpass/.test(e.message)?e.message:"AngolaIQ request failed");};
+const fail=(e:unknown)=>{console.error("iq_api_failed",{error:e instanceof Error?e.message.slice(0,200):"unknown"});return jsonError(500,e instanceof Error&&/AI |not configured|HTTP|Comtrade|Overpass|Photon/.test(e.message)?e.message:"AngolaIQ request failed");};
 
 /* ---------- GET ---------- */
 export async function GET(req:Request,{params}:Ctx){

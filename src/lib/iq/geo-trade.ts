@@ -33,28 +33,39 @@ export async function tradeFor(commodity:string,refresh=false):Promise<Row[]>{
  throw new Error(lastErr||"Comtrade returned no data for this commodity");
 }
 
-/* OpenStreetMap import (Overpass). Community data: stored with source link, marked unverified until the owner verifies. */
-const OSM_Q:Record<string,string>={
- ports:`nwr["landuse"="port"]["name"](area.a);nwr["industrial"="port"]["name"](area.a);nwr["harbour"="yes"]["name"](area.a);`,
- airports:`nwr["aeroway"="aerodrome"]["iata"](area.a);`,
- industrial:`nwr["landuse"="industrial"]["name"](area.a);`,
- fuel:`node["amenity"="fuel"]["name"](area.a);`,
- markets:`nwr["amenity"="marketplace"]["name"](area.a);`,
- hospitals:`nwr["amenity"="hospital"]["name"](area.a);`
+/* OpenStreetMap import via Photon (komoot), an OSM search service. Overpass servers time out from Vercel (tested 16 Nov 2026).
+ * Community data: stored with a link to the OSM record and marked unverified until the owner verifies it. */
+const PHOTON:Record<string,Array<[string,string]>>={
+ ports:[["porto","landuse:harbour"],["porto","landuse:industrial"]],
+ airports:[["aeroporto","aeroway:aerodrome"],["airport","aeroway:aerodrome"]],
+ industrial:[["zona industrial","landuse:industrial"],["polo industrial","landuse:industrial"]],
+ fuel:[["bomba","amenity:fuel"],["posto","amenity:fuel"]],
+ markets:[["mercado","amenity:marketplace"]],
+ hospitals:[["hospital","amenity:hospital"]]
 };
 const LABEL:Record<string,string>={ports:"Port",airports:"Airport",industrial:"Industrial area",fuel:"Fuel station",markets:"Market",hospitals:"Hospital"};
+const OSM_TYPE:Record<string,string>={N:"node",W:"way",R:"relation"};
+type PF={geometry:{coordinates:[number,number]};properties:{name?:string;countrycode?:string;osm_type?:string;osm_id?:number;state?:string;city?:string}};
 export async function osmImport(category:string){
- const q=`[out:json][timeout:25];area["ISO3166-1"="AO"][admin_level=2]->.a;(${OSM_Q[category]});out center 250;`;
- const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded","user-agent":"AngolaIQ/1.0"},signal:AbortSignal.timeout(40000)});
- if(!r.ok)throw new Error(`Overpass HTTP ${r.status}`);
- const j=await r.json() as {elements?:Array<{type:string;id:number;lat?:number;lon?:number;center?:{lat:number;lon:number};tags?:Record<string,string>}>};
- const db=await iqDb();let n=0;
- for(const e of j.elements??[]){
-  const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon,name=e.tags?.name;if(!lat||!lng||!name)continue;
-  if(lat<-19||lat>-4||lng<11||lng>25)continue;
-  const res=await db.query("INSERT INTO iq_locations (name,category,province,lat,lng,source,source_url,verified,ext_id) VALUES ($1,$2,$3,$4,$5,'OpenStreetMap',$6,false,$7) ON CONFLICT (ext_id) DO NOTHING",[name.slice(0,120),LABEL[category],e.tags?.["addr:province"]??e.tags?.["is_in:province"]??null,lat,lng,`https://www.openstreetmap.org/${e.type}/${e.id}`,`osm:${e.type}/${e.id}`]);
-  n+=res.rowCount??0;
+ const db=await iqDb();let n=0,ok=0;let last="";
+ for(const [q,tag] of PHOTON[category]??[]){
+  try{
+   const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&osm_tag=${tag}&bbox=11,-19,25,-4&limit=50`,{headers:{"user-agent":"AngolaIQ/1.0 (private research tool)"},signal:AbortSignal.timeout(20000),cache:"no-store"});
+   if(!r.ok)throw new Error(`Photon HTTP ${r.status}`);
+   const j=await r.json().catch(()=>{throw new Error("Photon busy (rate limit) — try again in a minute");}) as {features?:PF[]};ok++;
+   for(const f of j.features??[]){
+    const p=f.properties,[lng,lat]=f.geometry.coordinates;
+    if(p.countrycode!=="AO"||!p.name||lat<-19||lat>-4||lng<11||lng>25)continue;
+    if(category==="ports"&&tag==="landuse:industrial"&&!/^porto/i.test(p.name))continue;
+    if(/^(hospital|mercado|bomba|posto|aeroporto)$/i.test(p.name.trim()))continue; // skip unnamed generic entries
+    const type=OSM_TYPE[p.osm_type??""]??"node";
+    const res=await db.query("INSERT INTO iq_locations (name,category,province,lat,lng,source,source_url,verified,ext_id) VALUES ($1,$2,$3,$4,$5,'OpenStreetMap',$6,false,$7) ON CONFLICT (ext_id) DO NOTHING",[p.name.slice(0,120),LABEL[category],p.state??null,lat,lng,`https://www.openstreetmap.org/${type}/${p.osm_id}`,`osm:${type}/${p.osm_id}`]);
+    n+=res.rowCount??0;
+   }
+  }catch(e){last=e instanceof Error?e.message:"failed";}
+  await new Promise(x=>setTimeout(x,1200)); // be polite to the free service
  }
+ if(!ok){await db.query("UPDATE iq_sources SET status='degraded',last_run=now(),last_error=$1 WHERE id='osm'",[last]);throw new Error(last||"Photon unavailable");}
  await db.query("UPDATE iq_sources SET status='operational',last_ok=now(),last_run=now(),last_error=NULL WHERE id='osm'");
  return n;
 }

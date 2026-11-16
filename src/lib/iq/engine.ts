@@ -15,7 +15,7 @@ export const SOURCES:Src[]=[
  {id:"imf",name:"IMF World Economic Outlook (DataMapper)",kind:"macro",url:"https://www.imf.org/external/datamapper",trust:"primary"},
  {id:"fred",name:"FRED (St. Louis Fed) commodity prices",kind:"commodities",url:"https://fred.stlouisfed.org",trust:"primary",config:"FRED_API_KEY (free at fred.stlouisfed.org)"},
  {id:"comtrade",name:"UN Comtrade (public preview)",kind:"trade",url:"https://comtradeplus.un.org",trust:"primary"},
- {id:"osm",name:"OpenStreetMap (Overpass)",kind:"map",url:"https://www.openstreetmap.org",trust:"trusted"},
+ {id:"osm",name:"OpenStreetMap (via Photon search)",kind:"map",url:"https://photon.komoot.io",trust:"trusted"},
  {id:"ai",name:"AI analysis (Groq / Gemini)",kind:"ai",url:"",trust:"unverified"},
  {id:"manual",name:"Entered by owner",kind:"manual",url:"",trust:"trusted"}
 ];
