@@ -19,11 +19,11 @@ export function Workspace({kind,form,actions=["save","devil","project","export"]
  const act=async(a:string,r:Row)=>{try{
   if(a==="save"){await api("/api/iq/saved","POST",{kind:"analysis",refId:r.id,title:r.title});setToast("Saved");}
   if(a==="devil"){const o=r.output as Record<string,string>;sessionStorage.setItem("iq-devil",JSON.stringify({idea:`${o.title??r.title}. ${o.executive_summary??o.summary??""}`.slice(0,2900),sector:String(r.input.sector??""),geography:String(r.input.geography??""),fromId:r.id}));router.push("/iq/devil");}
-  if(a==="project"){const o=r.output as Record<string,string>;await api("/api/iq/projects","POST",{name:(o.title??r.title).slice(0,160),description:(o.executive_summary??o.summary??"").slice(0,2000),sector:String(r.input.sector??"")||undefined,geography:String(r.input.geography??"")||undefined,analysis_ids:[r.id],milestones:Array.isArray(r.output.plan_90_days)?(r.output.plan_90_days as string[]).slice(0,10).map(t=>({title:String(t).slice(0,160),done:false})):[]});setToast("Project created");router.push("/iq/projects");}
+  if(a==="project"){const o=r.output as Record<string,string>;await api("/api/tasks","POST",{title:("AngolaIQ: "+(o.title??r.title)).slice(0,160),project:"AngolaIQ"});setToast("Task added to NASSIM OS");}
   if(a==="export")exportReport(r);
   if(a==="delete"){await api(`/api/iq/analyses?id=${r.id}`,"DELETE");if(cur?.id===r.id)setCur(null);hist.reload();setToast("Deleted");}
  }catch(e){setToast(e instanceof Error?e.message:"Failed");}};
- const L:Record<string,string>={save:"☆ Save",devil:"⚔ Devil's Advocate",project:"▣ Make project",export:"⤓ Export"};
+ const L:Record<string,string>={save:"☆ Save",devil:"⚔ Devil's Advocate",project:"＋ Task",export:"⤓ Export"};
  return <div className="iq-grid">
   <section className="iq-card">{form(run,busy)}{busy&&<Loading label="AI is working — this takes 10–40 s…"/>}{err&&<ErrorBox msg={err}/>}</section>
   {cur&&<section className="iq-card" id="iq-result"><h3>{cur.title}<span className="iq-tags">{actions.map(a=><button key={a} className="iq-btn sm" onClick={()=>act(a,cur)}>{L[a]}</button>)}</span></h3>

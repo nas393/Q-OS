@@ -7,7 +7,7 @@ import {externalApps} from "@/lib/external-apps";
 import {runIqJobs} from "@/lib/iq/engine";
 
 /*
- * NASSIM OS alerts. Checks run at most every 10 minutes, triggered after each Counter-Trader push
+ * NASSIM OS alerts. Checks run at most every 10 minutes: GitHub Actions every 15 min + Vercel Cron ~08:00 (/api/cron/check), after each Counter-Trader push,
  * (every 15 min) or by the owner. A push notification is sent only when something CHANGES
  * (site goes down / comes back, a build fails, a gold level is crossed). The morning brief goes out once a day at 08:00 Luanda.
  */
