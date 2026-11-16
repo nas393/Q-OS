@@ -4,7 +4,7 @@ import {Badge,ErrorBox,Head,Loading,Toast,ago,api,useApi} from "../ui";
 
 type Src={id:string;name:string;kind:string;url:string;trust:string;status:string;last_ok:string|null;last_error:string|null;last_run:string|null;config_needed:string|null};
 type Job={name:string;every_minutes:number;last_run:string|null;last_ok:string|null;last_error:string|null;runs:number;history:Array<{at:string;ok:boolean;msg:string}>};
-const LABEL:Record<string,string>={operational:"Operational",degraded:"Degraded",not_configured:"Not configured",not_run:"Not run yet"};
+const LABEL:Record<string,string>={operational:"Operational",degraded:"Degraded",not_configured:"Not configured",not_run:"Not run yet",rate_limited:"Rate limited"};
 
 export default function Sources(){
  const {data,error,loading,reload}=useApi<{sources:Src[];jobs:Job[]}>("/api/iq/sources");

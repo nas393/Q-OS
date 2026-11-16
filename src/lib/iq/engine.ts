@@ -34,7 +34,7 @@ const reliability=(domain:string)=>TRUSTED_DOMAINS.some(d=>domain===d||domain.en
 
 async function setSource(id:string,ok:boolean,error?:string){
  const db=await iqDb();
- await db.query("UPDATE iq_sources SET last_run=now(), status=$2, last_ok=CASE WHEN $3 THEN now() ELSE last_ok END, last_error=$4 WHERE id=$1",[id,ok?"operational":"degraded",ok,ok?null:(error??"failed").slice(0,300)]);
+ await db.query("UPDATE iq_sources SET last_run=now(), status=$2, last_ok=CASE WHEN $3 THEN now() ELSE last_ok END, last_error=$4 WHERE id=$1",[id,ok?"operational":/rate limited/.test(error??"")?"rate_limited":"degraded",ok,ok?null:(error??"failed").slice(0,300)]);
 }
 export async function seedSources(){
  const db=await iqDb();
@@ -79,7 +79,13 @@ async function fred(){
 }
 async function news(){
  const q=encodeURIComponent("(Angola OR Luanda OR Lobito OR kwanza) (economy OR business OR trade OR investment OR oil OR bank OR port OR economia OR investimento OR comercio)");
- const j=await getJSON<{articles?:Array<{url:string;title:string;seendate:string;domain:string;language?:string;sourcecountry?:string}>}>(`https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&format=json&maxrecords=100&sort=datedesc&timespan=2d`);
+ // GDELT allows ~1 request per 5 s: on 429 wait once and retry; if still limited, report "rate limited" (not broken).
+ const url=`https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&format=json&maxrecords=100&sort=datedesc&timespan=2d`;
+ let r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});
+ if(r.status===429){await new Promise(x=>setTimeout(x,6500));r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});}
+ if(r.status===429)throw new Error("rate limited by GDELT; stored news kept, next run retries");
+ if(!r.ok)throw new Error(`HTTP ${r.status}`);
+ const j=await r.json() as {articles?:Array<{url:string;title:string;seendate:string;domain:string}>};
  const db=await iqDb();let n=0;
  for(const a of j.articles??[]){
   if(!a.url?.startsWith("http")||!a.title)continue;
