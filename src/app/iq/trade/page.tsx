@@ -45,7 +45,7 @@ export default function Trade(){
     <div className="iq-meta" style={{marginTop:8,lineHeight:1.6}}>
      <b>Period:</b> calendar year {per} (annual) · <b>Retrieved:</b> {retrieved?.toLocaleString()} · <b>Years stored:</b> {periods.join(", ")}<br/>
      <b>Source:</b> UN Comtrade public API, {imp?"partner-reported exports to Angola (FOB)":"partner-reported imports from Angola (CIF)"} · <a href={cur[0].source_url} target="_blank" rel="noreferrer" style={{color:"var(--vio2)"}}>exact query ↗</a> · <a href="https://comtradeplus.un.org" target="_blank" rel="noreferrer" style={{color:"var(--vio2)"}}>comtradeplus.un.org ↗</a><br/>
-     Mirror values can differ from Angola's own customs figures (timing, valuation, re-exports). Weights are missing where the reporting country did not declare them.
+     Mirror values can differ from Angola&apos;s own customs figures (timing, valuation, re-exports). Weights are missing where the reporting country did not declare them.
     </div>
    </section>
    {an&&<section className="iq-card"><h3>Interpretation<button className="iq-btn sm" onClick={()=>exportReport(an)}>⤓ Export</button></h3><Analysis out={an.output} meta={an}/></section>}
