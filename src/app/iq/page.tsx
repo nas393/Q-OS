@@ -8,7 +8,7 @@ type D={obs:Obs[];counts:{total:number;last24:number;unreviewed:number};top:Arra
  briefing:{output:Record<string,unknown>&{developments?:Array<{text:string;ref?:number[]}>};provider:string;model:string;created_at:string}|null;hits:Array<{keyword:string;n:number;last:string}>;projects:Array<{status:string;n:number}>;
  sources:Array<{id:string;name:string;status:string;last_ok:string|null;last_error:string|null;config_needed:string|null}>;jobs:Array<{name:string;last_run:string|null;last_ok:string|null;last_error:string|null;every_minutes:number}>};
 
-const ORDER=["USD/AOA","Inflation","GDP growth","Population","Unemployment","GDP","Imports","Exports","Brent crude","Wheat","Rice","Sugar","Maize","Soybean oil","Palm oil","USD/EUR","USD/ZAR","USD/CNY"];
+const ORDER=["USD/AOA","Inflation","GDP growth","Population","Unemployment","GDP","Imports","Exports","Government debt","Brent crude","Wheat","Rice","Sugar","Maize","Soybean oil","Palm oil","USD/EUR","USD/ZAR","USD/CNY"];
 
 export default function Dashboard(){
  const {data,error,loading,reload}=useApi<D>("/api/iq/dashboard");

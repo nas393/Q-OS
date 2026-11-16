@@ -11,6 +11,7 @@ export const SOURCES:Src[]=[
  {id:"worldbank",name:"World Bank Open Data",kind:"macro",url:"https://data.worldbank.org/country/angola",trust:"primary"},
  {id:"fx",name:"ExchangeRate-API (open access)",kind:"fx",url:"https://www.exchangerate-api.com",trust:"trusted"},
  {id:"gdelt",name:"GDELT news index",kind:"news",url:"https://www.gdeltproject.org",trust:"trusted"},
+ {id:"imf",name:"IMF World Economic Outlook (DataMapper)",kind:"macro",url:"https://www.imf.org/external/datamapper",trust:"primary"},
  {id:"fred",name:"FRED (St. Louis Fed) commodity prices",kind:"commodities",url:"https://fred.stlouisfed.org",trust:"primary",config:"FRED_API_KEY (free at fred.stlouisfed.org)"},
  {id:"comtrade",name:"UN Comtrade (public preview)",kind:"trade",url:"https://comtradeplus.un.org",trust:"primary"},
  {id:"osm",name:"OpenStreetMap (Overpass)",kind:"map",url:"https://www.openstreetmap.org",trust:"trusted"},
@@ -40,7 +41,13 @@ export async function seedSources(){
  const db=await iqDb();
  for(const s of SOURCES)await db.query("INSERT INTO iq_sources (id,name,kind,url,trust,config_needed,status) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,url=EXCLUDED.url,config_needed=EXCLUDED.config_needed",[s.id,s.name,s.kind,s.url,s.trust,s.config??null,s.config&&!process.env[s.config.split(" ")[0]]?"not_configured":"not_run"]);
 }
-async function getJSON<T>(url:string,init?:RequestInit):Promise<T>{const r=await fetch(url,{...init,cache:"no-store",signal:AbortSignal.timeout(15000),headers:{"user-agent":"AngolaIQ/1.0 (private research)",...(init?.headers??{})}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json() as Promise<T>;}
+const why=(e:unknown)=>{const c=(e as {cause?:{code?:string;message?:string}})?.cause;return e instanceof Error?(e.name==="TimeoutError"?"timeout":c?.code??c?.message??e.message):"failed";};
+async function getJSON<T>(url:string,init?:RequestInit):Promise<T>{
+ for(let attempt=0;;attempt++){
+  try{const r=await fetch(url,{...init,cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)",...(init?.headers??{})}});if(!r.ok)throw Object.assign(new Error(`HTTP ${r.status}`),{status:r.status});return await r.json() as T;}
+  catch(e){const st=(e as {status?:number}).status;if(attempt>=1||(st&&st<500))throw new Error(st?`HTTP ${st}`:why(e));await new Promise(x=>setTimeout(x,2500));}
+ }
+}
 
 /* --- Providers --- */
 const WB=[["NY.GDP.MKTP.KD.ZG","GDP growth","% annual"],["FP.CPI.TOTL.ZG","Inflation","% annual"],["SP.POP.TOTL","Population","people"],["SL.UEM.TOTL.ZS","Unemployment","% labour force"],["NY.GDP.MKTP.CD","GDP","current US$"],["NE.IMP.GNFS.ZS","Imports","% of GDP"],["NE.EXP.GNFS.ZS","Exports","% of GDP"]];
@@ -54,7 +61,22 @@ async function worldBank(){
    if(!r.ok)throw new Error(`HTTP ${r.status}`);
    const j=await r.json() as [unknown,Array<{date:string;value:number|null}>|null];
    for(const row of (j[1]??[]).filter(x=>x.value!==null)){await db.query("INSERT INTO iq_obs (indicator,value,unit,period,source_id,source_url,meta) VALUES ($1,$2,$3,$4,'worldbank',$5,$6) ON CONFLICT (indicator,period,geography,source_id) DO UPDATE SET value=EXCLUDED.value,retrieved_at=now()",[name,row.value,unit,row.date,url,JSON.stringify({code})]);n++;}
-  }catch(e){errors.push(`${name}: ${e instanceof Error&&e.name==="TimeoutError"?"timeout":e instanceof Error?e.message:"failed"}`);}
+  }catch(e){errors.push(`${name}: ${why(e)}`);}
+ }));
+ if(!n)throw new Error(errors.join("; ")||"no data");
+ return n;
+}
+/* IMF WEO DataMapper (free, no key): backup macro source. Future years are IMF projections and are labelled as such. */
+const IMF=[["NGDP_RPCH","GDP growth","% annual"],["PCPIPCH","Inflation","% annual"],["LP","Population","million people"],["NGDPD","GDP","US$ billion"],["LUR","Unemployment","% labour force"],["GGXWDG_NGDP","Government debt","% of GDP"]];
+async function imf(){
+ const db=await iqDb();let n=0;const thisYear=new Date().getUTCFullYear();const errors:string[]=[];
+ await Promise.all(IMF.map(async([code,name,unit])=>{
+  const url=`https://www.imf.org/external/datamapper/api/v1/${code}/AGO`;
+  try{const j=await getJSON<{values?:Record<string,{AGO?:Record<string,number>}>}>(url,{headers:{accept:"application/json"}});
+   const series=j.values?.[code]?.AGO??{};
+   for(const [year,v] of Object.entries(series)){const y=Number(year);if(!Number.isFinite(v)||y<thisYear-8||y>thisYear+1)continue;
+    await db.query("INSERT INTO iq_obs (indicator,value,unit,period,source_id,source_url,meta) VALUES ($1,$2,$3,$4,'imf',$5,$6) ON CONFLICT (indicator,period,geography,source_id) DO UPDATE SET value=EXCLUDED.value,retrieved_at=now()",[name,v,unit,year,`https://www.imf.org/external/datamapper/${code}@WEO/AGO`,JSON.stringify({code,projection:y>=thisYear})]);n++;}
+  }catch(e){errors.push(`${name}: ${e instanceof Error?e.message:"failed"}`);}
  }));
  if(!n)throw new Error(errors.join("; ")||"no data");
  return n;
@@ -81,8 +103,10 @@ async function news(){
  const q=encodeURIComponent("(Angola OR Luanda OR Lobito OR kwanza) (economy OR business OR trade OR investment OR oil OR bank OR port OR economia OR investimento OR comercio)");
  // GDELT allows ~1 request per 5 s: on 429 wait once and retry; if still limited, report "rate limited" (not broken).
  const url=`https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&format=json&maxrecords=100&sort=datedesc&timespan=2d`;
- let r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});
- if(r.status===429){await new Promise(x=>setTimeout(x,6500));r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});}
+ const get=()=>fetch(url,{cache:"no-store",signal:AbortSignal.timeout(20000),headers:{"user-agent":"AngolaIQ/1.0 (private research)"}});
+ let r:Response;
+ try{r=await get();}catch{await new Promise(x=>setTimeout(x,6500));try{r=await get();}catch(e){throw new Error(`GDELT unreachable (${why(e)}); stored news kept`);}}
+ if(r.status===429){await new Promise(x=>setTimeout(x,6500));r=await get();}
  if(r.status===429)throw new Error("rate limited by GDELT; stored news kept, next run retries");
  if(!r.ok)throw new Error(`HTTP ${r.status}`);
  const j=await r.json() as {articles?:Array<{url:string;title:string;seendate:string;domain:string}>};
@@ -120,6 +144,7 @@ const JOBS:Array<{name:string;every:number;run:()=>Promise<number>;source:string
  {name:"news",every:60,run:news,source:"gdelt"},
  {name:"fx",every:360,run:fx,source:"fx"},
  {name:"worldbank",every:1440,run:worldBank,source:"worldbank"},
+ {name:"imf",every:1440,run:imf,source:"imf"},
  {name:"fred",every:1440,run:fred,source:"fred"}
 ];
 

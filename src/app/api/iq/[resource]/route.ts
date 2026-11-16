@@ -27,7 +27,7 @@ export async function GET(req:Request,{params}:Ctx){
    case "dashboard":{
     await seedSources();
     const [obs,cnt,top,brief,hits,proj,src,jobs]=await Promise.all([
-     db.query(`SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id,source_url,retrieved_at,(SELECT o2.value FROM iq_obs o2 WHERE o2.indicator=o.indicator AND o2.source_id=o.source_id AND o2.period<o.period ORDER BY o2.period DESC LIMIT 1) AS prev FROM iq_obs o ORDER BY indicator,period DESC`),
+     db.query(`SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id,source_url,retrieved_at,(SELECT o2.value FROM iq_obs o2 WHERE o2.indicator=o.indicator AND o2.source_id=o.source_id AND o2.period<o.period AND coalesce(o2.meta->>'projection','false')<>'true' ORDER BY o2.period DESC LIMIT 1) AS prev,o.meta FROM iq_obs o WHERE o.source_id<>'comtrade' ORDER BY indicator,(o.meta->>'projection')='true',period DESC`),
      db.query("SELECT count(*)::int AS total,count(*) FILTER (WHERE retrieved_at>now()-interval '24 hours')::int AS last24,count(*) FILTER (WHERE NOT reviewed)::int AS unreviewed FROM iq_items"),
      db.query("SELECT id,title,url,publisher,published_at,category,impact,reliability FROM iq_items ORDER BY published_at DESC NULLS LAST LIMIT 8"),
      db.query("SELECT id,output,provider,model,created_at FROM iq_analyses WHERE kind='briefing' ORDER BY created_at DESC LIMIT 1"),
@@ -85,7 +85,7 @@ async function saveAnalysis(kind:string,title:string,input:unknown,res:{data:unk
 /* ---------- POST ---------- */
 const S=z.string().trim().max(2000);
 const bodies={
- refresh:z.object({job:z.enum(["news","fx","worldbank","fred"]).optional()}),
+ refresh:z.object({job:z.enum(["news","fx","worldbank","imf","fred"]).optional()}),
  analyze:z.discriminatedUnion("kind",[
   z.object({kind:z.literal("devil"),input:z.object({idea:z.string().trim().min(10).max(3000),investment:S.optional(),sector:S.optional(),geography:S.optional(),revenue:S.optional(),costs:S.optional(),customer:S.optional(),model:S.optional(),return:S.optional(),timeline:S.optional(),evidence:S.optional()}),fromId:uuid.optional()}),
   z.object({kind:z.literal("devil_review"),parentId:uuid}),
