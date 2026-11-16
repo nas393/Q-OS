@@ -7,7 +7,7 @@ type Row={partner:string;value:number;qty:number|null;period:string};
 export async function tradeFor(commodity:string,refresh=false):Promise<Row[]>{
  const hs=COMMODITIES[commodity];if(!hs)throw new Error("Unknown commodity");
  const db=await iqDb();const ind=`Exports to Angola: ${commodity}`;
- const cached=await db.query("SELECT geography partner,value::float8 value,(meta->>'qty')::float8 qty,period FROM iq_obs WHERE indicator=$1 AND source_id='comtrade' ORDER BY period DESC,value DESC",[ind]);
+ const cached=await db.query("SELECT geography AS partner,value::float8 AS value,(meta->>'qty')::float8 AS qty,period FROM iq_obs WHERE indicator=$1 AND source_id='comtrade' ORDER BY period DESC,value DESC",[ind]);
  const fresh=cached.rows.length&&!refresh;
  if(fresh)return cached.rows;
  const year=new Date().getUTCFullYear();let rows:Row[]=[];let lastErr="";

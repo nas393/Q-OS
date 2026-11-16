@@ -4,7 +4,7 @@ import {useState} from "react";
 import {Analysis,Badge,Empty,ErrorBox,Head,Loading,Toast,ago,api,fmt,useApi} from "./ui";
 
 type Obs={indicator:string;value:string;unit:string;period:string;source_id:string;source_url:string;retrieved_at:string;prev:string|null};
-type D={obs:Obs[];counts:{total:number;day:number;unreviewed:number};top:Array<{id:string;title:string;url:string;publisher:string;published_at:string;category:string;impact:string|null;reliability:string}>;
+type D={obs:Obs[];counts:{total:number;last24:number;unreviewed:number};top:Array<{id:string;title:string;url:string;publisher:string;published_at:string;category:string;impact:string|null;reliability:string}>;
  briefing:{output:Record<string,unknown>&{developments?:Array<{text:string;ref?:number[]}>};provider:string;model:string;created_at:string}|null;hits:Array<{keyword:string;n:number;last:string}>;projects:Array<{status:string;n:number}>;
  sources:Array<{id:string;name:string;status:string;last_ok:string|null;last_error:string|null;config_needed:string|null}>;jobs:Array<{name:string;last_run:string|null;last_ok:string|null;last_error:string|null;every_minutes:number}>};
 
@@ -41,7 +41,7 @@ export default function Dashboard(){
      </section>
      <section className="iq-card"><h3>Action centre</h3>
       <ul className="iq-list">
-       <li className="iq-row"><div><b>{data.counts.unreviewed}</b> news items not reviewed <span className="iq-sub">({data.counts.day} in 24h, {data.counts.total} stored)</span></div><Link className="iq-btn sm" href="/iq/news">Review</Link></li>
+       <li className="iq-row"><div><b>{data.counts.unreviewed}</b> news items not reviewed <span className="iq-sub">({data.counts.last24} in 24h, {data.counts.total} stored)</span></div><Link className="iq-btn sm" href="/iq/news">Review</Link></li>
        <li className="iq-row"><div><b>{data.hits.reduce((s,h)=>s+h.n,0)}</b> watchlist matches (7 days){data.hits.length>0&&<div className="iq-sub">{data.hits.map(h=>`${h.keyword} (${h.n})`).join(" · ")}</div>}</div><Link className="iq-btn sm" href="/iq/watch">Open</Link></li>
        <li className="iq-row"><div><b>{data.projects.reduce((s,p)=>s+p.n,0)}</b> projects{data.projects.length>0&&<div className="iq-sub">{data.projects.map(p=>`${p.status} ${p.n}`).join(" · ")}</div>}</div><Link className="iq-btn sm" href="/iq/projects">Open</Link></li>
       </ul>

@@ -27,12 +27,12 @@ export async function GET(req:Request,{params}:Ctx){
    case "dashboard":{
     await seedSources();
     const [obs,cnt,top,brief,hits,proj,src,jobs]=await Promise.all([
-     db.query(`SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id,source_url,retrieved_at,(SELECT o2.value FROM iq_obs o2 WHERE o2.indicator=o.indicator AND o2.source_id=o.source_id AND o2.period<o.period ORDER BY o2.period DESC LIMIT 1) prev FROM iq_obs o ORDER BY indicator,period DESC`),
-     db.query("SELECT count(*)::int total,count(*) FILTER (WHERE retrieved_at>now()-interval '24 hours')::int day,count(*) FILTER (WHERE NOT reviewed)::int unreviewed FROM iq_items"),
+     db.query(`SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id,source_url,retrieved_at,(SELECT o2.value FROM iq_obs o2 WHERE o2.indicator=o.indicator AND o2.source_id=o.source_id AND o2.period<o.period ORDER BY o2.period DESC LIMIT 1) AS prev FROM iq_obs o ORDER BY indicator,period DESC`),
+     db.query("SELECT count(*)::int AS total,count(*) FILTER (WHERE retrieved_at>now()-interval '24 hours')::int AS last24,count(*) FILTER (WHERE NOT reviewed)::int AS unreviewed FROM iq_items"),
      db.query("SELECT id,title,url,publisher,published_at,category,impact,reliability FROM iq_items ORDER BY published_at DESC NULLS LAST LIMIT 8"),
      db.query("SELECT id,output,provider,model,created_at FROM iq_analyses WHERE kind='briefing' ORDER BY created_at DESC LIMIT 1"),
-     db.query("SELECT w.keyword,count(*)::int n,max(h.created_at) last FROM iq_watch_hits h JOIN iq_watch w ON w.id=h.watch_id WHERE h.created_at>now()-interval '7 days' GROUP BY w.keyword ORDER BY last DESC LIMIT 6"),
-     db.query("SELECT status,count(*)::int n FROM iq_projects WHERE NOT archived GROUP BY status"),
+     db.query("SELECT w.keyword,count(*)::int AS n,max(h.created_at) AS last FROM iq_watch_hits h JOIN iq_watch w ON w.id=h.watch_id WHERE h.created_at>now()-interval '7 days' GROUP BY w.keyword ORDER BY last DESC LIMIT 6"),
+     db.query("SELECT status,count(*)::int AS n FROM iq_projects WHERE NOT archived GROUP BY status"),
      db.query("SELECT id,name,status,last_ok,last_error,config_needed FROM iq_sources ORDER BY id"),
      db.query("SELECT name,last_run,last_ok,last_error,every_minutes FROM iq_jobs")
     ]);
@@ -40,8 +40,8 @@ export async function GET(req:Request,{params}:Ctx){
    }
    case "items":{
     const q=u.get("q")?.trim().slice(0,80)??"",cat=u.get("cat")??"",rel=u.get("rel")??"",days=Math.min(Number(u.get("days")??30)||30,365),page=Math.max(0,Number(u.get("page")??0)||0),pub=u.get("pub")??"";
-    const {rows}=await db.query(`SELECT i.*,EXISTS(SELECT 1 FROM iq_saved s WHERE s.kind='news' AND s.ref_id=i.id::text AND NOT s.archived) saved FROM iq_items i WHERE ($1='' OR i.title ILIKE '%'||$1||'%' OR coalesce(i.summary,'') ILIKE '%'||$1||'%') AND ($2='' OR i.category=$2) AND ($3='' OR i.reliability=$3) AND coalesce(i.published_at,i.retrieved_at)>now()-($4||' days')::interval AND ($6='' OR i.publisher=$6) ORDER BY coalesce(i.published_at,i.retrieved_at) DESC LIMIT 30 OFFSET $5`,[q,cat,rel,String(days),page*30,pub]);
-    const pubs=await db.query("SELECT publisher,count(*)::int n FROM iq_items WHERE publisher IS NOT NULL GROUP BY publisher ORDER BY n DESC LIMIT 25");
+    const {rows}=await db.query(`SELECT i.*,EXISTS(SELECT 1 FROM iq_saved s WHERE s.kind='news' AND s.ref_id=i.id::text AND NOT s.archived) AS saved FROM iq_items i WHERE ($1='' OR i.title ILIKE '%'||$1||'%' OR coalesce(i.summary,'') ILIKE '%'||$1||'%') AND ($2='' OR i.category=$2) AND ($3='' OR i.reliability=$3) AND coalesce(i.published_at,i.retrieved_at)>now()-($4||' days')::interval AND ($6='' OR i.publisher=$6) ORDER BY coalesce(i.published_at,i.retrieved_at) DESC LIMIT 30 OFFSET $5`,[q,cat,rel,String(days),page*30,pub]);
+    const pubs=await db.query("SELECT publisher,count(*)::int AS n FROM iq_items WHERE publisher IS NOT NULL GROUP BY publisher ORDER BY n DESC LIMIT 25");
     return ok({items:rows,publishers:pubs.rows,page});
    }
    case "analyses":{
@@ -57,7 +57,7 @@ export async function GET(req:Request,{params}:Ctx){
    case "obs":{const {rows}=await db.query("SELECT indicator,value,unit,period,geography,source_id,source_url,retrieved_at,meta FROM iq_obs WHERE ($1='' OR indicator=$1) AND ($2='' OR source_id=$2) ORDER BY indicator,period DESC LIMIT 600",[u.get("indicator")??"",u.get("source")??""]);return ok({obs:rows});}
    case "locations":{const {rows}=await db.query("SELECT * FROM iq_locations ORDER BY category,name");return ok({locations:rows});}
    case "search":{const q=(u.get("q")??"").trim().slice(0,80);if(q.length<2)return ok({results:[]});
-    const {rows}=await db.query(`(SELECT 'news' kind,id::text id,title,url FROM iq_items WHERE title ILIKE '%'||$1||'%' ORDER BY published_at DESC NULLS LAST LIMIT 8) UNION ALL (SELECT 'analysis',id::text,title,NULL FROM iq_analyses WHERE title ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'project',id::text,name,NULL FROM iq_projects WHERE name ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'location',id::text,name,NULL FROM iq_locations WHERE name ILIKE '%'||$1||'%' LIMIT 6)`,[q]);return ok({results:rows});}
+    const {rows}=await db.query(`(SELECT 'news' AS kind,id::text AS id,title,url FROM iq_items WHERE title ILIKE '%'||$1||'%' ORDER BY published_at DESC NULLS LAST LIMIT 8) UNION ALL (SELECT 'analysis',id::text,title,NULL FROM iq_analyses WHERE title ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'project',id::text,name,NULL FROM iq_projects WHERE name ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'location',id::text,name,NULL FROM iq_locations WHERE name ILIKE '%'||$1||'%' LIMIT 6)`,[q]);return ok({results:rows});}
    default:return jsonError(404,"Unknown resource");
   }
  }catch(e){return fail(e);}
@@ -77,7 +77,7 @@ async function articleText(url:string){
 }
 async function saveAnalysis(kind:string,title:string,input:unknown,res:{data:unknown;provider:string;model:string},parent?:string){
  const db=await iqDb();
- const v=parent?(await db.query("SELECT coalesce(max(version),1)+1 v FROM iq_analyses WHERE id=$1 OR parent_id=$1",[parent])).rows[0].v:1;
+ const v=parent?(await db.query("SELECT coalesce(max(version),1)+1 AS v FROM iq_analyses WHERE id=$1 OR parent_id=$1",[parent])).rows[0].v:1;
  const {rows}=await db.query("INSERT INTO iq_analyses (kind,title,input,output,provider,model,parent_id,version) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",[kind,title.slice(0,200),JSON.stringify(input),JSON.stringify(res.data),res.provider,res.model,parent??null,v]);
  return rows[0];
 }

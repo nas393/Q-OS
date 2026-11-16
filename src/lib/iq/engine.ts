@@ -78,7 +78,7 @@ async function news(){
  for(const a of j.articles??[]){
   if(!a.url?.startsWith("http")||!a.title)continue;
   const key=titleKey(a.title);
-  const dup=await db.query("SELECT 1 FROM iq_items WHERE title_key=$1 AND retrieved_at>now()-interval '4 days' LIMIT 1",[key]);if(dup.rowCount)continue;
+  const dup=await db.query("SELECT 1 FROM iq_items WHERE title_key=$1 AND retrieved_at>now()-interval '4 days' LIMIT 1",[key]);if(dup.rows.length)continue;
   const s=a.seendate,pub=/^\d{8}T\d{6}Z$/.test(s)?`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:${s.slice(13,15)}Z`:null;
   const r=await db.query("INSERT INTO iq_items (source_id,title,url,publisher,published_at,category,reliability,title_key) VALUES ('gdelt',$1,$2,$3,$4,$5,$6,$7) ON CONFLICT (url) DO NOTHING",[a.title.slice(0,300),a.url,a.domain,pub,categorize(a.title),reliability(a.domain),key]);
   n+=r.rowCount??0;
