@@ -39,6 +39,7 @@ async function setSource(id:string,ok:boolean,error?:string){
 }
 export async function seedSources(){
  const db=await iqDb();
+ for(const j of JOB_LIST)await db.query("INSERT INTO iq_jobs (name,every_minutes) VALUES ($1,$2) ON CONFLICT (name) DO NOTHING",j);
  for(const s of SOURCES)await db.query("INSERT INTO iq_sources (id,name,kind,url,trust,config_needed,status) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,url=EXCLUDED.url,config_needed=EXCLUDED.config_needed",[s.id,s.name,s.kind,s.url,s.trust,s.config??null,s.config&&!process.env[s.config.split(" ")[0]]?"not_configured":"not_run"]);
 }
 const why=(e:unknown)=>{const c=(e as {cause?:{code?:string;message?:string}})?.cause;return e instanceof Error?(e.name==="TimeoutError"?"timeout":c?.code??c?.message??e.message):"failed";};
@@ -140,6 +141,7 @@ export async function matchWatchlist(){
  return pushed;
 }
 
+const JOB_LIST:Array<[string,number]>=[["news",60],["fx",360],["worldbank",1440],["imf",1440],["fred",1440]];
 const JOBS:Array<{name:string;every:number;run:()=>Promise<number>;source:string}>=[
  {name:"news",every:60,run:news,source:"gdelt"},
  {name:"fx",every:360,run:fx,source:"fx"},
