@@ -6,7 +6,7 @@ import {useEffect,useState,type ReactNode} from "react";
 const NAV=[
  ["Intelligence",[["/iq","Dashboard","◈"],["/iq/news","Live News","◉"],["/iq/clusters","Market Clusters","▦"]]],
  ["Strategy",[["/iq/suggest","AI Suggestions","✦"],["/iq/devil","Devil's Advocate","⚔"]]],
- ["Tools",[["/iq/map","Business Map","⌖"],["/iq/trade","Trade Analytics","⇄"],["/iq/compliance","Compliance Guide","§"],["/iq/watch","Market Watchlist","👁"]]],
+ ["Tools",[["/iq/map","Business Map","⌖"],["/iq/trade","Trade Analytics","⇄"],["/iq/ports","Port Arrivals","⚓"],["/iq/compliance","Compliance Guide","§"],["/iq/watch","Market Watchlist","👁"]]],
  ["Workspace",[["/iq/projects","My Projects","▣"],["/iq/saved","Saved Items","★"],["/iq/sources","Data Sources","⚙"]]]
 ] as const;
 

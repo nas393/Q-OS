@@ -56,6 +56,9 @@ export async function GET(req:Request,{params}:Ctx){
    case "sources":{await seedSources();const [s,j]=await Promise.all([db.query("SELECT * FROM iq_sources ORDER BY kind"),db.query("SELECT * FROM iq_jobs ORDER BY name")]);return ok({sources:s.rows,jobs:j.rows});}
    case "obs":{const {rows}=await db.query("SELECT indicator,value,unit,period,geography,source_id,source_url,retrieved_at,meta FROM iq_obs WHERE ($1='' OR indicator=$1) AND ($2='' OR source_id=$2) ORDER BY indicator,period DESC LIMIT 600",[u.get("indicator")??"",u.get("source")??""]);return ok({obs:rows});}
    case "locations":{const {rows}=await db.query("SELECT * FROM iq_locations ORDER BY category,name");return ok({locations:rows});}
+   case "vessels":{const from=u.get("from"),to=u.get("to"),port=u.get("port")??"";
+    const {rows}=await db.query("SELECT * FROM iq_vessels WHERE ($1::timestamptz IS NULL OR coalesce(ata,eta)>=$1::timestamptz) AND ($2::timestamptz IS NULL OR coalesce(ata,eta)<$2::timestamptz) AND ($3='' OR port=$3) ORDER BY coalesce(ata,eta) NULLS LAST LIMIT 500",[from||null,to||null,port]);
+    return ok({vessels:rows});}
    case "search":{const q=(u.get("q")??"").trim().slice(0,80);if(q.length<2)return ok({results:[]});
     const {rows}=await db.query(`(SELECT 'news' AS kind,id::text AS id,title,url FROM iq_items WHERE title ILIKE '%'||$1||'%' ORDER BY published_at DESC NULLS LAST LIMIT 8) UNION ALL (SELECT 'analysis',id::text,title,NULL FROM iq_analyses WHERE title ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'project',id::text,name,NULL FROM iq_projects WHERE name ILIKE '%'||$1||'%' LIMIT 6) UNION ALL (SELECT 'location',id::text,name,NULL FROM iq_locations WHERE name ILIKE '%'||$1||'%' LIMIT 6)`,[q]);return ok({results:rows});}
    default:return jsonError(404,"Unknown resource");
@@ -94,13 +97,14 @@ const bodies={
   z.object({kind:z.literal("suggest"),input:z.object({sector:z.string().trim().min(2).max(80),context:S.optional(),budget:S.optional(),geography:S.optional(),model:S.optional(),customers:S.optional(),horizon:S.optional(),risk:S.optional(),capabilities:S.optional(),constraints:S.optional()})}),
   z.object({kind:z.literal("cluster"),sector:z.string().trim().min(2).max(80)}),
   z.object({kind:z.literal("compliance"),activity:z.string().trim().min(3).max(300)}),
-  z.object({kind:z.literal("trade"),commodity:z.string().trim().max(40)})
+  z.object({kind:z.literal("trade"),commodity:z.string().trim().max(40),flow:z.enum(["imports","exports"]).default("imports"),period:z.string().max(4).optional()})
  ]),
  projects:z.object({id:uuid.optional(),name:z.string().trim().min(1).max(160),description:S.optional(),sector:S.optional(),geography:S.optional(),status:z.enum(["idea","researching","compliance","active","paused","abandoned","completed"]).optional(),investment:S.optional(),target_date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),expected_outcome:S.optional(),notes:S.optional(),milestones:z.array(z.object({title:z.string().max(160),done:z.boolean(),due:z.string().max(10).optional()})).max(40).optional(),analysis_ids:z.array(uuid).max(40).optional(),item_ids:z.array(uuid).max(100).optional(),archived:z.boolean().optional()}),
  saved:z.object({kind:z.enum(["news","analysis","project","location","trade","regulation","report","observation"]),refId:z.string().max(80).optional(),title:z.string().trim().min(1).max(300),url:z.string().url().optional(),notes:S.optional(),tags:z.array(z.string().trim().max(30)).max(10).optional()}),
  watch:z.object({keyword:z.string().trim().min(2).max(60),category:z.enum(["all","news","port_arrivals","sector_reports"]).default("all"),frequency:z.enum(["instant","daily","weekly"]).default("instant"),priority:z.enum(["low","normal","high"]).default("normal")}),
  locations:z.object({name:z.string().trim().min(2).max(120),category:z.string().trim().min(2).max(40),province:S.optional(),lat:z.number().min(-19).max(-4),lng:z.number().min(11).max(25),source_url:z.string().url().optional(),notes:S.optional()}),
- osm:z.object({category:z.enum(["ports","airports","industrial","fuel","markets","hospitals"])})
+ osm:z.object({category:z.enum(["ports","airports","industrial","fuel","markets","hospitals"])}),
+ vessel:z.object({id:uuid.optional(),vessel:z.string().trim().min(1).max(120),port:z.string().trim().min(2).max(60),terminal:S.optional(),cargo:S.optional(),commodity:S.optional(),tonnage:z.number().nonnegative().max(1e7).nullable().optional(),origin:S.optional(),consignee:S.optional(),eta:z.string().max(30).nullable().optional(),ata:z.string().max(30).nullable().optional(),etd:z.string().max(30).nullable().optional(),atd:z.string().max(30).nullable().optional(),status:z.enum(["expected","anchored","berthed","discharging","departed","cancelled"]).optional(),source:z.string().max(80).optional(),source_url:z.string().url().optional(),notes:S.optional()})
 };
 
 export async function POST(req:Request,{params}:Ctx){
@@ -130,11 +134,11 @@ export async function POST(req:Request,{params}:Ctx){
     else if(a.kind==="suggest"){const i=a.input;const res=await generateJSON(P.SUGGEST.task+"\n\nINPUTS:\n"+Object.entries(i).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join("\n"),P.SUGGEST.shape,await evidence(`${i.sector} ${i.context??""}`));row=await saveAnalysis("suggest",String((res.data as {title?:string}).title??i.sector),i,res);}
     else if(a.kind==="cluster"){const res=await generateJSON(P.CLUSTER.task+"\n\nSECTOR: "+a.sector,P.CLUSTER.shape,await evidence(a.sector));row=await saveAnalysis("cluster",a.sector,{sector:a.sector},res);}
     else if(a.kind==="compliance"){const res=await generateJSON(P.COMPLIANCE.task+"\n\nACTIVITY: "+a.activity,P.COMPLIANCE.shape,"");row=await saveAnalysis("compliance",a.activity,{activity:a.activity},res);}
-    else {const obs=await tradeFor(a.commodity);const res=await generateJSON(P.TRADE.task+"\n\nCOMMODITY: "+a.commodity,P.TRADE.shape,obs.map(o=>`${o.partner}: ${o.value} US$ (${o.period}), ${o.qty??"?"} kg`).join("\n"));row=await saveAnalysis("trade",a.commodity,{commodity:a.commodity},res);}
+    else {await seedSources();const all=await tradeFor(a.commodity,false,a.flow);const per=a.period??all[0]?.period;const obs=all.filter(o=>o.period===per);const res=await generateJSON(P.TRADE.task+`\n\nFLOW: ${a.flow==="exports"?"Angola exports (partners report importing from Angola, CIF)":"Angola imports (partners report exporting to Angola, FOB)"}\nCOMMODITY: ${a.commodity}\nPERIOD: ${per}`,P.TRADE.shape,obs.map(o=>`${o.partner}: ${o.value} US$, ${o.qty??"?"} kg`).join("\n"));row=await saveAnalysis("trade",`${a.flow==="exports"?"Exports":"Imports"}: ${a.commodity} ${per}`,{commodity:a.commodity,flow:a.flow,period:per},res);}
     await writeAudit({action:`iq.analyze.${a.kind}`,outcome:"succeeded",details:{id:row.id}});
     return ok({analysis:row});
    }
-   case "trade":{const p=z.object({commodity:z.string().trim().max(40),refresh:z.boolean().optional()}).parse(raw);return ok({rows:await tradeFor(p.commodity,!!p.refresh)});}
+   case "trade":{await seedSources();const p=z.object({commodity:z.string().trim().max(40),refresh:z.boolean().optional(),flow:z.enum(["imports","exports"]).default("imports")}).parse(raw);return ok({rows:await tradeFor(p.commodity,!!p.refresh,p.flow)});}
    case "projects":{const p=bodies.projects.safeParse(raw);if(!p.success)return jsonError(400,"Check the project fields.");const d=p.data;
     const cols=["name","description","sector","geography","status","investment","target_date","expected_outcome","notes","milestones","analysis_ids","item_ids","archived"] as const;
     const vals=cols.map(c=>c==="milestones"?(d.milestones?JSON.stringify(d.milestones):undefined):d[c]);
@@ -149,7 +153,18 @@ export async function POST(req:Request,{params}:Ctx){
     const {rows}=await db.query("INSERT INTO iq_watch (keyword,category,frequency,priority) VALUES ($1,$2,$3,$4) RETURNING *",[d.keyword,d.category,d.frequency,d.priority]);return ok({watch:rows[0]});}
    case "locations":{const p=bodies.locations.safeParse(raw);if(!p.success)return jsonError(400,"Check name, category and coordinates (must be inside Angola).");const d=p.data;
     const {rows}=await db.query("INSERT INTO iq_locations (name,category,province,lat,lng,source,source_url,verified,notes) VALUES ($1,$2,$3,$4,$5,'manual',$6,false,$7) RETURNING *",[d.name,d.category,d.province??null,d.lat,d.lng,d.source_url??null,d.notes??null]);return ok({location:rows[0]});}
-   case "osm":{const p=bodies.osm.parse(raw);return ok({added:await osmImport(p.category)});}
+   case "osm":{await seedSources();const p=bodies.osm.parse(raw);return ok({added:await osmImport(p.category)});}
+   case "vessels":{
+    const list=Array.isArray(raw)?raw:[raw];if(list.length>200)return jsonError(400,"Max 200 rows per import");
+    const out=[];
+    for(const r of list){const p=bodies.vessel.safeParse(r);if(!p.success)return jsonError(400,`Check vessel row ${out.length+1}: name, port and dates are required in a valid format.`);const d=p.data;
+     const cols=["vessel","port","terminal","cargo","commodity","tonnage","origin","consignee","eta","ata","etd","atd","status","source","source_url","notes"] as const;
+     const vals=cols.map(c=>{const v=d[c];return typeof v==="string"&&v===""?null:v;});
+     if(d.id){const sets:string[]=[];const args:unknown[]=[d.id];cols.forEach((c,i)=>{if(vals[i]!==undefined){args.push(vals[i]);sets.push(`${c}=$${args.length}`);}});
+      const {rows}=await db.query(`UPDATE iq_vessels SET ${sets.join(",")},updated_at=now() WHERE id=$1 RETURNING *`,args);out.push(rows[0]);}
+     else{const {rows}=await db.query(`INSERT INTO iq_vessels (${cols.join(",")}) VALUES (${cols.map((_,i)=>`$${i+1}`).join(",")}) RETURNING *`,vals.map((v,i)=>v===undefined?(cols[i]==="status"?"expected":cols[i]==="source"?"manual":null):v));out.push(rows[0]);}
+    }
+    await writeAudit({action:"iq.vessels.save",outcome:"succeeded",details:{n:out.length}});return ok({vessels:out});}
    default:return jsonError(404,"Unknown resource");
   }
  }catch(e){return fail(e);}
@@ -170,7 +185,7 @@ export async function PATCH(req:Request,{params}:Ctx){
 export async function DELETE(req:Request,{params}:Ctx){
  const g=await guard(req,true);if(g)return g;
  const {resource}=await params;const id=new URL(req.url).searchParams.get("id")??"";
- const t={saved:"iq_saved",watch:"iq_watch",locations:"iq_locations",analyses:"iq_analyses"}[resource];
+ const t={saved:"iq_saved",watch:"iq_watch",locations:"iq_locations",analyses:"iq_analyses",vessels:"iq_vessels"}[resource];
  if(!t||!uuid.safeParse(id).success)return jsonError(400,"Invalid request");
  try{const db=await iqDb();await db.query(`DELETE FROM ${t} WHERE id=$1`,[id]);await writeAudit({action:`iq.delete.${resource}`,outcome:"succeeded",details:{id}});return ok({ok:true});}catch(e){return fail(e);}
 }

@@ -34,6 +34,6 @@ export const COMPLIANCE={
  shape:`{"authorities":[{"name":string,"role":string}],"items":[{"area":"licensing|documentation|customs|tax|standards|inspection|legal|labour","requirement":string,"type":"legal_requirement|guidance","verify":string}],"deadlines":[string],"official_sources_to_check":[string],${TRUST}}`
 };
 export const TRADE={
- task:"Interpret the trade observations below (UN Comtrade, mirror data: what partner countries report exporting to Angola). Explain supply concentration and risk. Use only the numbers given.",
+ task:"Interpret the trade observations below (UN Comtrade mirror data for Angola; the FLOW line says imports or exports). Explain concentration (suppliers for imports, buyers for exports) and risk. Use only the numbers given.",
  shape:`{"summary":string,"top_origins":[string],"concentration":"low|medium|high","risks":[string],"opportunities":[string],${TRUST}}`
 };
