@@ -8,6 +8,7 @@ export async function iqDb(){
  await db.query(`
 CREATE TABLE IF NOT EXISTS iq_sources (id text PRIMARY KEY, name text NOT NULL, kind text NOT NULL, url text, trust text NOT NULL DEFAULT 'trusted', status text NOT NULL DEFAULT 'not_run', last_ok timestamptz, last_error text, last_run timestamptz, config_needed text);
 CREATE TABLE IF NOT EXISTS iq_items (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), source_id text REFERENCES iq_sources(id), title text NOT NULL, summary text, url text UNIQUE, publisher text, published_at timestamptz, retrieved_at timestamptz NOT NULL DEFAULT now(), category text NOT NULL DEFAULT 'economy', geography text NOT NULL DEFAULT 'Angola', impact text, reliability text NOT NULL DEFAULT 'unverified', confidence text, facts jsonb NOT NULL DEFAULT '[]', reviewed boolean NOT NULL DEFAULT false, notes text, title_key text);
+ALTER TABLE iq_items ADD COLUMN IF NOT EXISTS raw jsonb NOT NULL DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS iq_items_pub ON iq_items(published_at DESC);
 CREATE INDEX IF NOT EXISTS iq_items_titlekey ON iq_items(title_key);
 CREATE TABLE IF NOT EXISTS iq_obs (id bigserial PRIMARY KEY, indicator text NOT NULL, value numeric NOT NULL, unit text NOT NULL, period text NOT NULL, geography text NOT NULL DEFAULT 'Angola', source_id text REFERENCES iq_sources(id), source_url text, retrieved_at timestamptz NOT NULL DEFAULT now(), meta jsonb NOT NULL DEFAULT '{}', UNIQUE(indicator,period,geography,source_id));
