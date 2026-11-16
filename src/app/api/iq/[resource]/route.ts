@@ -28,8 +28,8 @@ export async function GET(req:Request,{params}:Ctx){
     await seedSources();
     const [obs,cnt,top,brief,hits,proj,src,jobs]=await Promise.all([
      db.query(`SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id,source_url,retrieved_at,(SELECT o2.value FROM iq_obs o2 WHERE o2.indicator=o.indicator AND o2.source_id=o.source_id AND o2.period<o.period AND coalesce(o2.meta->>'projection','false')<>'true' ORDER BY o2.period DESC LIMIT 1) AS prev,o.meta FROM iq_obs o WHERE o.source_id<>'comtrade' ORDER BY indicator,(o.meta->>'projection')='true',period DESC`),
-     db.query("SELECT count(*)::int AS total,count(*) FILTER (WHERE retrieved_at>now()-interval '24 hours')::int AS last24,count(*) FILTER (WHERE NOT reviewed)::int AS unreviewed FROM iq_items"),
-     db.query("SELECT id,title,url,publisher,published_at,category,impact,reliability FROM iq_items ORDER BY published_at DESC NULLS LAST LIMIT 8"),
+     db.query("SELECT count(*)::int AS total,count(*) FILTER (WHERE retrieved_at>now()-interval '24 hours')::int AS last24,count(*) FILTER (WHERE NOT reviewed)::int AS unreviewed FROM iq_items WHERE title ~* '(angol|luanda|lobito|benguela|kwanza|cabinda|huambo|namibe|lubango|malanje|sonangol|soyo)'"),
+     db.query("SELECT id,title,url,publisher,published_at,category,impact,reliability FROM iq_items WHERE title ~* '(angol|luanda|lobito|benguela|kwanza|cabinda|huambo|namibe|lubango|malanje|sonangol|soyo)' ORDER BY published_at DESC NULLS LAST LIMIT 8"),
      db.query("SELECT id,output,provider,model,created_at FROM iq_analyses WHERE kind='briefing' ORDER BY created_at DESC LIMIT 1"),
      db.query("SELECT w.keyword,count(*)::int AS n,max(h.created_at) AS last FROM iq_watch_hits h JOIN iq_watch w ON w.id=h.watch_id WHERE h.created_at>now()-interval '7 days' GROUP BY w.keyword ORDER BY last DESC LIMIT 6"),
      db.query("SELECT status,count(*)::int AS n FROM iq_projects WHERE NOT archived GROUP BY status"),
@@ -40,7 +40,7 @@ export async function GET(req:Request,{params}:Ctx){
    }
    case "items":{
     const q=u.get("q")?.trim().slice(0,80)??"",cat=u.get("cat")??"",rel=u.get("rel")??"",days=Math.min(Number(u.get("days")??30)||30,365),page=Math.max(0,Number(u.get("page")??0)||0),pub=u.get("pub")??"";
-    const {rows}=await db.query(`SELECT i.*,EXISTS(SELECT 1 FROM iq_saved s WHERE s.kind='news' AND s.ref_id=i.id::text AND NOT s.archived) AS saved FROM iq_items i WHERE ($1='' OR i.title ILIKE '%'||$1||'%' OR coalesce(i.summary,'') ILIKE '%'||$1||'%') AND ($2='' OR i.category=$2) AND ($3='' OR i.reliability=$3) AND coalesce(i.published_at,i.retrieved_at)>now()-($4||' days')::interval AND ($6='' OR i.publisher=$6) ORDER BY coalesce(i.published_at,i.retrieved_at) DESC LIMIT 30 OFFSET $5`,[q,cat,rel,String(days),page*30,pub]);
+    const {rows}=await db.query(`SELECT i.*,EXISTS(SELECT 1 FROM iq_saved s WHERE s.kind='news' AND s.ref_id=i.id::text AND NOT s.archived) AS saved FROM iq_items i WHERE i.title ~* '(angol|luanda|lobito|benguela|kwanza|cabinda|huambo|namibe|lubango|malanje|sonangol|soyo)' AND ($1='' OR i.title ILIKE '%'||$1||'%' OR coalesce(i.summary,'') ILIKE '%'||$1||'%') AND ($2='' OR i.category=$2) AND ($3='' OR i.reliability=$3) AND coalesce(i.published_at,i.retrieved_at)>now()-($4||' days')::interval AND ($6='' OR i.publisher=$6) ORDER BY coalesce(i.published_at,i.retrieved_at) DESC LIMIT 30 OFFSET $5`,[q,cat,rel,String(days),page*30,pub]);
     const pubs=await db.query("SELECT publisher,count(*)::int AS n FROM iq_items WHERE publisher IS NOT NULL GROUP BY publisher ORDER BY n DESC LIMIT 25");
     return ok({items:rows,publishers:pubs.rows,page});
    }
@@ -68,8 +68,8 @@ async function evidence(filter:string){
  const db=await iqDb();
  const words=filter.toLowerCase().split(/[^a-zà-ú0-9]+/).filter(w=>w.length>3).slice(0,8);
  const {rows:items}=await db.query(`SELECT title,publisher,published_at,url,summary FROM iq_items WHERE ${words.length?words.map((_,i)=>`title ILIKE '%'||$${i+1}||'%'`).join(" OR "):"true"} ORDER BY published_at DESC NULLS LAST LIMIT 25`,words);
- const {rows:obs}=await db.query("SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id FROM iq_obs ORDER BY indicator,period DESC");
- return [...items.map((r,i)=>`[${i+1}] ${r.title} — ${r.publisher??"?"}, ${r.published_at?new Date(r.published_at).toISOString().slice(0,10):"?"} ${r.url}${r.summary?`\n    ${r.summary}`:""}`),"INDICATORS:",...obs.map(o=>`${o.indicator}: ${Number(o.value)} ${o.unit} (${o.period}, ${o.source_id})`)].join("\n");
+ const {rows:obs}=await db.query("SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id FROM iq_obs WHERE source_id<>'comtrade' AND coalesce(meta->>'projection','false')<>'true' ORDER BY indicator,period DESC");
+ return [...items.map((r,i)=>`[${i+1}] ${r.title} — ${r.publisher??"?"}, ${r.published_at?new Date(r.published_at).toISOString().slice(0,10):"?"} ${r.url}${r.summary?`\n    ${r.summary}`:""}`),"INDICATORS:",...obs.map(o=>`${o.indicator}: ${Number(o.value)} ${o.unit} (actual, ${o.period}, ${o.source_id})`)].join("\n");
 }
 async function articleText(url:string){
  try{const r=await fetch(url,{signal:AbortSignal.timeout(12000),headers:{"user-agent":"Mozilla/5.0 AngolaIQ"}});if(!r.ok)return "";
@@ -118,10 +118,10 @@ export async function POST(req:Request,{params}:Ctx){
      const res=await generateJSON(P.DEVIL.task+"\n\nIDEA:\n"+ctx,P.DEVIL.shape,await evidence(`${i.idea} ${i.sector??""}`));row=await saveAnalysis("devil",i.idea.slice(0,120),{...i,fromId:a.fromId},res);}
     else if(a.kind==="devil_review"){const {rows}=await db.query("SELECT * FROM iq_analyses WHERE id=$1",[a.parentId]);if(!rows[0])return jsonError(404,"Analysis not found");
      const res=await generateJSON(P.DEVIL_REVIEW.task+"\n\nIDEA INPUT:\n"+JSON.stringify(rows[0].input)+"\n\nFIRST ANALYSIS:\n"+JSON.stringify(rows[0].output),P.DEVIL_REVIEW.shape,"");row=await saveAnalysis("devil_review","Second review: "+rows[0].title,{parentId:a.parentId},res,a.parentId);}
-    else if(a.kind==="briefing"){const {rows:items}=await db.query("SELECT title,publisher,published_at,url,summary FROM iq_items WHERE coalesce(published_at,retrieved_at)>now()-interval '48 hours' ORDER BY reliability='trusted' DESC,published_at DESC LIMIT 40");
+    else if(a.kind==="briefing"){const {rows:items}=await db.query("SELECT title,publisher,published_at,url,summary FROM iq_items WHERE title ~* '(angol|luanda|lobito|benguela|kwanza|cabinda|huambo|namibe|lubango|malanje|sonangol|soyo)' AND coalesce(published_at,retrieved_at)>now()-interval '48 hours' ORDER BY reliability='trusted' DESC,published_at DESC LIMIT 40");
      if(!items.length)return jsonError(409,"No news in the last 48 hours yet. Tap Refresh first.");
-     const {rows:obs}=await db.query("SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id FROM iq_obs ORDER BY indicator,period DESC");
-     const ev=[...items.map((r,i)=>`[${i+1}] ${r.title} — ${r.publisher}, ${r.published_at?new Date(r.published_at).toISOString().slice(0,10):"?"}`),"INDICATORS:",...obs.map(o=>`${o.indicator}: ${Number(o.value)} ${o.unit} (${o.period}, ${o.source_id})`)].join("\n");
+     const {rows:obs}=await db.query("SELECT DISTINCT ON (indicator) indicator,value,unit,period,source_id FROM iq_obs WHERE source_id<>'comtrade' AND coalesce(meta->>'projection','false')<>'true' ORDER BY indicator,period DESC");
+     const ev=[...items.map((r,i)=>`[${i+1}] ${r.title} — ${r.publisher}, ${r.published_at?new Date(r.published_at).toISOString().slice(0,10):"?"}`),"INDICATORS:",...obs.map(o=>`${o.indicator}: ${Number(o.value)} ${o.unit} (actual, ${o.period}, ${o.source_id})`)].join("\n");
      const res=await generateJSON(P.BRIEFING.task,P.BRIEFING.shape,ev);row=await saveAnalysis("briefing","Executive briefing "+new Date().toISOString().slice(0,10),{refs:items.map(r=>({title:r.title,url:r.url,publisher:r.publisher}))},res);}
     else if(a.kind==="news"){const {rows}=await db.query("SELECT * FROM iq_items WHERE id=$1",[a.itemId]);const it=rows[0];if(!it)return jsonError(404,"Article not found");
      const text=await articleText(it.url);const res=await generateJSON<{summary?:string;impact?:string;category?:string;facts?:string[];confidence?:string}>(P.NEWS_ANALYSIS.task+(text?"":" NOTE: the article text could not be fetched; work from the headline only and set confidence low."),P.NEWS_ANALYSIS.shape,`HEADLINE: ${it.title}\nPUBLISHER: ${it.publisher}\nURL: ${it.url}\nTEXT: ${text}`);

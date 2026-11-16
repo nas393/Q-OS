@@ -13,7 +13,7 @@ export const DEVIL_REVIEW={
  shape:`{"agree":true|false,"verdict":"REJECT|RECONSIDER|VALIDATE FURTHER|PROCEED WITH CONDITIONS|STRONG OPPORTUNITY","risk_score":1-10,"summary":string,"too_soft":[string],"too_harsh":[string],"unsupported":[string],"missed":[string],${TRUST}}`
 };
 export const BRIEFING={
- task:"Write today's executive intelligence briefing on Angola's commercial environment for an FMCG commercial director, using ONLY the evidence (recent headlines with sources, and stored indicators). Cite the headline index [n] for each development.",
+ task:"Write today's executive intelligence briefing on Angola's commercial environment for an FMCG commercial director, using ONLY the evidence (recent headlines with sources, and stored indicators). Indicators are actual values with their year; never present a forecast as current. Every risk and opportunity must cite at least one headline [n] or indicator. Cite the headline index [n] for each development.",
  shape:`{"headline":string,"developments":[{"text":string,"ref":[number],"category":string}],"opportunities":[{"name":string,"sector":string,"geography":string,"evidence_ref":[number],"risk":"low|medium|high","next_action":string}],
 "risks":[{"type":"currency|supply_chain|freight_port|commodity|regulatory|concentration|macro_political","level":"low|medium|high","why":string,"evidence_ref":[number]}],"actions":[string],${TRUST}}`
 };

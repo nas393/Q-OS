@@ -20,7 +20,7 @@ export const SOURCES:Src[]=[
  {id:"manual",name:"Entered by owner",kind:"manual",url:"",trust:"trusted"}
 ];
 
-const TRUSTED_DOMAINS=["reuters.com","bloomberg.com","ft.com","angop.ao","jornaldeangola.ao","expansao.co.ao","novojornal.co.ao","macauhub.com.mo","theafricareport.com","worldbank.org","imf.org","bna.ao","minfin.gov.ao","africanews.com","apnews.com","bbc.com","bbc.co.uk","lusa.pt","rtp.pt","dw.com","economist.com","verangola.net"];
+const TRUSTED_DOMAINS=["zawya.com","observador.pt","expresso.pt","publico.pt","jornaldenegocios.pt","eco.sapo.pt","dn.pt","sapo.pt","mercado.co.ao","forbesafricalusofona.com","allafrica.com","businessday.ng","reuters.com","bloomberg.com","ft.com","angop.ao","jornaldeangola.ao","expansao.co.ao","novojornal.co.ao","macauhub.com.mo","theafricareport.com","worldbank.org","imf.org","bna.ao","minfin.gov.ao","africanews.com","apnews.com","bbc.com","bbc.co.uk","lusa.pt","rtp.pt","dw.com","economist.com","verangola.net"];
 const CATS:Array<[string,RegExp]>=[
  ["oil_gas",/\b(oil|crude|petrol|petróleo|sonangol|lng|gas|barrel|opec|refin)/i],["mining",/\b(diamond|diamante|mining|mineração|endiama|catoca|copper|gold mine)/i],
  ["agriculture",/\b(agricult|farm|crop|harvest|maize|milho|coffee|café|cattle|fertili)/i],["food",/\b(food|aliment|flour|farinha|wheat|trigo|rice|arroz|sugar|açúcar|dairy|leite|beverage|bebida)/i],
@@ -30,6 +30,7 @@ const CATS:Array<[string,RegExp]>=[
  ["technology",/\b(tech|digital|telecom|internet|unitel|africell|fintech|startup)/i],["retail",/\b(retail|supermarket|supermercado|shoprite|kero|consumer|consumo)/i],
  ["manufacturing",/\b(factory|fábrica|industr|manufactur)/i],["regulation",/\b(law|lei|decree|decreto|regulat|regulamento|tax|imposto|agt|licen)/i],["politics",/\b(president|presidente|lourenço|mpla|unita|election|eleiç|minister|ministro|government|governo|parliament)/i]
 ];
+export const ABOUT_ANGOLA=/(angol|luanda|lobito|benguela|kwanza|cabinda|huambo|namibe|lubango|malanje|sonangol|soyo)/i;
 export const categorize=(t:string)=>CATS.find(([,re])=>re.test(t))?.[0]??"economy";
 const titleKey=(t:string)=>t.toLowerCase().normalize("NFD").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim().slice(0,70);
 const reliability=(domain:string)=>TRUSTED_DOMAINS.some(d=>domain===d||domain.endsWith("."+d))?"trusted":"unverified";
@@ -101,6 +102,7 @@ async function fred(){
  return n;
 }
 async function saveNews(db:Awaited<ReturnType<typeof iqDb>>,src:string,a:{title:string;url:string;publisher:string;domain:string;pub:string|null}){
+ if(!ABOUT_ANGOLA.test(a.title))return 0; // keep only headlines that are about Angola
  const key=titleKey(a.title);
  const dup=await db.query("SELECT 1 FROM iq_items WHERE title_key=$1 AND retrieved_at>now()-interval '4 days' LIMIT 1",[key]);if(dup.rows.length)return 0;
  const r=await db.query("INSERT INTO iq_items (source_id,title,url,publisher,published_at,category,reliability,title_key,raw) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (url) DO NOTHING",[src,a.title.slice(0,300),a.url,a.publisher,a.pub,categorize(a.title),reliability(a.domain),key,JSON.stringify({domain:a.domain})]);
