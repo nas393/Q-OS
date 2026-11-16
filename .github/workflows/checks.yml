@@ -1,0 +1,20 @@
+name: NASSIM OS checks
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run checks
+        env:
+          Q_URL: ${{ secrets.Q_URL }}
+          TOKEN: ${{ secrets.Q_CHECK_TOKEN }}
+        run: |
+          if [ -z "$Q_URL" ] || [ -z "$TOKEN" ]; then echo "Secrets not set; skipping."; exit 0; fi
+          code=$(curl -sS -o out.json -w "%{http_code}" -X POST "$Q_URL/api/cron/check" -H "Authorization: Bearer $TOKEN" --max-time 90)
+          cat out.json; [ "$code" = "200" ] || exit 1
