@@ -61,6 +61,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const gold=metrics.xauusd;
  const activity=useMemo(()=>[...projects.filter(p=>p.lastCommit).map(p=>({t:new Date(p.lastCommit!.date).getTime(),title:`${clean(p.name)} — ${p.lastCommit!.message}`,src:"GitHub",href:p.lastCommit!.url})),...(gold?[{t:new Date(gold.updatedAt).getTime(),title:`Trading HQ — gold updated ${gold.value.price.toFixed(2)}`,src:"Counter-Trader",href:""}]:[])].sort((a,b)=>b.t-a.t).slice(0,6),[projects,gold]);
  const open=(tasks??[]).filter(t=>!t.done);
+ const overdue=open.filter(t=>t.due&&t.due<today()).length,redCount=alerts.filter(a=>a.level==="red").length;
  const agenda=[...open.filter(t=>t.due&&t.due<=today()).map(t=>({id:t.id,time:t.due===today()?(t.dueTime??"Today"):"Overdue",title:t.title,hot:t.due!==today()})),...alerts.filter(a=>a.level==="red").map(a=>({id:a.title,time:"Now",title:a.title,hot:true}))].slice(0,6);
  const filtered=search?projects.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())):projects;
  const time=clock?clock.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"}):"";
@@ -117,8 +118,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" s={30}/><span><b>{data?projects.length:"—"}</b><small>Projects</small></span></div>
     <div><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" s={30}/><span><b>{data?`${ready} / ${projects.length}`:"—"}</b><small>Deployments{failed?` · ${failed} failed`:""}</small></span></div>
     <div><Ico d="M13 2L4 14h7l-1 8 9-12h-7z" s={30}/><span><b>{data?p1:"—"}</b><small>P1 Active</small></span></div>
-    <div className="nc"><Ico d="M4 20V10M10 20V4M16 20v-7M22 20H2" s={30}/><span><b>—</b><small>Growth · not connected</small></span></div>
-    <div className="nc"><Ico d="M3 12h4l3-8 4 16 3-8h4" s={30}/><span><b>—</b><small>Sales · not connected</small></span></div>
+    <a href="#agenda"><Ico d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" s={30}/><span><b>{tasks?open.length:"—"}</b><small>Open tasks{overdue?` · ${overdue} overdue`:""}</small></span></a>
+    <a href="#alerts"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0" s={30}/><span><b>{data?alerts.length:"—"}</b><small>Alerts{redCount?` · ${redCount} urgent`:""}</small></span></a>
     <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#E5132B" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
    </section>
 
