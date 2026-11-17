@@ -1,0 +1,16 @@
+[
+  {"type":"stdout","text":"Running \"npm run lint && npm run typecheck && npm run build\""},
+  {"type":"stdout","text":"> eslint ."},
+  {"type":"stdout","text":""},
+  {"type":"stdout","text":"/vercel/path0/eslint.config.mjs"},
+  {"type":"stdout","text":"  10:1  warning  Assign array to a variable before exporting as module default  import/no-anonymous-default-export","level":"warning"},
+  {"type":"stdout","text":""},
+  {"type":"stdout","text":"/vercel/path0/src/app/chat/workspace.tsx"},
+  {"type":"stdout","text":"  46:4   warning  Using `<img>` could result in slower LCP and higher bandwidth.  @next/next/no-img-element","level":"warning"},
+  {"type":"stdout","text":""},
+  {"type":"stdout","text":"/vercel/path0/src/app/iq/trade/page.tsx"},
+  {"type":"stdout","text":"  48:42  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities","level":"error"},
+  {"type":"stdout","text":""},
+  {"type":"stdout","text":"✖ 12 problems (1 error, 11 warnings)"},
+  {"type":"stderr","text":"Error: [BUILD_UTILS_SPAWN_1] Command \"npm run lint && npm run typecheck && npm run build\" exited with 1","level":"error"}
+]

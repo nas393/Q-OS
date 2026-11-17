@@ -34,3 +34,10 @@ Connect this repository to the existing Vercel project q-jarvis. Configure requi
 - Verify DATABASE_URL, Neon compute availability, and network access before restarting deployments.
 - Rotate AUTH_SECRET to invalidate all existing sessions.
 - Do not run destructive database operations as a recovery shortcut.
+## Build alerts (/api/cron/check)
+- Rule: "latest build failed only". For each project + branch only the newest deployment counts. A preview whose newest build is ERROR is logged at once and pushed in the 07:00 UTC morning brief; a later READY on that branch removes it from the digest. A production ERROR is always pushed right away.
+- Urgent pushes: production build ERROR, site down/back up, a failing check section (once per section per day), gold levels set by the owner.
+- Dedupe key: the deployment id (`q_alert_state` key `build:<id>`).
+- Alert text: project, branch, short SHA, first line of the commit message, the first build-log line at level error (file:line:col + rule, from `/v3/deployments/<id>/events?builds=1`), and a link to the Vercel inspector.
+- History: Vercel Hobby keeps runtime logs for 1 h, so every run is stored in `q_check_runs` (30 days) and every alert in `q_alerts`.
+- Tests: `npm test` (Node's built-in test runner, no extra packages). Fixtures are in `tests/`.
