@@ -111,14 +111,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  return <main className="os" id="top">
   <aside className="os-side">
-   <div className="os-brand"><img src="/os/n-mark.svg" alt="" width={84} height={76}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>
+   <div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={84} height={76}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
    <div className="os-side-art" aria-hidden="true"/>
   </aside>
 
   <div className="os-center">
    <header className="os-top">
-    <div className="os-mbrand"><img src="/os/n-mark.svg" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
+    <div className="os-mbrand"><img src="/os/q-emblem.webp" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
      <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
@@ -246,6 +246,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <h3>NASSIM OS</h3>
    <div className="os-sheet-l"><a href="/brief">☀ Morning brief</a><a href="/alerts">🔔 Alerts</a><a href="/iq">🌍 AngolaIQ</a><a href="/chat">💬 Q chat</a></div>
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
-  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.svg" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
+  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
  </main>;
 }
