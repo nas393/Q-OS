@@ -31,6 +31,7 @@ export async function POST(request:Request){
   if(Number(throttle.rows[0]?.attempt_count??99)>6){await writeAudit({action:"auth.login",outcome:"blocked",details:{reason:"rate_limit"}});return fail(429,"Too many attempts. Try again in 15 minutes.");}
   const owner=await db.query("SELECT id,email,role FROM users WHERE role='owner' LIMIT 1");
   const account=owner.rows[0];
+  if(!account){console.error("auth_owner_not_provisioned");return fail(503,"Owner account is not provisioned. Contact the system administrator.");}
   const supplied=Buffer.from(parsed.data.passkey,"utf8");
   const expected=Buffer.from(env.OWNER_PASSKEY,"utf8");
   const passkeyMatches=supplied.length===expected.length&&timingSafeEqual(supplied,expected);
