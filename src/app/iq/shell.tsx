@@ -5,7 +5,7 @@ import {useEffect,useState,type ReactNode} from "react";
 import {Toast} from "./ui";
 
 const NAV=[
- ["Intelligence",[["/iq","Dashboard","◈"],["/iq/news","Live News","◉"]]],
+ ["Intelligence",[["/iq","Dashboard","◈"],["/iq/q-news","Q News","◎"],["/iq/news","AngolaIQ News","◉"]]],
  ["Strategy",[["/iq/suggest","Sectors & Ideas","✦"],["/iq/devil","Devil's Advocate","⚔"]]],
  ["Tools",[["/iq/map","Business Map","⌖"],["/iq/trade","Trade Analytics","⇄"],["/iq/ports","Port Arrivals","⚓"],["/iq/watch","Market Watchlist","👁"]]],
  ["Workspace",[["/iq/saved","Saved Items","★"],["/iq/sources","Data Sources","⚙"]]]
