@@ -26,7 +26,7 @@ npm run dev
 Populate .env.local with valid values before starting the application. Never commit .env.local.
 
 ## Deployment
-Connect this repository to the existing Vercel project q-jarvis. Configure required variables for Preview and Production. Keep Vercel Deployment Protection enabled. Deploy a preview first; do not promote to Production until acceptance is signed off.
+Connect this repository to the existing Vercel project q-os. Configure required variables for Preview and Production. Keep Vercel Deployment Protection enabled. Deploy a preview first; do not promote to Production until acceptance is signed off.
 
 ## Health and recovery
 - GET /api/health checks application and PostgreSQL connectivity.
