@@ -111,14 +111,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  return <main className="os" id="top">
   <aside className="os-side">
-   <div className="os-brand"><img src="/os/n-mark.svg" alt="" width={84} height={76}/><b>NASSIM <i>OS</i></b><small>Personal Ecosystem</small></div>
+   <div className="os-brand"><img src="/os/n-mark.svg" alt="" width={84} height={76}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
    <div className="os-side-art" aria-hidden="true"/>
   </aside>
 
   <div className="os-center">
    <header className="os-top">
-    <div className="os-mbrand"><img src="/os/n-mark.svg" alt="" width={34} height={31}/><b>NASSIM <i>OS</i></b></div>
+    <div className="os-mbrand"><img src="/os/n-mark.svg" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
      <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
@@ -138,16 +138,13 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <a href="#q" className="os-today-q"><b>Ask Q</b><small>{qState}</small></a>
    </section>
 
-   <section className="os-hero">
-    <div className="os-hero-l" aria-hidden="true"/><div className="os-hero-r" aria-hidden="true"/>
-    <div className="os-hero-c">
-     <img src="/os/n-mark.svg" alt="" width={74} height={67} className="os-hero-n"/>
-     <h1>NASSIM</h1>
-     <p className="os-sub"><i/>The Restless Architect<i/></p>
-     <p className="os-eco-l">My Ecosystem</p>
-     <p className="os-head"><span>Think beyond.</span><b>Build with purpose.</b></p>
-     <p className="os-caps">Builder | Strategist | Creator | Explorer</p>
+   <section className="os-welcome">
+    <div className="os-welcome-copy">
+     <p className="os-kicker">Q OS <span> / </span> PRIVATE COMMAND CENTRE</p>
+     <h1>{clock&&clock.getHours()<12?"Good morning":clock&&clock.getHours()<18?"Good afternoon":"Good evening"}.</h1>
+     <p>Your portfolio, priorities and intelligence — in one place.</p>
     </div>
+    <div className="os-welcome-meta"><span className="os-live-dot"/><span>PERSONAL SYSTEM</span><i/>{date}</div>
    </section>
 
    {(error||metricsError)&&<p className="os-err">{error||metricsError}</p>}
@@ -162,7 +159,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    </section>
 
    <section className="os-eco" id="ecosystem">
-    <div className="os-eco-h"><h2>My Projects Ecosystem</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
+    <div className="os-eco-h"><h2>Portfolio</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
     <div className="os-grid">
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
       const href=p.url??apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
@@ -187,7 +184,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    <section className="os-panels">
     <article className="os-panel os-focus">
-     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Strategic Focus <span>(Next 15 Days)</span></h3>
+     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>Next 15 days</span></h3>
      {taskErr&&<p className="os-err">{taskErr}</p>}
      {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
      <ul>{open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10)).slice(0,6).map(t=>editing?.id===t.id?
@@ -200,20 +197,20 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
     </article>
     <article className="os-panel os-metrics">
-     <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Key Metrics</h3>
+     <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Portfolio Health</h3>
      {[["Execution (active 7d)",exec],["Projects health",projects.length?Math.round(ready/projects.length*100):null],["Data verified",projects.length?Math.round(verified/projects.length*100):null]].map(([l,v])=><div className="os-bar" key={l as string}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":`${v}%`}</em></div>)}
      <div className="os-bar"><span>Market tracking</span><i><b style={{width:gold?"100%":"0%"}} className={gold&&Date.now()-new Date(gold.updatedAt).getTime()>3600e3?"stale":""}/></i><em>{gold?ago(gold.updatedAt):"off"}</em></div>
      <div className="os-bar"><span>Tasks done (7d)</span><i><b style={{width:doneWeek===null?"0%":`${Math.round(doneWeek/Math.max(1,doneWeek+open.length)*100)}%`}}/></i><em>{doneWeek===null?"—":`${doneWeek} done`}</em></div>
     </article>
     <article className="os-panel os-activity">
-     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>Recent Activity</h3>
+     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>System Activity</h3>
      {activity.length?<ul>{activity.map(a=><li key={a.title+a.t}><Ico d="M5 12l5 5 9-10" s={16}/>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:<span>{a.title}</span>}<time title={a.src}>{ago(a.t)}</time></li>)}</ul>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
      <p className="os-foot">Q: {activityCount} events · {conversationCount} chats (24h)</p>
     </article>
    </section>
 
    <section className="os-panel os-markets" id="markets">
-    <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Markets · XAU/USD</h3>
+    <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Market Pulse · XAU/USD</h3>
     {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
      <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#E5132B" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
@@ -229,7 +226,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
    </section>
    <section className="os-panel os-agenda" id="agenda">
-    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today&apos;s Agenda</h3>
+    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
     {agenda.length?<ul>{agenda.map(a=><li key={a.id}><i className={a.hot?"hot":""}/><span>{a.title}</span><time>{a.time}</time></li>)}</ul>:<p className="os-muted">{tasks?"Nothing due today. Add focus items with a date.":"Loading…"}</p>}
    </section>
    <AlertsPanel goldPrice={gold?.value.price}/>
@@ -249,6 +246,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <h3>NASSIM OS</h3>
    <div className="os-sheet-l"><a href="/brief">☀ Morning brief</a><a href="/alerts">🔔 Alerts</a><a href="/iq">🌍 AngolaIQ</a><a href="/chat">💬 Q chat</a></div>
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
-  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.svg" alt="" width={60} height={54}/><b>NASSIM <i>OS</i></b><small>The Restless Architect</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
+  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.svg" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
  </main>;
 }
