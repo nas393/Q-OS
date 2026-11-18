@@ -43,7 +43,7 @@ export default function ChatWorkspace({gold}:{gold:Gold}){
  return <main className="qc">
   <header className="qc-top">
    <Link href="/dashboard" className="qc-back" aria-label="Back to Command Center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg></Link>
-   <img src="/os/q-emblem.png" alt="" width={40} height={40} className="qc-emblem"/>
+   <img src="/os/q-emblem.webp" alt="" width={40} height={40} className="qc-emblem"/>
    <div className="qc-title"><b>Q</b><small><i className={status}/>{status==="online"?"Online":status==="offline"?"Offline":"Checking"} · Your Strategic Assistant</small></div>
    <button className="qc-btn" onClick={()=>setHist(h=>!h)} aria-label="History"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg></button>
    <button className="qc-btn" onClick={newChat} aria-label="New chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>

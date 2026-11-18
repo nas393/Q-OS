@@ -3,7 +3,7 @@ import {z} from "zod";
 import {readSession} from "@/lib/session";
 import {jsonError,requestOriginAllowed} from "@/lib/http";
 import {writeAudit} from "@/lib/audit";
-import {addGoldRule,lastCheck,listGoldRules,notify,publicKey,recentAlerts,removeGoldRule,removeSubscription,runChecks,saveSubscription,subscriptionCount} from "@/lib/alerts";
+import {acknowledgeAlert,addGoldRule,lastCheck,listGoldRules,notify,publicKey,recentAlerts,removeGoldRule,removeSubscription,runChecks,saveSubscription,subscriptionCount} from "@/lib/alerts";
 
 export const runtime="nodejs",dynamic="force-dynamic",maxDuration=60;
 const ok=(b:unknown)=>NextResponse.json(b,{headers:{"Cache-Control":"no-store"}});
@@ -24,6 +24,7 @@ const action=z.discriminatedUnion("action",[
   z.object({action:z.literal("addRule"),direction:z.enum(["above","below"]),price:z.number().positive().max(100000)}),
   z.object({action:z.literal("removeRule"),id:z.string().uuid()}),
   z.object({action:z.literal("check")}),
+  z.object({action:z.literal("ack"),id:z.union([z.number().int().positive(),z.literal("all")])}),
   z.object({action:z.literal("test")})
 ]);
 
@@ -40,6 +41,7 @@ export async function POST(req:Request){
     if(a.action==="removeRule")await removeGoldRule(a.id);
     let result:unknown=null;
     if(a.action==="check")result=await runChecks(true);
+    else if(a.action==="ack"){await acknowledgeAlert(a.id);result={ok:true};}
     if(a.action==="test")result={sent:await notify({level:"info",title:"✅ NASSIM OS alerts are on",body:"This phone will get build, uptime, gold and morning-brief alerts.",url:"/dashboard"})};
     await writeAudit({action:`alerts.${a.action}`,outcome:"succeeded"});
     return ok({ok:true,result});
