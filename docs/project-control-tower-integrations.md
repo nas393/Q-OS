@@ -4,12 +4,12 @@ The private `/projects` page reads GitHub and Vercel metadata only. It does not 
 
 ## Required Vercel environment variables
 
-Configure these in the Vercel project settings for **q-jarvis** (Production and Preview as appropriate):
+Configure these in the Vercel project settings for **q-os** (Production and Preview as appropriate):
 
 - `GITHUB_TOKEN`: a fine-grained GitHub token limited to the required `nas393` repositories, with read-only access to repository metadata, contents, and issues.
 - `VERCEL_TOKEN`: a Vercel token with read access to deployments for the `nas393s-projects` team.
 
-Do not commit real tokens, paste them into chat, or expose them as `NEXT_PUBLIC_*` variables. After setting them, redeploy Q JARVIS.
+Do not commit real tokens, paste them into chat, or expose them as `NEXT_PUBLIC_*` variables. After setting them, redeploy Q OS.
 
 ## Data model
 
