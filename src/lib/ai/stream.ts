@@ -28,3 +28,20 @@ export function extractProviderText(provider: AIProvider, rawData: string): stri
   const content = (candidates[0] as { content?: { parts?: Array<{ text?: unknown }> } } | undefined)?.content;
   return (content?.parts ?? []).map(part => typeof part.text === "string" ? part.text : "").join("");
 }
+
+export function isProviderStreamFinished(provider: AIProvider, rawData: string): boolean {
+  if (rawData === "[DONE]") return true;
+  if (!rawData) return false;
+  let payload: unknown;
+  try { payload = JSON.parse(rawData); } catch { return false; }
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as Record<string, unknown>;
+  if (provider === "groq") {
+    const choices = Array.isArray(p.choices) ? p.choices : [];
+    const finishReason = (choices[0] as { finish_reason?: unknown } | undefined)?.finish_reason;
+    return typeof finishReason === "string" && finishReason.length > 0;
+  }
+  const candidates = Array.isArray(p.candidates) ? p.candidates : [];
+  const finishReason = (candidates[0] as { finishReason?: unknown } | undefined)?.finishReason;
+  return typeof finishReason === "string" && finishReason.length > 0;
+}
