@@ -155,7 +155,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div><Ico d="M13 2L4 14h7l-1 8 9-12h-7z" s={30}/><span><b>{data?p1:"—"}</b><small>P1 Active</small></span></div>
     <a href="#agenda"><Ico d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" s={30}/><span><b>{tasks?open.length:"—"}</b><small>Open tasks{overdue?` · ${overdue} overdue`:""}</small></span></a>
     <a href="#alerts"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0" s={30}/><span><b>{data?alerts.length:"—"}</b><small>Alerts{redCount?` · ${redCount} urgent`:""}</small></span></a>
-    <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#E5132B" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
+    <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#64d9ad" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
    </section>
 
    <section className="os-eco" id="ecosystem">
@@ -212,7 +212,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <section className="os-panel os-markets" id="markets">
     <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Market Pulse · XAU/USD</h3>
     {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
-     <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#E5132B" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
+     <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#64d9ad" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
 
   </div>
@@ -243,7 +243,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <h3>Apps</h3>
    <div className="os-sheet-g">{(apps??[]).filter(a=>a.url).map(a=>{const p=projects.find(x=>x.vercel===a.id);const logo=p&&LOGOS[p.name];return <a key={a.id} href={a.url!} target="_blank" rel="noreferrer">{logo?<img src={logo} alt="" width={90} height={32} loading="lazy"/>:<b>{a.name.slice(0,2)}</b>}<span>{a.name}</span></a>;})}
     {!apps&&<p className="os-muted">Loading apps…</p>}</div>
-   <h3>NASSIM OS</h3>
+   <h3>Q OS</h3>
    <div className="os-sheet-l"><a href="/brief">☀ Morning brief</a><a href="/alerts">🔔 Alerts</a><a href="/iq">🌍 AngolaIQ</a><a href="/chat">💬 Q chat</a></div>
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
   {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
