@@ -4,16 +4,16 @@ The Command Center never shows invented numbers. Each business panel stays empty
 
 ## Setup (one time)
 
-1. In Vercel → q-jarvis → Settings → Environment Variables, add `INGEST_TOKEN` (Production + Preview). Use a random string of 32+ characters.
+1. In Vercel → q-os → Settings → Environment Variables, add `INGEST_TOKEN` (Production + Preview). Use a random string of 32+ characters.
 2. Put the same token in each source project as a server-side secret (never `NEXT_PUBLIC_*`).
-3. Redeploy q-jarvis.
+3. Redeploy q-os.
 
 Without `INGEST_TOKEN` the endpoint returns `503 Ingest is not configured`.
 
 ## Request
 
 ```
-POST https://<q-jarvis-domain>/api/ingest
+POST https://<q-os-domain>/api/ingest
 Authorization: Bearer <INGEST_TOKEN>
 Content-Type: application/json
 

@@ -46,6 +46,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const dueRef=useRef<HTMLInputElement>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
+ const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
  const [weather,setWeather]=useState<{t:number;code:number}|null>(null),[search,setSearch]=useState<string|null>(null),[drawer,setDrawer]=useState(false);
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   const on=()=>setOnline(navigator.onLine);on();window.addEventListener("online",on);window.addEventListener("offline",on);
   return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};
  },[loadTasks]);
- useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==="Escape"){setSheet(false);setDrawer(false);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
+ useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandOpen(v=>!v);setCommandQuery("");}if(e.key==="Escape"){setSheet(false);setDrawer(false);setCommandOpen(false);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
  useEffect(()=>{qRef.current?.scrollTo({top:qRef.current.scrollHeight,behavior:"smooth"})},[qMsgs]);
 
  const projects=useMemo(()=>data?.projects??[],[data]);
@@ -111,17 +112,17 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  return <main className="os" id="top">
   <aside className="os-side">
-   <div className="os-brand"><img src="/os/n-mark.svg" alt="" width={84} height={76}/><b>NASSIM <i>OS</i></b><small>Personal Ecosystem</small></div>
+   <div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={84} height={76}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
    <div className="os-side-art" aria-hidden="true"/>
   </aside>
 
   <div className="os-center">
    <header className="os-top">
-    <div className="os-mbrand"><img src="/os/n-mark.svg" alt="" width={34} height={31}/><b>NASSIM <i>OS</i></b></div>
+    <div className="os-mbrand"><img src="/os/q-emblem.webp" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
-     <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
+     <button aria-label="Open command palette" title="Command palette · Ctrl K" onClick={()=>{setCommandOpen(true);setCommandQuery("");}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
      <a aria-label="Alerts" href="#alerts" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
      <a aria-label="Projects and apps" href="#ecosystem"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></a>
     </div>
@@ -138,16 +139,13 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <a href="#q" className="os-today-q"><b>Ask Q</b><small>{qState}</small></a>
    </section>
 
-   <section className="os-hero">
-    <div className="os-hero-l" aria-hidden="true"/><div className="os-hero-r" aria-hidden="true"/>
-    <div className="os-hero-c">
-     <img src="/os/n-mark.svg" alt="" width={74} height={67} className="os-hero-n"/>
-     <h1>NASSIM</h1>
-     <p className="os-sub"><i/>The Restless Architect<i/></p>
-     <p className="os-eco-l">My Ecosystem</p>
-     <p className="os-head"><span>Think beyond.</span><b>Build with purpose.</b></p>
-     <p className="os-caps">Builder | Strategist | Creator | Explorer</p>
+   <section className="os-welcome">
+    <div className="os-welcome-copy">
+     <p className="os-kicker">Q OS <span> / </span> PRIVATE COMMAND CENTRE</p>
+     <h1>{clock&&clock.getHours()<12?"Good morning":clock&&clock.getHours()<18?"Good afternoon":"Good evening"}.</h1>
+     <p>Your portfolio, priorities and intelligence — in one place.</p>
     </div>
+    <div className="os-welcome-meta"><span className="os-live-dot"/><span>PERSONAL SYSTEM</span><i/>{date}</div>
    </section>
 
    {(error||metricsError)&&<p className="os-err">{error||metricsError}</p>}
@@ -158,11 +156,11 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div><Ico d="M13 2L4 14h7l-1 8 9-12h-7z" s={30}/><span><b>{data?p1:"—"}</b><small>P1 Active</small></span></div>
     <a href="#agenda"><Ico d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" s={30}/><span><b>{tasks?open.length:"—"}</b><small>Open tasks{overdue?` · ${overdue} overdue`:""}</small></span></a>
     <a href="#alerts"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0" s={30}/><span><b>{data?alerts.length:"—"}</b><small>Alerts{redCount?` · ${redCount} urgent`:""}</small></span></a>
-    <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#E5132B" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
+    <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#64d9ad" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
    </section>
 
    <section className="os-eco" id="ecosystem">
-    <div className="os-eco-h"><h2>My Projects Ecosystem</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
+    <div className="os-eco-h"><h2>Portfolio</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
     <div className="os-grid">
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
       const href=p.url??apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
@@ -187,7 +185,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    <section className="os-panels">
     <article className="os-panel os-focus">
-     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Strategic Focus <span>(Next 15 Days)</span></h3>
+     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>Next 15 days</span></h3>
      {taskErr&&<p className="os-err">{taskErr}</p>}
      {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
      <ul>{open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10)).slice(0,6).map(t=>editing?.id===t.id?
@@ -200,22 +198,22 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
     </article>
     <article className="os-panel os-metrics">
-     <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Key Metrics</h3>
+     <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Portfolio Health</h3>
      {[["Execution (active 7d)",exec],["Projects health",projects.length?Math.round(ready/projects.length*100):null],["Data verified",projects.length?Math.round(verified/projects.length*100):null]].map(([l,v])=><div className="os-bar" key={l as string}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":`${v}%`}</em></div>)}
      <div className="os-bar"><span>Market tracking</span><i><b style={{width:gold?"100%":"0%"}} className={gold&&Date.now()-new Date(gold.updatedAt).getTime()>3600e3?"stale":""}/></i><em>{gold?ago(gold.updatedAt):"off"}</em></div>
      <div className="os-bar"><span>Tasks done (7d)</span><i><b style={{width:doneWeek===null?"0%":`${Math.round(doneWeek/Math.max(1,doneWeek+open.length)*100)}%`}}/></i><em>{doneWeek===null?"—":`${doneWeek} done`}</em></div>
     </article>
     <article className="os-panel os-activity">
-     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>Recent Activity</h3>
+     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>System Activity</h3>
      {activity.length?<ul>{activity.map(a=><li key={a.title+a.t}><Ico d="M5 12l5 5 9-10" s={16}/>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:<span>{a.title}</span>}<time title={a.src}>{ago(a.t)}</time></li>)}</ul>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
      <p className="os-foot">Q: {activityCount} events · {conversationCount} chats (24h)</p>
     </article>
    </section>
 
    <section className="os-panel os-markets" id="markets">
-    <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Markets · XAU/USD</h3>
+    <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Market Pulse · XAU/USD</h3>
     {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
-     <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#E5132B" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
+     <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#64d9ad" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
 
   </div>
@@ -229,7 +227,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
    </section>
    <section className="os-panel os-agenda" id="agenda">
-    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today&apos;s Agenda</h3>
+    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
     {agenda.length?<ul>{agenda.map(a=><li key={a.id}><i className={a.hot?"hot":""}/><span>{a.title}</span><time>{a.time}</time></li>)}</ul>:<p className="os-muted">{tasks?"Nothing due today. Add focus items with a date.":"Loading…"}</p>}
    </section>
    <AlertsPanel goldPrice={gold?.value.price}/>
@@ -246,9 +244,28 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <h3>Apps</h3>
    <div className="os-sheet-g">{(apps??[]).filter(a=>a.url).map(a=>{const p=projects.find(x=>x.vercel===a.id);const logo=p&&LOGOS[p.name];return <a key={a.id} href={a.url!} target="_blank" rel="noreferrer">{logo?<img src={logo} alt="" width={90} height={32} loading="lazy"/>:<b>{a.name.slice(0,2)}</b>}<span>{a.name}</span></a>;})}
     {!apps&&<p className="os-muted">Loading apps…</p>}</div>
-   <h3>NASSIM OS</h3>
+   <h3>Q OS</h3>
    <div className="os-sheet-l"><a href="/brief">☀ Morning brief</a><a href="/alerts">🔔 Alerts</a><a href="/iq">🌍 AngolaIQ</a><a href="/chat">💬 Q chat</a></div>
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
-  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/n-mark.svg" alt="" width={60} height={54}/><b>NASSIM <i>OS</i></b><small>The Restless Architect</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
+  {commandOpen&&<div className="os-command-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setCommandOpen(false);}}>
+   <section className="os-command" role="dialog" aria-modal="true" aria-label="Q command palette">
+    <div className="os-command-search"><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={20}/><input autoFocus value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Search projects, tasks or commands…" onKeyDown={e=>{if(e.key==="Escape")setCommandOpen(false);}}/><kbd>ESC</kbd></div>
+    <div className="os-command-group"><small>QUICK COMMANDS</small>
+     {[
+      {label:"Ask Q for today's priorities",detail:"Strategic briefing",run:()=>askQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
+      {label:"Run system checks",detail:"Refresh alerts and project telemetry",run:()=>{setCommandOpen(false);fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>refresh());}},
+      {label:"Open portfolio",detail:"Projects and deployments",run:()=>{setCommandOpen(false);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}},
+      {label:"Open priority queue",detail:"Tasks requiring attention",run:()=>{setCommandOpen(false);document.getElementById("agenda")?.scrollIntoView({behavior:"smooth"});}},
+      {label:"Open market pulse",detail:"XAU/USD monitoring",run:()=>{setCommandOpen(false);document.getElementById("markets")?.scrollIntoView({behavior:"smooth"});}}
+     ].filter(x=>(x.label+" "+x.detail).toLowerCase().includes(commandQuery.toLowerCase())).map(x=><button key={x.label} onClick={()=>{setCommandOpen(false);x.run();}}><span><b>{x.label}</b><small>{x.detail}</small></span><kbd>↵</kbd></button>)}
+    </div>
+    <div className="os-command-group"><small>PROJECTS</small>
+     {projects.filter(p=>clean(p.name).toLowerCase().includes(commandQuery.toLowerCase())).slice(0,5).map(p=><button key={p.id} onClick={()=>{setCommandOpen(false);const href=p.url??apps?.find(a=>a.id===p.vercel)?.url;if(href)window.open(href,"_blank","noopener");else document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}}><span><b>{clean(p.name)}</b><small>{p.area} · {p.deployment?.state??"Status unavailable"}</small></span><kbd>↗</kbd></button>)}
+     {!projects.some(p=>clean(p.name).toLowerCase().includes(commandQuery.toLowerCase()))&&<p>No matching projects.</p>}
+    </div>
+    <footer><span><kbd>CTRL</kbd> <kbd>K</kbd> to toggle</span><span>Q OS COMMAND LAYER</span></footer>
+   </section>
+  </div>}
+  {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
  </main>;
 }

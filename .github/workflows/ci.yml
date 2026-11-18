@@ -1,9 +1,9 @@
 name: Stage 1 CI
 on:
   push:
-    branches: ["stage1/implementation"]
+    branches: ["stage1/implementation", "q/core-foundation", "q/core-foundation-sync", "q/stabilization", "q/executive-experience-v2"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "q/stabilization", "q/rebuild-executive-command-center"]
 permissions:
   contents: read
 jobs:

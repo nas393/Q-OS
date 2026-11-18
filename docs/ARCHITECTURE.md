@@ -1,4 +1,4 @@
-# Q JARVIS Stage 1 Architecture
+# Q OS Stage 1 Architecture
 
 ## Runtime boundaries
 - Next.js App Router serves the command-centre UI and server-side API routes.
