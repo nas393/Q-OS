@@ -46,6 +46,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const dueRef=useRef<HTMLInputElement>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
+ const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
  const [weather,setWeather]=useState<{t:number;code:number}|null>(null),[search,setSearch]=useState<string|null>(null),[drawer,setDrawer]=useState(false);
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   const on=()=>setOnline(navigator.onLine);on();window.addEventListener("online",on);window.addEventListener("offline",on);
   return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};
  },[loadTasks]);
- useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==="Escape"){setSheet(false);setDrawer(false);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
+ useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandOpen(v=>!v);setCommandQuery("");}if(e.key==="Escape"){setSheet(false);setDrawer(false);setCommandOpen(false);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
  useEffect(()=>{qRef.current?.scrollTo({top:qRef.current.scrollHeight,behavior:"smooth"})},[qMsgs]);
 
  const projects=useMemo(()=>data?.projects??[],[data]);
@@ -246,6 +247,25 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <h3>Q OS</h3>
    <div className="os-sheet-l"><a href="/brief">☀ Morning brief</a><a href="/alerts">🔔 Alerts</a><a href="/iq">🌍 AngolaIQ</a><a href="/chat">💬 Q chat</a></div>
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
+  {commandOpen&&<div className="os-command-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setCommandOpen(false);}}>
+   <section className="os-command" role="dialog" aria-modal="true" aria-label="Q command palette">
+    <div className="os-command-search"><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={20}/><input autoFocus value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Search projects, tasks or commands…" onKeyDown={e=>{if(e.key==="Escape")setCommandOpen(false);}}/><kbd>ESC</kbd></div>
+    <div className="os-command-group"><small>QUICK COMMANDS</small>
+     {[
+      {label:"Ask Q for today's priorities",detail:"Strategic briefing",run:()=>askQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
+      {label:"Run system checks",detail:"Refresh alerts and project telemetry",run:()=>{setCommandOpen(false);fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>refresh());}},
+      {label:"Open portfolio",detail:"Projects and deployments",run:()=>{setCommandOpen(false);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}},
+      {label:"Open priority queue",detail:"Tasks requiring attention",run:()=>{setCommandOpen(false);document.getElementById("agenda")?.scrollIntoView({behavior:"smooth"});}},
+      {label:"Open market pulse",detail:"XAU/USD monitoring",run:()=>{setCommandOpen(false);document.getElementById("markets")?.scrollIntoView({behavior:"smooth"});}}
+     ].filter(x=>(x.label+" "+x.detail).toLowerCase().includes(commandQuery.toLowerCase())).map(x=><button key={x.label} onClick={()=>{setCommandOpen(false);x.run();}}><span><b>{x.label}</b><small>{x.detail}</small></span><kbd>↵</kbd></button>)}
+    </div>
+    <div className="os-command-group"><small>PROJECTS</small>
+     {projects.filter(p=>clean(p.name).toLowerCase().includes(commandQuery.toLowerCase())).slice(0,5).map(p=><button key={p.id} onClick={()=>{setCommandOpen(false);const href=p.url??apps?.find(a=>a.id===p.vercel)?.url;if(href)window.open(href,"_blank","noopener");else document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}}><span><b>{clean(p.name)}</b><small>{p.area} · {p.deployment?.state??"Status unavailable"}</small></span><kbd>↗</kbd></button>)}
+     {!projects.some(p=>clean(p.name).toLowerCase().includes(commandQuery.toLowerCase()))&&<p>No matching projects.</p>}
+    </div>
+    <footer><span><kbd>CTRL</kbd> <kbd>K</kbd> to toggle</span><span>Q OS COMMAND LAYER</span></footer>
+   </section>
+  </div>}
   {drawer&&<div className="os-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={()=>setDrawer(false)}><nav onClick={e=>e.stopPropagation()}><div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={60} height={54}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>{NAV.map(n=>navLink(n,"os-nav"))}<button className="os-close" onClick={()=>setDrawer(false)}>Close</button></nav></div>}
  </main>;
 }
