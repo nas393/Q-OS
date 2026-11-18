@@ -122,7 +122,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-mbrand"><img src="/os/q-emblem.webp" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
     <div className="os-tools">
-     <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
+     <button aria-label="Open command palette" title="Command palette · Ctrl K" onClick={()=>{setCommandOpen(true);setCommandQuery("");}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
      <a aria-label="Alerts" href="#alerts" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
      <a aria-label="Projects and apps" href="#ecosystem"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></a>
     </div>
