@@ -1,7 +1,7 @@
 name: Stage 1 CI
 on:
   push:
-    branches: ["stage1/implementation"]
+    branches: ["stage1/implementation", "q/core-foundation"]
   pull_request:
     branches: ["main"]
 permissions:
