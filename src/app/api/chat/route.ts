@@ -6,7 +6,7 @@ import { getAIConfig } from "@/lib/ai/provider";
 import { orchestrateChat } from "@/lib/core/orchestrator";
 import { extractProviderText, readSseData, splitSseEvents, type AIProvider } from "@/lib/ai/stream";
 import { jsonError, requestOriginAllowed } from "@/lib/http";
-import { writeAudit } from "@/lib/audit";
+import { publishQEvent } from "@/lib/events/publisher";
 
 export const runtime = "nodejs", dynamic = "force-dynamic", maxDuration = 60;
 const OWNER_ID = "owner";
@@ -92,10 +92,11 @@ export async function POST(request: Request) {
       console.error("ai_provider_rejected_request", {
         status: upstream.status, code: providerCode, message: providerMessage.slice(0, 240)
       });
-      await writeAudit({
-        userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
-        action: "chat.response", outcome: "failed",
-        details: { provider: actualProvider, status: upstream.status, code: providerCode, intent }
+      await publishQEvent({
+        type: "chat.response", occurredAt: new Date().toISOString(),
+        actor: { type: "owner", id: OWNER_ID }, source: "q-core",
+        entityId: activeConversationId, outcome: "failed",
+        data: { provider: actualProvider, status: upstream.status, code: providerCode, intent }
       });
       return jsonError(502, `AI provider error (${upstream.status})${providerCode ? ` [${providerCode}]` : ""}: ${providerMessage.slice(0, 180) || "Check provider configuration and billing."}`);
     }
@@ -149,19 +150,21 @@ export async function POST(request: Request) {
             [activeConversationId, answer, JSON.stringify({ provider: actualProvider, model: actualModel, status: "completed", intent })]
           );
           await db.query("UPDATE conversations SET updated_at=now() WHERE id=$1", [activeConversationId]);
-          await writeAudit({
-            userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
-            action: "chat.response", outcome: "succeeded",
-            details: { provider: actualProvider, model: actualModel, streamed: true, intent }
+          await publishQEvent({
+            type: "chat.response", occurredAt: new Date().toISOString(),
+            actor: { type: "owner", id: OWNER_ID }, source: "q-core",
+            entityId: activeConversationId, outcome: "succeeded",
+            data: { provider: actualProvider, model: actualModel, streamed: true, intent }
           });
           send(controller, { done: true, conversationId: activeConversationId });
           controller.close();
         } catch (error) {
           if (cancelled || signal.aborted) {
-            await writeAudit({
-              userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
-              action: "chat.response", outcome: "cancelled",
-              details: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
+            await publishQEvent({
+              type: "chat.response", occurredAt: new Date().toISOString(),
+              actor: { type: "owner", id: OWNER_ID }, source: "q-core",
+              entityId: activeConversationId, outcome: "cancelled",
+              data: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
             });
             return;
           }
@@ -169,10 +172,11 @@ export async function POST(request: Request) {
             provider: actualProvider, model: actualModel,
             error: error instanceof Error ? error.message.slice(0, 180) : "unknown"
           });
-          await writeAudit({
-            userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
-            action: "chat.response", outcome: "failed",
-            details: { provider: actualProvider, model: actualModel, partial: answer.length > 0 }
+          await publishQEvent({
+            type: "chat.response", occurredAt: new Date().toISOString(),
+            actor: { type: "owner", id: OWNER_ID }, source: "q-core",
+            entityId: activeConversationId, outcome: "failed",
+            data: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
           });
           if (!cancelled) {
             send(controller, { error: error instanceof Error ? error.message : "AI stream failed." });
