@@ -7,5 +7,6 @@ export const PORTFOLIO_PROJECTS = [
   { id:"xauusd", name:"XAU/USD TRADING HQ", repo:"counter-trader", repoVisibility:"private", vercel:"prj_Yj88nFe9nAEY97iUndUUZs42zAhs", priority:"P2", next:"Validate market data, chart interactions, signal integrity and risk controls.", area:"Trading" },
   { id:"novae", name:"NOVAÉ", repo:"novae-site", repoVisibility:"public", vercel:"prj_Vkri4LKQpL3r24l9FpAIfoWBpx38", priority:"P2", next:"Maintain the agency platform and revisit growth work after P1 delivery.", area:"Agency" },
   { id:"lep", name:"LUANDA EDGE PULSE", repo:null, repoVisibility:null, vercel:null, url:"https://luanda-edge-pulse.base44.app", priority:"P2", next:"Angola market intelligence (Base44). Keep live; review data sources and Devil's Advocate.", area:"Intelligence" },
+  { id:"ali-quest", name:"ALI-QUEST / CISA QUEST", repo:"ali-quest-battle-academy", repoVisibility:"private", vercel:"prj_tyHNrMetMuimbPhHbPPYYYupHq4u", priority:"P2", next:"Complete the PDF lesson library workflow, verify uploaded lesson content and validate the learner experience.", area:"Education" },
   { id:"radio", name:"RADIO CEDARS", repo:"Radio-Cedars-", repoVisibility:"public", vercel:"prj_QRS67OXbiBMasOqgG2zVcrdHYJOR", priority:"P3", next:"Review the roadmap and define the next release milestone.", area:"Media" }
 ] as const;
