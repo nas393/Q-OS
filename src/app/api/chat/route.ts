@@ -145,7 +145,17 @@ export async function POST(request: Request) {
           const finalEvents = splitSseEvents(buffer, true);
           for (const event of finalEvents.events) await consume(event);
 
-          if (cancelled || signal.aborted) return;
+          if (cancelled) return;
+          if (signal.aborted) {
+            await publishQEvent({
+              type: "chat.response", occurredAt: new Date().toISOString(),
+              actor: { type: "owner", id: OWNER_ID }, source: "q-core",
+              entityId: activeConversationId, outcome: "cancelled",
+              data: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
+            });
+            controller.close();
+            return;
+          }
           if (!streamFinished) throw new Error("AI provider stream ended before its completion marker.");
           if (!answer.trim()) throw new Error("AI provider returned an empty stream.");
 
