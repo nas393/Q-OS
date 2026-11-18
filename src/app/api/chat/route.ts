@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     if (parsed.data.portfolioContext?.trim()) {
       const latestUser = [...turns].reverse().find(turn => turn.role === "user");
       if (latestUser) {
-        latestUser.content = `LIVE SNAPSHOT (source of truth; answer from it):\n${parsed.data.portfolioContext.trim()}\n\nUSER REQUEST:\n${latestUser.content}`;
+        latestUser.content = `CLIENT DASHBOARD CONTEXT (unverified; may be stale or modified; do not present as independently verified):\n${parsed.data.portfolioContext.trim()}\n\nUSER REQUEST:\n${latestUser.content}`;
       }
     }
 
