@@ -5,11 +5,14 @@ import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
 import {externalApps} from "@/lib/external-apps";
 import {runIqJobs} from "@/lib/iq/engine";
+import {alertBody,alertTitle,digestLine,evaluateBuilds,firstBuildError,type BuildEvent,type Deployment} from "@/lib/build-alerts";
 
 /*
- * NASSIM OS alerts. Checks run at most every 10 minutes: GitHub Actions every 15 min + Vercel Cron ~08:00 (/api/cron/check), after each Counter-Trader push,
- * (every 15 min) or by the owner. A push notification is sent only when something CHANGES
- * (site goes down / comes back, a build fails, a gold level is crossed). The morning brief goes out once a day at 08:00 Luanda.
+ * NASSIM OS alerts. Checks run at most every 10 minutes: GitHub Actions every 15 min + Vercel Cron 07:00 UTC (/api/cron/check),
+ * or by the owner. A push notification is sent only when something CHANGES.
+ * Urgent (pushed right away): production build ERROR, site down/back up, a check that fails, gold levels the owner set.
+ * Non-urgent (logged now, pushed once in the 07:00 UTC / 08:00 Luanda morning brief): preview builds whose LATEST build
+ * on the branch is ERROR (see src/lib/build-alerts.ts). Every alert is keyed by deployment id and never sent twice.
  */
 
 export type AlertRow={id:number;level:"red"|"amber"|"info";title:string;body:string;url:string|null;createdAt:string};
@@ -27,6 +30,7 @@ async function ensure(){
 CREATE TABLE IF NOT EXISTS q_push_subs (endpoint text PRIMARY KEY, sub jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS q_alerts (id bigserial PRIMARY KEY, level text NOT NULL, title text NOT NULL, body text NOT NULL DEFAULT '', url text, created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS q_alert_state (key text PRIMARY KEY, status text NOT NULL, fails int NOT NULL DEFAULT 0, updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS q_check_runs (id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), ms int NOT NULL DEFAULT 0, events jsonb NOT NULL DEFAULT '[]', errors jsonb NOT NULL DEFAULT '[]');
 CREATE TABLE IF NOT EXISTS q_gold_rules (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), direction text NOT NULL CHECK (direction IN ('above','below')), price numeric NOT NULL, active boolean NOT NULL DEFAULT true, fired_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());`);
   ensured=true;
 }
@@ -46,10 +50,11 @@ export async function saveSubscription(sub:{endpoint:string;keys:{p256dh:string;
 export async function removeSubscription(endpoint:string){await ensure();await db().query("DELETE FROM q_push_subs WHERE endpoint=$1",[endpoint]);}
 export async function subscriptionCount(){await ensure();const {rows}=await db().query("SELECT count(*)::int n FROM q_push_subs");return rows[0].n as number;}
 
-/* Log the alert and push it to every subscribed device. Dead subscriptions are removed. */
-export async function notify(a:{level:AlertRow["level"];title:string;body:string;url?:string|null}){
+/* Log the alert and push it to every subscribed device (push:false = log only, for the daily digest). Dead subscriptions are removed. */
+export async function notify(a:{level:AlertRow["level"];title:string;body:string;url?:string|null;push?:boolean}){
   await ensure();
-  await db().query("INSERT INTO q_alerts (level,title,body,url) VALUES ($1,$2,$3,$4)",[a.level,a.title.slice(0,120),a.body.slice(0,300),a.url??null]);
+  await db().query("INSERT INTO q_alerts (level,title,body,url) VALUES ($1,$2,$3,$4)",[a.level,a.title.slice(0,120),a.body.slice(0,1000),a.url??null]);
+  if(a.push===false)return 0;
   const keys=await vapid();
   webpush.setVapidDetails("mailto:owner@nassim-os.app",keys.publicKey,keys.privateKey);
   const {rows}=await db().query("SELECT endpoint,sub FROM q_push_subs");
@@ -98,13 +103,31 @@ async function checkUptime(out:string[]){
   }));
 }
 
-async function checkBuilds(out:string[],since:number){
-  const {deployments=[]}=await vercelGet<{deployments?:Array<{uid:string;name:string;state?:string;target?:string|null;inspectorUrl?:string;createdAt?:number;created?:number}>}>("/v6/deployments",{state:"ERROR",limit:"20",since:String(since)});
-  for(const d of deployments){
-    if(await transition(`build:${d.uid}`,"error"))continue; // already reported
-    out.push(`build:${d.name}`);
-    await notify({level:"red",title:`❌ ${d.name} build failed`,body:`${d.target==="production"?"Production":"Preview"} deploy failed. Production is unchanged.`,url:d.inspectorUrl??null});
+/* Non-urgent items waiting for the morning brief, keyed by project@branch (newest failure only). */
+type DigestItem={id:string;line:string;url:string|null};
+const DIGEST_KEY="build_digest";
+
+async function buildLogLine(id:string){
+  try{
+    const ev=await vercelGet<BuildEvent[]|{events?:BuildEvent[]}>(`/v3/deployments/${encodeURIComponent(id)}/events`,{builds:"1",limit:"-1",direction:"forward"});
+    return firstBuildError(Array.isArray(ev)?ev:ev.events??[]);
+  }catch{return null;}
+}
+
+/* "Latest build failed only": see src/lib/build-alerts.ts for the rule and tests/build-alerts.test.mjs for fixtures. */
+async function checkBuilds(out:string[]){
+  const {deployments=[]}=await vercelGet<{deployments?:Deployment[]}>("/v6/deployments",{limit:"100",since:String(Date.now()-72*3600_000)});
+  const {alerts,clearedKeys}=evaluateBuilds(deployments);
+  const digest=(await kvGet<Record<string,DigestItem>>(DIGEST_KEY))??{};
+  for(const k of clearedKeys)if(digest[k]){delete digest[k];out.push(`build-cleared:${k}`);} // a later READY clears it
+  for(const a of alerts){
+    if(await transition(`build:${a.id}`,"error"))continue; // dedupe: deployment id already reported
+    const log=await buildLogLine(a.id);
+    out.push(`build:${a.project}@${a.branch}${a.urgent?":prod":""}`);
+    await notify({level:a.urgent?"red":"amber",title:alertTitle(a),body:alertBody(a,log),url:a.inspectorUrl,push:a.urgent});
+    if(!a.urgent)digest[a.key]={id:a.id,line:digestLine(a,log),url:a.inspectorUrl};
   }
+  await kvSet(DIGEST_KEY,digest);
 }
 
 async function checkGold(out:string[]){
@@ -137,8 +160,12 @@ async function morningBrief(out:string[]){
   const open=tasks.filter(t=>!t.done),dueToday=open.filter(t=>t.due===today()).length,overdue=open.filter(t=>t.due&&t.due<today()).length;
   const parts=[down[0].n?`🔴 ${down[0].n} site(s) down`:"✅ All sites up",`${dueToday} task(s) today${overdue?`, ${overdue} overdue`:""}`];
   if(gold&&Date.now()-Date.parse(gold.updatedAt)<24*3600_000)parts.push(`Gold ${gold.value.price.toFixed(0)} (${gold.value.changePct>=0?"+":""}${gold.value.changePct.toFixed(2)}%)`);
+  // Daily digest: non-urgent items still current (builds already re-checked earlier in this run).
+  const items=Object.values((await kvGet<Record<string,DigestItem>>(DIGEST_KEY))??{});
+  const body=parts.join(" · ")+(items.length?`\n${items.length} preview build(s) failing:\n${items.map(i=>i.line).join("\n")}`:"");
   out.push("brief");
-  await notify({level:"info",title:"☀️ Morning brief",body:parts.join(" · "),url:"/dashboard"});
+  await notify({level:"info",title:"☀️ Morning brief",body,url:items.length===1?items[0].url??"/dashboard":"/dashboard"});
+  await kvSet(DIGEST_KEY,{});
 }
 
 /* Main entry. force=true skips the 10-minute throttle (owner "check now"). */
@@ -147,11 +174,19 @@ export async function runChecks(force=false){
   const last=(await kvGet<number>("last_check"))??0;
   if(!force&&Date.now()-last<10*60_000)return {skipped:true,events:[] as string[]};
   await kvSet("last_check",Date.now());
-  const out:string[]=[],errors:string[]=[];
-  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out,last||Date.now()-3600_000)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
-    try{await fn();}catch(e){errors.push(`${name}: ${e instanceof Error?e.message:"failed"}`);}
+  const started=Date.now(),out:string[]=[],errors:string[]=[];
+  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
+    try{await fn();}catch(e){
+      const msg=e instanceof Error?e.message:"failed";
+      errors.push(`${name}: ${msg}`);
+      // Cron failure is urgent; at most one push per failing check per day.
+      if(await transition(`cronfail:${name}:${today()}`,"sent")===null)await notify({level:"red",title:`⚠️ Q check "${name}" failed`,body:msg.slice(0,200),url:"/dashboard"}).catch(()=>{});
+    }
   }
   await kvSet("last_check_result",{at:Date.now(),events:out,errors});
+  // Own history (Vercel Hobby keeps runtime logs for 1 h only). Keep 30 days.
+  await db().query("INSERT INTO q_check_runs (ms,events,errors) VALUES ($1,$2::jsonb,$3::jsonb)",[Date.now()-started,JSON.stringify(out),JSON.stringify(errors)]);
+  await db().query("DELETE FROM q_check_runs WHERE at<now()-interval '30 days'");
   return {skipped:false,events:out,errors};
 }
 

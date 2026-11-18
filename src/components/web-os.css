@@ -53,7 +53,7 @@
 /* KPI strip */
 .os-kpis{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:14px 0 0;padding:0 14px 4px;scrollbar-width:none}
 .os-kpis::-webkit-scrollbar{display:none}
-.os-kpis>div{flex:0 0 auto;min-width:150px;scroll-snap-align:start;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--sub)}
+.os-kpis>:is(div,a){flex:0 0 auto;min-width:150px;scroll-snap-align:start;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--sub)}
 .os-kpis b{display:block;font:700 22px Montserrat;color:var(--txt)}.os-kpis small{display:block;font:500 11px Montserrat;color:var(--sub);white-space:nowrap}
 .os-kpis .nc b{color:var(--muted)}
 /* ecosystem */
@@ -132,7 +132,7 @@
  .os-hero-l{width:30%}.os-hero-r{width:34%}
  .os-head{font-size:40px}.os-hero h1{font-size:44px}
  .os-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin:-6px 0 0;padding:6px 0;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:visible;position:relative;z-index:3}
- .os-kpis>div{min-width:0;border:0;border-radius:0;border-left:1px solid var(--line);background:none;padding:10px 14px}.os-kpis>div:first-child{border-left:0}
+ .os-kpis>:is(div,a){min-width:0;border:0;border-radius:0;border-left:1px solid var(--line);background:none;padding:10px 14px}.os-kpis>:is(div,a):first-child{border-left:0}
  .os-kpis b{font-size:20px}.os-kpis small{white-space:normal}
  .os-eco{padding:22px 0 0}.os-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
  .os-panel,.os-q{margin:0}.os-markets,.os-launch{margin-top:16px}
@@ -170,3 +170,6 @@
 .os-al-list li>i{flex:0 0 9px;height:9px;margin-top:5px;border-radius:50%;background:#55555c}.os-al-list li>i.red{background:var(--red);box-shadow:0 0 8px var(--red)}.os-al-list li>i.amber{background:#f5b142}.os-al-list li>i.info{background:#4ade80}
 .os-al-list span{flex:1;display:flex;flex-direction:column;min-width:0}.os-al-list b{font:600 12.5px Montserrat}.os-al-list small{font-size:11.5px;color:var(--sub);overflow-wrap:anywhere}
 .os-al-list time{font-size:11px;color:var(--sub)}.os-al-err{margin:0;color:#ff9aa6;font-size:12px}
+
+.os-kpis>a{text-decoration:none;color:var(--sub)}
+.os-kpis>a:hover b{color:#E5132B}

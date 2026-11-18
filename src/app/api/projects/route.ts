@@ -35,6 +35,7 @@ async function vercel(projectId:string, token?:string):Promise<ApiResult<{deploy
     const url=new URL("https://api.vercel.com/v6/deployments");
     url.searchParams.set("projectId",projectId);
     url.searchParams.set("limit","1");
+    url.searchParams.set("target","production"); // live status = production; preview failures go through the build-alert digest
     url.searchParams.set("teamId",TEAM_ID);
     const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});
     if(!response.ok) {
