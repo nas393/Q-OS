@@ -1,7 +1,7 @@
 name: Stage 1 CI
 on:
   push:
-    branches: ["stage1/implementation", "q/core-foundation", "q/core-foundation-sync", "q/stabilization"]
+    branches: ["stage1/implementation", "q/core-foundation", "q/core-foundation-sync", "q/stabilization", "q/executive-experience-v2"]
   pull_request:
     branches: ["main", "q/stabilization"]
 permissions:
