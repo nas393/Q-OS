@@ -1,6 +1,6 @@
 /* Canonical Q portfolio configuration. Keep IDs and records stable; dynamic status is fetched separately. */
 export const PORTFOLIO_PROJECTS = [
-  { id:"q-jarvis", name:"NASSIM AI HQ / Q", repo:"q-jarvis", repoVisibility:"public", vercel:"prj_G87tunS7S6xoJAZyZzEmRIhHAru4", priority:"P1", next:"Complete Stage 1 Preview validation, confirm portfolio intelligence and system health, then define the next approved phase.", area:"Personal HQ" },
+  { id:"q-jarvis", name:"NASSIM AI HQ / Q", repo:"Q-OS", repoVisibility:"public", vercel:"prj_G87tunS7S6xoJAZyZzEmRIhHAru4", priority:"P1", next:"Complete Stage 1 Preview validation, confirm portfolio intelligence and system health, then define the next approved phase.", area:"Personal HQ" },
   { id:"certigo", name:"CERTIGO", repo:"certigo-institute", repoVisibility:"public", vercel:"prj_ZxaLAJyMIXizGz8HqpflWC0TjSfG", priority:"P1", next:"Validate the mobile lesson reader and course quality before adding features.", area:"Education" },
   { id:"dalil", name:"DALIL AL-BAZOURIEH", repo:"dalil-al-bazourieh", repoVisibility:"private", vercel:"prj_y4i0VPZXxzUhKLvNFOCxwdTSr94v", priority:"P2", next:"Protect the approved design baseline and validate the current mobile experience.", area:"Directory" },
   { id:"lumeris", name:"LUMERIS", repo:"lumeris", repoVisibility:"private", vercel:"prj_9en6kfMm515bnbkmAgXSpEumh88r", priority:"P1", next:"One site live (home, guide, welcome, posts, studio). Next: Instagram stats into Q.", area:"Media" },
