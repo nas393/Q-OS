@@ -7,7 +7,7 @@ import { extractProviderText, readSseData, splitSseEvents, type AIProvider } fro
 import { jsonError, requestOriginAllowed } from "@/lib/http";
 import { writeAudit } from "@/lib/audit";
 
-export const runtime = "nodejs", dynamic = "force-dynamic";
+export const runtime = "nodejs", dynamic = "force-dynamic", maxDuration = 60;
 const OWNER_ID = "owner";
 
 export async function GET() {
