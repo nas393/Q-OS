@@ -38,6 +38,8 @@ const QUICK:[string,string,string][]=[
 const days=(d?:string|null)=>d?Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/864e5)):null;
 const ago=(iso:string|number)=>{const m=Math.round((Date.now()-new Date(iso).getTime())/6e4);return m<60?`${Math.max(1,m)}m ago`:m<2880?`${Math.round(m/60)}h ago`:`${Math.round(m/1440)}d ago`;};
 const clean=(n:string)=>n.replace(" / Q","");
+/* Polyline points for a series scaled into w×h (2px top/bottom padding). */
+const spark=(s:number[],w:number,h:number)=>{const lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/Math.max(1,s.length-1)*w).toFixed(1)},${(h-2-(v-lo)/r*(h-4)).toFixed(1)}`).join(" ");};
 const today=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Luanda"});
 function Ico({d,s=18}:{d:string;s?:number}){return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d}/></svg>;}
 
@@ -80,6 +82,11 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const overdue=open.filter(t=>t.due&&t.due<today()).length,redCount=alerts.filter(a=>a.level==="red").length;
  const agenda=[...open.filter(t=>t.due&&t.due<=today()).map(t=>({id:t.id,time:t.due===today()?(t.dueTime??"Today"):"Overdue",title:t.title,hot:t.due!==today()})),...alerts.filter(a=>a.level==="red").map(a=>({id:a.title,time:"Now",title:a.title,hot:true}))].slice(0,6);
  const filtered=search?projects.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())):projects;
+ const dueNow=open.filter(t=>t.due===today()).length;
+ /* Ecosystem health 0-100: builds 40%, activity 20%, tasks on time 20%, no urgent alerts 20%. */
+ const pBuild=projects.length?Math.round(ready/projects.length*100):null,pTasks=tasks?Math.round(100-Math.min(100,overdue/Math.max(1,open.length)*100)):null,pAlerts=data?Math.max(0,100-redCount*25):null;
+ const health=pBuild===null?null:Math.round(pBuild*.4+(exec??0)*.2+(pTasks??100)*.2+(pAlerts??100)*.2);
+ const healthParts:[string,number|null][]=[["Builds",pBuild],["Activity 7d",exec],["Tasks on time",pTasks],["Alerts clear",pAlerts],["Data verified",projects.length?Math.round(verified/projects.length*100):null]];
  const time=clock?clock.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"}):"";
  const date=clock?clock.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"Africa/Luanda"}):"";
 
@@ -130,33 +137,37 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-clock"><strong>{time}</strong><small>{date}</small></div>
    </header>
 
-   <section className="os-today" aria-label="Today">
-    {!online&&<p className="os-offline" role="status">Offline: showing the last saved data.</p>}
-    <a href="/brief" className="os-today-b"><b>☀ Morning brief</b><small>{date}</small></a>
-    <a href="/alerts" className={redCount?"hot":""}><b>{data?redCount:"—"}</b><small>urgent</small></a>
-    <a href="#agenda" className={overdue?"hot":""}><b>{tasks?open.filter(t=>t.due&&t.due<=today()).length:"—"}</b><small>due{overdue?` · ${overdue} late`:""}</small></a>
-    <a href="#markets"><b>{gold?gold.value.price.toFixed(0):"—"}</b><small>{gold?`gold ${gold.value.changePct>=0?"+":""}${gold.value.changePct.toFixed(1)}%`:"gold"}</small></a>
-    <a href="#q" className="os-today-q"><b>Ask Q</b><small>{qState}</small></a>
-   </section>
-
-   <section className="os-welcome">
-    <div className="os-welcome-copy">
-     <p className="os-kicker">Q OS <span> / </span> PRIVATE COMMAND CENTRE</p>
-     <h1>{clock&&clock.getHours()<12?"Good morning":clock&&clock.getHours()<18?"Good afternoon":"Good evening"}.</h1>
-     <p>Your portfolio, priorities and intelligence — in one place.</p>
+   <section className="os-hello">
+    <div>
+     <p className="os-kicker"><span className="os-live-dot"/>Q OS · Command centre · {date}</p>
+     <h1>{clock&&clock.getHours()<12?"Good morning":clock&&clock.getHours()<18?"Good afternoon":"Good evening"}, Nassim.</h1>
+     <p className="os-hello-sub">{data?`${ready} of ${projects.length} apps live`:"Loading portfolio"}{tasks?` · ${dueNow} due today`:""}{overdue?` · ${overdue} overdue`:""}{gold?` · gold ${gold.value.changePct>=0?"+":""}${gold.value.changePct.toFixed(2)}%`:""}</p>
     </div>
-    <div className="os-welcome-meta"><span className="os-live-dot"/><span>PERSONAL SYSTEM</span><i/>{date}</div>
+    <button className="os-cmdk" onClick={()=>{setCommandOpen(true);setCommandQuery("");}} aria-label="Open command palette"><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={16}/><span>Search or ask Q…</span><kbd>Ctrl K</kbd></button>
    </section>
-
+   {!online&&<p className="os-offline" role="status">Offline: showing the last saved data.</p>}
    {(error||metricsError)&&<p className="os-err">{error||metricsError}</p>}
 
-   <section className="os-kpis" aria-label="Key performance">
-    <div><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" s={30}/><span><b>{data?projects.length:"—"}</b><small>Projects</small></span></div>
-    <div><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" s={30}/><span><b>{data?`${ready} / ${projects.length}`:"—"}</b><small>Deployments{failed?` · ${failed} failed`:""}</small></span></div>
-    <div><Ico d="M13 2L4 14h7l-1 8 9-12h-7z" s={30}/><span><b>{data?p1:"—"}</b><small>P1 Active</small></span></div>
-    <a href="#agenda"><Ico d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" s={30}/><span><b>{tasks?open.length:"—"}</b><small>Open tasks{overdue?` · ${overdue} overdue`:""}</small></span></a>
-    <a href="#alerts"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0" s={30}/><span><b>{data?alerts.length:"—"}</b><small>Alerts{redCount?` · ${redCount} urgent`:""}</small></span></a>
-    <div><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a2e" strokeWidth="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="#64d9ad" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(exec??0)/100*100.5} 100.5`} transform="rotate(-90 20 20)"/></svg><span><b>{exec===null?"—":`${exec}%`}</b><small>Execution · active 7d</small></span></div>
+   <section className="os-bento" aria-label="Today at a glance">
+    <a className="os-health" href="/brief" aria-label={`Ecosystem health ${health??"unknown"} out of 100. Open morning brief`}>
+     <div className="os-health-h"><small>Ecosystem health</small><em>Brief →</em></div>
+     <div className="os-ring">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="osRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff4d5e"/><stop offset="1" stopColor="#8b7cff"/></linearGradient></defs>
+       <circle cx="60" cy="60" r="50" className="trk"/><circle cx="60" cy="60" r="50" className="val" strokeDasharray={`${(health??0)/100*314.2} 314.2`}/></svg>
+      <div><b>{health??"—"}</b><small>{health===null?"loading":health>=85?"Excellent":health>=65?"Good":"Needs attention"}</small></div>
+     </div>
+     <ul>{healthParts.map(([l,v])=><li key={l}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":v}</em></li>)}</ul>
+    </a>
+    <a className="os-tile os-tile-hero" href="#ecosystem">
+     <small>Apps live</small><b>{data?ready:"—"}<span>/{data?projects.length:"—"}</span></b>
+     <p className="os-dots" aria-hidden="true">{projects.map(p=><i key={p.id} className={p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":""} title={clean(p.name)}/>)}</p>
+     <em>{failed?`${failed} failing · fix first`:"All production builds healthy"}</em>
+    </a>
+    <a className="os-tile" href="#agenda"><small>Open tasks</small><b>{tasks?open.length:"—"}</b><em className={overdue?"bad":""}>{tasks?(overdue?`${overdue} overdue · ${dueNow} today`:`${dueNow} due today`):"…"}</em></a>
+    <a className="os-tile" href="/alerts"><small>Urgent alerts</small><b className={redCount?"bad":""}>{data?redCount:"—"}</b><em>{alerts.length?`${alerts.length} signal${alerts.length===1?"":"s"} in total`:"All quiet"}</em></a>
+    <a className="os-tile" href="#markets"><small>Gold · XAU/USD</small><b>{gold?gold.value.price.toFixed(0):"—"}</b>
+     {gold&&<svg className="os-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><polyline points={spark(gold.value.series,100,24)} className={gold.value.changePct>=0?"ok":"bad"}/></svg>}
+     <em className={gold?(gold.value.changePct>=0?"ok":"bad"):""}>{gold?`${gold.value.changePct>=0?"▲ +":"▼ "}${gold.value.changePct.toFixed(2)}% today`:"No feed"}</em></a>
    </section>
 
    <section className="os-eco" id="ecosystem">
@@ -197,15 +208,9 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <button type="button" className={newRecur?"set":""} onClick={()=>setNewRecur(r=>({"":"daily",daily:"weekdays",weekdays:"weekly",weekly:"monthly",monthly:""} as Record<string,string>)[r])} aria-label={`Repeat: ${newRecur||"none"}`} title={`Repeat: ${newRecur||"none"}`}>{newRecur?newRecur.slice(0,2):"↻"}</button>
       <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
     </article>
-    <article className="os-panel os-metrics">
-     <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Portfolio Health</h3>
-     {[["Execution (active 7d)",exec],["Projects health",projects.length?Math.round(ready/projects.length*100):null],["Data verified",projects.length?Math.round(verified/projects.length*100):null]].map(([l,v])=><div className="os-bar" key={l as string}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":`${v}%`}</em></div>)}
-     <div className="os-bar"><span>Market tracking</span><i><b style={{width:gold?"100%":"0%"}} className={gold&&Date.now()-new Date(gold.updatedAt).getTime()>3600e3?"stale":""}/></i><em>{gold?ago(gold.updatedAt):"off"}</em></div>
-     <div className="os-bar"><span>Tasks done (7d)</span><i><b style={{width:doneWeek===null?"0%":`${Math.round(doneWeek/Math.max(1,doneWeek+open.length)*100)}%`}}/></i><em>{doneWeek===null?"—":`${doneWeek} done`}</em></div>
-    </article>
     <article className="os-panel os-activity">
      <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>System Activity</h3>
-     {activity.length?<ul>{activity.map(a=><li key={a.title+a.t}><Ico d="M5 12l5 5 9-10" s={16}/>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:<span>{a.title}</span>}<time title={a.src}>{ago(a.t)}</time></li>)}</ul>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
+     {activity.length?<ol className="os-tl">{activity.map(a=><li key={a.title+a.t}><time title={a.src}>{new Date(a.t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"})}</time><i/><span>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:a.title}<small>{a.src} · {ago(a.t)}</small></span></li>)}</ol>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
      <p className="os-foot">Q: {activityCount} events · {conversationCount} chats (24h)</p>
     </article>
    </section>
@@ -213,7 +218,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <section className="os-panel os-markets" id="markets">
     <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Market Pulse · XAU/USD</h3>
     {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
-     <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#64d9ad" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
+     <svg viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="osGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff4d5e" stopOpacity=".35"/><stop offset="1" stopColor="#ff4d5e" stopOpacity="0"/></linearGradient></defs>
+      <polygon fill="url(#osGold)" points={`0,80 ${spark(gold.value.series,300,76)} 300,80`}/><polyline fill="none" stroke="#ff4d5e" strokeWidth="2" points={spark(gold.value.series,300,76)}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
 
   </div>
