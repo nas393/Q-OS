@@ -145,3 +145,27 @@
  .os .os-quick{grid-template-columns:1fr 1fr}.os-clock{padding-left:8px}.os-clock strong{font-size:13px}.os-clock small{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){.os *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* Q OS command layer — keyboard-first navigation */
+.os-command-backdrop{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:12vh 20px 24px;background:#030708c9;backdrop-filter:blur(12px);animation:os-command-in .16s ease-out}
+.os-command{width:min(640px,100%);max-height:min(72vh,720px);overflow:auto;border:1px solid #3c6255;border-radius:18px;background:linear-gradient(155deg,#15221f 0%,#0d1518 65%);box-shadow:0 28px 100px #000a,0 0 0 1px #ffffff08 inset}
+.os-command-search{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:17px 18px;border-bottom:1px solid #ffffff16;background:#111c1bf2;backdrop-filter:blur(16px)}
+.os-command-search>svg{flex:0 0 auto;color:var(--accent)}
+.os-command-search input{flex:1;min-width:0;height:34px;border:0;outline:0;background:transparent;color:var(--txt);font:500 15px 'Space Grotesk'}
+.os-command-search input::placeholder{color:#71847e}
+.os-command kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:23px;padding:0 6px;border:1px solid #ffffff20;border-radius:6px;background:#ffffff08;color:#91a49d;font:10px 'IBM Plex Mono'}
+.os-command-group{display:grid;gap:4px;padding:14px 12px 8px}
+.os-command-group>small{padding:4px 8px 7px;color:#779187;font:600 9px 'IBM Plex Mono';letter-spacing:1.6px}
+.os-command-group>button{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:54px;padding:8px 11px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left}
+.os-command-group>button:hover,.os-command-group>button:focus-visible{border-color:#3b6a57;background:#1a3028;outline:none}
+.os-command-group>button span{display:grid;gap:3px;min-width:0}
+.os-command-group>button b{font:500 13px 'Space Grotesk';color:#eef8f2}
+.os-command-group>button small{font:10px 'IBM Plex Mono';color:#8da39a}
+.os-command-group>button kbd{color:#64d9ad}
+.os-command-group>p{padding:8px;color:#84958f;font-size:12px}
+.os-command>footer{display:flex;justify-content:space-between;gap:12px;padding:12px 18px 15px;border-top:1px solid #ffffff12;color:#7d928a;font:9px 'IBM Plex Mono';letter-spacing:.8px}
+.os-command>footer span:first-child{display:flex;align-items:center;gap:5px}
+@keyframes os-command-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:640px){.os-command-backdrop{padding:8vh 10px 16px}.os-command{max-height:78vh;border-radius:14px}.os-command-search{padding:13px}.os-command-search input{font-size:13px}.os-command-group{padding:11px 8px 6px}}
+@media(prefers-reduced-motion:reduce){.os-command-backdrop{animation:none}}
