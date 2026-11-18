@@ -15,4 +15,6 @@ export async function setDone(id:string,done:boolean){await ensureTasks();const 
  /* Completing a recurring task creates the next one. */
  if(t&&done&&t.recur)await addTask({title:t.title,project:t.project,due:nextDue(t.due??new Date().toISOString().slice(0,10),t.recur),dueTime:t.dueTime,priority:t.priority,recur:t.recur});
  return t;}
+export async function updateTask(id:string,f:{title?:string;due?:string|null}){await ensureTasks();const {rows}=await getDb().query("UPDATE q_tasks SET title=coalesce($2,title), due_date=CASE WHEN $3 THEN $4::date ELSE due_date END WHERE id=$1 RETURNING *",[id,f.title??null,f.due!==undefined,f.due??null]);return rows[0]?row(rows[0]):null;}
+export async function doneThisWeek(){await ensureTasks();const {rows}=await getDb().query("SELECT count(*)::int n FROM q_tasks WHERE done AND done_at>now()-interval '7 days'");return rows[0].n as number;}
 export async function removeTask(id:string){await ensureTasks();await getDb().query("DELETE FROM q_tasks WHERE id=$1",[id]);}
