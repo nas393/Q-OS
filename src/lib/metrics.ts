@@ -1,3 +1,4 @@
+import {ensureSchema} from "@/lib/schema";
 import {z} from "zod";
 import {getDb} from "@/lib/db";
 
@@ -30,17 +31,7 @@ export const ingestSchema=z.object({
   metrics:z.object(Object.fromEntries(metricKeys.map(k=>[k,metricSchemas[k].optional()])) as {[K in MetricKey]:z.ZodOptional<(typeof metricSchemas)[K]>})
 }).refine(b=>metricKeys.some(k=>b.metrics[k]!==undefined),{message:"metrics must contain at least one known key"});
 
-let ensured=false;
-async function ensureTable(){
-  if(ensured)return;
-  await getDb().query(`CREATE TABLE IF NOT EXISTS command_metrics (
-    metric_key text PRIMARY KEY,
-    payload jsonb NOT NULL,
-    source text NOT NULL,
-    updated_at timestamptz NOT NULL DEFAULT now()
-  )`);
-  ensured=true;
-}
+async function ensureTable(){await ensureSchema();}
 
 export async function saveMetrics(source:string,metrics:Partial<Record<MetricKey,unknown>>){
   await ensureTable();

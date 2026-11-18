@@ -1,0 +1,19 @@
+/* Shared look for NASSIM OS sub-pages (brief, alerts). Same palette as the Command Center. */
+.op{--panel:#0f0f11;--line:#26262b;--txt:#F2F2F3;--sub:#A9A9B0;--muted:#8E8E98;--red:#E5132B;--ok:#3ecf8e;--amber:#f5a524;min-height:100vh;background:#070708;color:var(--txt);font:15px/1.5 Montserrat,system-ui,sans-serif;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.op-w{max-width:760px;margin:0 auto}
+.op-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.op-top a{color:var(--sub);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.op h1{font-size:26px;margin:0}.op h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:0 0 10px}
+.op-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.op-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.op-row:first-of-type{border-top:0}
+.op-row small,.op-muted{color:var(--muted)}
+.op-pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+.op-pill.red{color:#ff6b7a;border-color:#5a1820}.op-pill.amber{color:var(--amber);border-color:#5a4210}.op-pill.info,.op-pill.ok{color:var(--ok);border-color:#1d4a37}
+.op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.op-stat b{display:block;font-size:24px}.op-stat small{color:var(--muted)}
+.op-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.op-filters a,.op-btn{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#141417;color:var(--txt);text-decoration:none;font:inherit;font-size:13px;cursor:pointer}
+.op-filters a[aria-current=page]{border-color:var(--red)}
+.op input[type=search]{flex:1;min-width:160px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:#0b0b0d;color:var(--txt);padding:0 12px;font:inherit}
+.op a{color:var(--txt)}.op :focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.op-ack{opacity:.55}

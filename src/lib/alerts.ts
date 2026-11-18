@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import {getDb} from "@/lib/db";
+import {ensureSchema} from "@/lib/schema";
 import {listProjects,pickProductionUrl,vercelGet} from "@/lib/vercel";
 import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
@@ -23,17 +24,7 @@ const luanda=()=>new Date(Date.now()+LUANDA_MS);
 const today=()=>luanda().toISOString().slice(0,10);
 const db=()=>getDb();
 
-let ensured=false;
-async function ensure(){
-  if(ensured)return;
-  await db().query(`CREATE TABLE IF NOT EXISTS q_kv (k text PRIMARY KEY, v jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now());
-CREATE TABLE IF NOT EXISTS q_push_subs (endpoint text PRIMARY KEY, sub jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
-CREATE TABLE IF NOT EXISTS q_alerts (id bigserial PRIMARY KEY, level text NOT NULL, title text NOT NULL, body text NOT NULL DEFAULT '', url text, created_at timestamptz NOT NULL DEFAULT now());
-CREATE TABLE IF NOT EXISTS q_alert_state (key text PRIMARY KEY, status text NOT NULL, fails int NOT NULL DEFAULT 0, updated_at timestamptz NOT NULL DEFAULT now());
-CREATE TABLE IF NOT EXISTS q_check_runs (id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), ms int NOT NULL DEFAULT 0, events jsonb NOT NULL DEFAULT '[]', errors jsonb NOT NULL DEFAULT '[]');
-CREATE TABLE IF NOT EXISTS q_gold_rules (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), direction text NOT NULL CHECK (direction IN ('above','below')), price numeric NOT NULL, active boolean NOT NULL DEFAULT true, fired_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());`);
-  ensured=true;
-}
+async function ensure(){await ensureSchema();}
 async function kvGet<T>(k:string):Promise<T|null>{const {rows}=await db().query("SELECT v FROM q_kv WHERE k=$1",[k]);return rows[0]?.v??null;}
 async function kvSet(k:string,v:unknown){await db().query("INSERT INTO q_kv (k,v,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (k) DO UPDATE SET v=EXCLUDED.v,updated_at=now()",[k,JSON.stringify(v)]);}
 
@@ -72,6 +63,19 @@ export async function recentAlerts(limit=20):Promise<AlertRow[]>{
   return rows.map(r=>({id:Number(r.id),level:r.level,title:r.title,body:r.body,url:r.url,createdAt:new Date(r.created_at).toISOString()}));
 }
 
+export async function alertHistory(o:{level?:string;q?:string;limit?:number}={}){
+  await ensure();
+  const {rows}=await db().query("SELECT id,level,title,body,url,created_at,acknowledged_at FROM q_alerts WHERE ($1::text IS NULL OR level=$1) AND ($2::text IS NULL OR title ILIKE '%'||$2||'%' OR body ILIKE '%'||$2||'%') ORDER BY id DESC LIMIT $3",[o.level??null,o.q??null,Math.min(o.limit??200,500)]);
+  return rows.map(r=>({id:Number(r.id),level:r.level as AlertRow["level"],title:r.title as string,body:r.body as string,url:r.url as string|null,createdAt:new Date(r.created_at).toISOString(),ack:!!r.acknowledged_at}));
+}
+export async function acknowledgeAlert(id:number|"all"){await ensure();if(id==="all")await db().query("UPDATE q_alerts SET acknowledged_at=now() WHERE acknowledged_at IS NULL");else await db().query("UPDATE q_alerts SET acknowledged_at=now() WHERE id=$1",[id]);}
+/* System health for the last 24 h, from the cron run log. */
+export async function systemHealth(){
+  await ensure();
+  const {rows}=await db().query("SELECT count(*)::int runs, count(*) FILTER (WHERE jsonb_array_length(errors)>0)::int failed, coalesce(round(avg(ms)),0)::int avg_ms, max(at) last_at FROM q_check_runs WHERE at>now()-interval '24 hours'");
+  const r=rows[0];return {runs:r.runs as number,failed:r.failed as number,avgMs:r.avg_ms as number,lastAt:r.last_at?new Date(r.last_at).toISOString():null};
+}
+export async function buildDigest(){await ensure();return Object.values((await kvGet<Record<string,{id:string;line:string;url:string|null}>>("build_digest"))??{});}
 export async function listGoldRules():Promise<GoldRule[]>{
   await ensure();
   const {rows}=await db().query("SELECT id,direction,price,active,fired_at FROM q_gold_rules ORDER BY price DESC");
@@ -164,7 +168,7 @@ async function morningBrief(out:string[]){
   const items=Object.values((await kvGet<Record<string,DigestItem>>(DIGEST_KEY))??{});
   const body=parts.join(" · ")+(items.length?`\n${items.length} preview build(s) failing:\n${items.map(i=>i.line).join("\n")}`:"");
   out.push("brief");
-  await notify({level:"info",title:"☀️ Morning brief",body,url:items.length===1?items[0].url??"/dashboard":"/dashboard"});
+  await notify({level:"info",title:"☀️ Morning brief",body,url:"/brief"});
   await kvSet(DIGEST_KEY,{});
 }
 
