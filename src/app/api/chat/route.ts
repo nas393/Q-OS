@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { readSession } from "@/lib/session";
 import { getAIConfig } from "@/lib/ai/provider";
 import { orchestrateChat } from "@/lib/core/orchestrator";
-import { extractProviderText, readSseData, splitSseEvents, type AIProvider } from "@/lib/ai/stream";
+import { extractProviderText, isProviderStreamFinished, readSseData, splitSseEvents, type AIProvider } from "@/lib/ai/stream";
 import { jsonError, requestOriginAllowed } from "@/lib/http";
 import { publishQEvent } from "@/lib/events/publisher";
 
@@ -114,9 +114,12 @@ export async function POST(request: Request) {
         reader = upstream.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "", answer = "";
+        let streamFinished = false;
         const consume = async (event: string) => {
           const data = readSseData(event);
-          if (!data || data === "[DONE]") return;
+          if (!data) return;
+          if (data === "[DONE]") { streamFinished = true; return; }
+          if (isProviderStreamFinished(provider, data)) streamFinished = true;
           let parsedEvent: unknown;
           try { parsedEvent = JSON.parse(data); } catch { return; }
           if (parsedEvent && typeof parsedEvent === "object" && "error" in parsedEvent) {
@@ -143,6 +146,7 @@ export async function POST(request: Request) {
           for (const event of finalEvents.events) await consume(event);
 
           if (cancelled || signal.aborted) return;
+          if (!streamFinished) throw new Error("AI provider stream ended before its completion marker.");
           if (!answer.trim()) throw new Error("AI provider returned an empty stream.");
 
           await db.query(
@@ -166,6 +170,7 @@ export async function POST(request: Request) {
               entityId: activeConversationId, outcome: "cancelled",
               data: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
             });
+            if (!cancelled) controller.close();
             return;
           }
           console.error("ai_stream_failed", {
