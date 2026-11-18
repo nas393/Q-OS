@@ -43,6 +43,7 @@ export type QServerContext = {
     createdAt: string;
   }>;
   metrics: QContextMetric[];
+  integrations: Array<{ id: string; provider: string; purpose: string; capabilities: string[]; status: "configured" | "not_configured" }>;
   availability: {
     tasks: QContextAvailability;
     alerts: QContextAvailability;
