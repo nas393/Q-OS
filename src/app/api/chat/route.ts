@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { readSession } from "@/lib/session";
-import { createAIStream, getAIConfig } from "@/lib/ai/provider";
+import { getAIConfig } from "@/lib/ai/provider";
+import { orchestrateChat } from "@/lib/core/orchestrator";
 import { extractProviderText, readSseData, splitSseEvents, type AIProvider } from "@/lib/ai/stream";
 import { jsonError, requestOriginAllowed } from "@/lib/http";
 import { writeAudit } from "@/lib/audit";
@@ -68,16 +69,15 @@ export async function POST(request: Request) {
       role: row.role, content: row.content
     }));
 
-    if (parsed.data.portfolioContext?.trim()) {
-      const latestUser = [...turns].reverse().find(turn => turn.role === "user");
-      if (latestUser) {
-        latestUser.content = `CLIENT DASHBOARD CONTEXT (unverified; may be stale or modified; do not present as independently verified):\n${parsed.data.portfolioContext.trim()}\n\nUSER REQUEST:\n${latestUser.content}`;
-      }
-    }
-
     const abortController = new AbortController();
     const signal = AbortSignal.any([request.signal, abortController.signal]);
-    const upstream = await createAIStream(turns, signal);
+    const orchestration = await orchestrateChat({
+      turns,
+      clientContext: parsed.data.portfolioContext,
+      signal
+    });
+    const intent = orchestration.intent;
+    const upstream = orchestration.response;
     const actualProvider = upstream.headers.get("x-ai-provider") ?? config.provider;
     const actualModel = upstream.headers.get("x-ai-model") ?? config.model;
 
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       await writeAudit({
         userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
         action: "chat.response", outcome: "failed",
-        details: { provider: actualProvider, status: upstream.status, code: providerCode }
+        details: { provider: actualProvider, status: upstream.status, code: providerCode, intent }
       });
       return jsonError(502, `AI provider error (${upstream.status})${providerCode ? ` [${providerCode}]` : ""}: ${providerMessage.slice(0, 180) || "Check provider configuration and billing."}`);
     }
@@ -146,13 +146,13 @@ export async function POST(request: Request) {
 
           await db.query(
             "INSERT INTO messages (conversation_id,role,content,metadata) VALUES ($1,'assistant',$2,$3::jsonb)",
-            [activeConversationId, answer, JSON.stringify({ provider: actualProvider, model: actualModel, status: "completed" })]
+            [activeConversationId, answer, JSON.stringify({ provider: actualProvider, model: actualModel, status: "completed", intent })]
           );
           await db.query("UPDATE conversations SET updated_at=now() WHERE id=$1", [activeConversationId]);
           await writeAudit({
             userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
             action: "chat.response", outcome: "succeeded",
-            details: { provider: actualProvider, model: actualModel, streamed: true }
+            details: { provider: actualProvider, model: actualModel, streamed: true, intent }
           });
           send(controller, { done: true, conversationId: activeConversationId });
           controller.close();
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
             await writeAudit({
               userId: OWNER_ID, actorType: "owner", actorId: OWNER_ID,
               action: "chat.response", outcome: "cancelled",
-              details: { provider: actualProvider, model: actualModel, partial: answer.length > 0 }
+              details: { provider: actualProvider, model: actualModel, partial: answer.length > 0, intent }
             });
             return;
           }
