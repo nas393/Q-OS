@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractProviderText, readSseData, splitSseEvents } from "../src/lib/ai/stream.ts";
+import { extractProviderText, isProviderStreamFinished, readSseData, splitSseEvents } from "../src/lib/ai/stream.ts";
 
 test("splitSseEvents keeps incomplete events until the delimiter arrives", () => {
   const first = splitSseEvents('data: {"choices":[{"delta":{"content":"Hello"}}]}\n');
@@ -37,4 +37,12 @@ test("extractProviderText reads Gemini candidate parts", () => {
 test("extractProviderText safely ignores malformed and metadata-only events", () => {
   assert.equal(extractProviderText("groq", "not-json"), "");
   assert.equal(extractProviderText("groq", JSON.stringify({ choices: [{ delta: {} }] })), "");
+});
+
+test("provider completion markers distinguish complete streams from truncation", () => {
+  assert.equal(isProviderStreamFinished("groq", "[DONE]"), true);
+  assert.equal(isProviderStreamFinished("groq", JSON.stringify({ choices: [{ finish_reason: "stop" }] })), true);
+  assert.equal(isProviderStreamFinished("groq", JSON.stringify({ choices: [{ finish_reason: null }] })), false);
+  assert.equal(isProviderStreamFinished("gemini", JSON.stringify({ candidates: [{ finishReason: "STOP" }] })), true);
+  assert.equal(isProviderStreamFinished("gemini", JSON.stringify({ candidates: [{ content: { parts: [{ text: "partial" }] } }] })), false);
 });
