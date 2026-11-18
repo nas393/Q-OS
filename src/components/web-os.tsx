@@ -43,14 +43,15 @@ function Ico({d,s=18}:{d:string;s?:number}){return <svg width={s} height={s} vie
 
 export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null}){
  const [clock,setClock]=useState<Date|null>(null),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState("");
- const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState("");
+ const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
+ const dueRef=useRef<HTMLInputElement>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [weather,setWeather]=useState<{t:number;code:number}|null>(null),[search,setSearch]=useState<string|null>(null),[drawer,setDrawer]=useState(false);
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
 
  const refresh=useCallback(async()=>{setLoading(true);setError("");try{const r=await fetch("/api/projects",{cache:"no-store"});if(!r.ok)throw new Error(r.status===401?"Sign in to load live data":`Projects API returned ${r.status}`);setData(await r.json());}catch(e){setError(e instanceof Error?e.message:"Live data unavailable");}finally{setLoading(false)}},[]);
- const loadTasks=useCallback(async()=>{try{const r=await fetch("/api/tasks",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error);setTasks(j.tasks);setTaskErr("");}catch(e){setTaskErr(e instanceof Error&&e.message?e.message:"Tasks unavailable");}},[]);
+ const loadTasks=useCallback(async()=>{try{const r=await fetch("/api/tasks",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error);setTasks(j.tasks);setDoneWeek(typeof j.doneWeek==="number"?j.doneWeek:null);setTaskErr("");}catch(e){setTaskErr(e instanceof Error&&e.message?e.message:"Tasks unavailable");}},[]);
  useEffect(()=>{setClock(new Date());const t=window.setInterval(()=>setClock(new Date()),30000);return()=>window.clearInterval(t)},[]);
  useEffect(()=>{refresh();const t=window.setInterval(refresh,300000);return()=>window.clearInterval(t)},[refresh]);
  useEffect(()=>{loadTasks();
@@ -83,6 +84,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  async function addT(e:FormEvent){e.preventDefault();if(!newTask.trim())return;const r=await fetch("/api/tasks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:newTask.trim(),priority:newPri,...(newDue?{due:newDue}:{}),...(newRecur?{recur:newRecur}:{})})});if(r.ok){setNewTask("");setNewDue("");setNewRecur("");setNewPri("normal");loadTasks();}else setTaskErr((await r.json().catch(()=>({}))).error??"Could not save");}
  async function toggleT(t:Task){setTasks(ts=>ts?.map(x=>x.id===t.id?{...x,done:!x.done}:x)??null);const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:t.id,done:!t.done})});if(!r.ok)loadTasks();}
+ async function delT(t:Task){if(!window.confirm(`Delete “${t.title}”?`))return;setTasks(ts=>ts?.filter(x=>x.id!==t.id)??null);const r=await fetch(`/api/tasks?id=${encodeURIComponent(t.id)}`,{method:"DELETE"});if(!r.ok){setTaskErr("Could not delete");loadTasks();}}
+ async function saveEdit(e:FormEvent){e.preventDefault();if(!editing||!editing.title.trim())return;const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:editing.id,title:editing.title.trim(),due:editing.due||null})});setEditing(null);if(!r.ok)setTaskErr("Could not save");loadTasks();}
  async function snoozeT(t:Task,d:number){const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:t.id,snoozeDays:d})});if(r.ok)loadTasks();else setTaskErr("Could not snooze");}
  async function runAction(a:QAction,key:string){
   const mark=(v:string)=>setDoneActs(d=>({...d,[key]:v}));mark("…");
@@ -120,7 +123,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-tools">
      <button aria-label="Search projects" onClick={()=>{setSearch(s=>s===null?"":null);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
      <a aria-label="Alerts" href="#alerts" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
-     <a aria-label="Launchpad" href="#launchpad"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></a>
+     <a aria-label="Projects and apps" href="#ecosystem"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></a>
     </div>
     {weather&&<div className="os-weather"><Ico d={weather.code<3?"M12 4v2M12 18v2M4 12H2M22 12h-2M6 6l1.5 1.5M16.5 16.5L18 18M6 18l1.5-1.5M16.5 7.5L18 6M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z":"M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3 3 0 0 0 7 18z"} s={22}/><span><small>Luanda, AO</small>{weather.t}°C</span></div>}
     <div className="os-clock"><strong>{time}</strong><small>{date}</small></div>
@@ -163,12 +166,20 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-grid">
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
       const href=p.url??apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
-      return <a key={p.id} href={href} target="_blank" rel="noreferrer" className="os-card">
+      const pages=apps?.find(a=>a.id===p.vercel)?.pages??[];
+      return <div key={p.id} className="os-card">
+       <a href={href} target="_blank" rel="noreferrer" className="os-card-a" aria-label={`Open ${clean(p.name)}`}/>
        <div className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt={clean(p.name)} loading="lazy" decoding="async" width={170} height={60}/>:<span className="os-word">{clean(p.name)}</span>}</div>
        {LOGOS[p.name]&&p.name==="NASSIM AI HQ / Q"&&<strong>NASSIM AI HQ</strong>}
        <small>{p.area}</small>
+       {pages.length>0&&<p className="os-card-pg">{pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>}
        <em className={st}><i/>{st==="ok"?"Active":st==="bad"?"Failed":"Unverified"}</em>
-      </a>;})}
+      </div>;})}
+     {data&&!search&&(apps??[]).filter(a=>a.url&&!projects.some(p=>p.vercel===a.id||p.url===a.url)).map(a=><div key={a.id} className="os-card">
+       <a href={a.url!} target="_blank" rel="noreferrer" className="os-card-a" aria-label={`Open ${a.name}`}/>
+       <div className="os-logo"><span className="os-word">{a.name.replace(/-/g," ").toUpperCase()}</span></div><small>{a.url!.replace("https://","")}</small>
+       {a.pages?.length?<p className="os-card-pg">{a.pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>:null}
+       <em className="ok"><i/>Live</em></div>)}
      {!data&&loading&&Array.from({length:7},(_,i)=><div key={i} className="os-card ghost"/>)}
      {data&&!filtered.length&&<p className="os-muted">No project matches “{search}”.</p>}
     </div>
@@ -179,15 +190,20 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Strategic Focus <span>(Next 15 Days)</span></h3>
      {taskErr&&<p className="os-err">{taskErr}</p>}
      {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
-     <ul>{open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10)).slice(0,6).map(t=><li key={t.id} className={`pri-${t.priority??"normal"}`}><label><input type="checkbox" checked={t.done} onChange={()=>toggleT(t)} aria-label={`Done: ${t.title}`}/><span>{t.priority==="high"&&<i className="os-pri" title="High priority">!</i>}{t.title}{t.recur&&<small className="os-rec" title={`Repeats ${t.recur}`}> ↻</small>}</span></label>{t.due&&<time>{t.due.slice(5)}</time>}<button className="os-snz" onClick={()=>snoozeT(t,1)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day">+1d</button></li>)}</ul>
-     <form onSubmit={addT} className="os-add"><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a focus item" maxLength={160} aria-label="New focus item"/><input type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} aria-label="Due date"/><button type="submit" aria-label="Add focus item">+</button>
-      <div className="os-add2"><select value={newPri} onChange={e=>setNewPri(e.target.value as typeof newPri)} aria-label="Priority"><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select><select value={newRecur} onChange={e=>setNewRecur(e.target.value)} aria-label="Repeat"><option value="">No repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div></form>
+     <ul>{open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10)).slice(0,6).map(t=>editing?.id===t.id?
+      <li key={t.id}><form className="os-edit" onSubmit={saveEdit}><input autoFocus value={editing.title} onChange={e=>setEditing({...editing,title:e.target.value})} maxLength={160} aria-label="Task title"/><input type="date" value={editing.due} onChange={e=>setEditing({...editing,due:e.target.value})} aria-label="Due date"/><button type="submit">Save</button><button type="button" onClick={()=>setEditing(null)} aria-label="Cancel edit">✕</button></form></li>:
+      <li key={t.id} className={`pri-${t.priority??"normal"}`}><input type="checkbox" checked={t.done} onChange={()=>toggleT(t)} aria-label={`Done: ${t.title}`}/><button className="os-ttl" onClick={()=>setEditing({id:t.id,title:t.title,due:t.due??""})} title="Tap to edit">{t.priority==="high"&&<i className="os-pri" title="High priority">!</i>}{t.title}{t.recur&&<small className="os-rec" title={`Repeats ${t.recur}`}> ↻</small>}</button>{t.due&&<time className={t.due<today()?"late":""}>{new Date(t.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</time>}<button className="os-snz" onClick={()=>snoozeT(t,1)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day">+1d</button><button className="os-snz os-del" onClick={()=>delT(t)} aria-label={`Delete ${t.title}`} title="Delete">✕</button></li>)}</ul>
+     <form onSubmit={addT} className="os-add os-add1"><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a focus item" maxLength={160} aria-label="New focus item"/>
+      <span className="os-datebtn"><button type="button" onClick={()=>{const el=dueRef.current;if(!el)return;try{el.showPicker();}catch{el.focus();}}} aria-label="Pick due date" title="Due date" className={newDue?"set":""}>{newDue?new Date(newDue+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):<Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" s={16}/>}</button><input ref={dueRef} type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} tabIndex={-1} aria-hidden="true"/></span>
+      <button type="button" className={newPri!=="normal"?"set":""} onClick={()=>setNewPri(p=>p==="normal"?"high":p==="high"?"low":"normal")} aria-label={`Priority: ${newPri}`} title={`Priority: ${newPri}`}>{newPri==="high"?"!":newPri==="low"?"↓":"–"}</button>
+      <button type="button" className={newRecur?"set":""} onClick={()=>setNewRecur(r=>({"":"daily",daily:"weekdays",weekdays:"weekly",weekly:"monthly",monthly:""} as Record<string,string>)[r])} aria-label={`Repeat: ${newRecur||"none"}`} title={`Repeat: ${newRecur||"none"}`}>{newRecur?newRecur.slice(0,2):"↻"}</button>
+      <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
     </article>
     <article className="os-panel os-metrics">
      <h3><Ico d="M4 20V10M10 20V4M16 20v-7"/>Key Metrics</h3>
      {[["Execution (active 7d)",exec],["Projects health",projects.length?Math.round(ready/projects.length*100):null],["Data verified",projects.length?Math.round(verified/projects.length*100):null]].map(([l,v])=><div className="os-bar" key={l as string}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":`${v}%`}</em></div>)}
      <div className="os-bar"><span>Market tracking</span><i><b style={{width:gold?"100%":"0%"}} className={gold&&Date.now()-new Date(gold.updatedAt).getTime()>3600e3?"stale":""}/></i><em>{gold?ago(gold.updatedAt):"off"}</em></div>
-     <div className="os-bar nc"><span>Content output</span><i><b/></i><em>n/c</em></div>
+     <div className="os-bar"><span>Tasks done (7d)</span><i><b style={{width:doneWeek===null?"0%":`${Math.round(doneWeek/Math.max(1,doneWeek+open.length)*100)}%`}}/></i><em>{doneWeek===null?"—":`${doneWeek} done`}</em></div>
     </article>
     <article className="os-panel os-activity">
      <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>Recent Activity</h3>
@@ -198,14 +214,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    <section className="os-panel os-markets" id="markets">
     <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Markets · XAU/USD</h3>
-    {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}%</em><small>{gold.source} · {ago(gold.updatedAt)}</small>
+    {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
      <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#E5132B" strokeWidth="2" points={(()=>{const s=gold.value.series,lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/(s.length-1)*300).toFixed(1)},${(56-(v-lo)/r*52).toFixed(1)}`).join(" ")})()}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
 
-   <section className="os-panel os-launch" id="launchpad">
-    <h3><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>Launchpad <span>{apps?`${apps.filter(a=>a.url).length} live`:""}</span></h3>
-    <div className="os-apps">{(apps??[]).filter(a=>a.url).map(a=><div key={a.id}><a href={a.url!} target="_blank" rel="noreferrer"><b>{a.name}</b><small>{a.url!.replace("https://","")}</small></a>{a.pages?.length?<p>{a.pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>:null}</div>)}</div>
-   </section>
   </div>
 
   <aside className="os-right">

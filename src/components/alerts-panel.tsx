@@ -34,6 +34,8 @@ export function AlertsPanel({goldPrice}:{goldPrice?:number}){
   const disable=()=>run("off",async()=>{const reg=await navigator.serviceWorker.getRegistration("/");const s=await reg?.pushManager.getSubscription();if(s){await post({action:"unsubscribe",endpoint:s.endpoint});await s.unsubscribe();}setHere(false);});
   const addRule=()=>{const n=Number(price);if(!(n>0))return setErr("Enter a gold price");run("rule",async()=>{await post({action:"addRule",direction:dir,price:n});setPrice("");});};
 
+  const key=(t:string)=>t.replace(/[^\p{L}\s]/gu,"").replace(/\s+/g," ").trim().toLowerCase().split(" ").slice(0,3).join(" ");
+  const feed=(d?.alerts??[]).filter((a,i,all)=>all.findIndex(x=>key(x.title)===key(a.title))===i);
   return <section className="os-panel os-alerts" id="alerts">
     <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/></svg>Alerts</h3>
     <div className="os-al-row">
@@ -55,8 +57,10 @@ export function AlertsPanel({goldPrice}:{goldPrice?:number}){
     </div>
 
     {err&&<p className="os-al-err">{err}</p>}
-    <ul className="os-al-list">{d?.alerts.slice(0,8).map(a=><li key={a.id}><i className={a.level}/><span><b>{a.title}</b>{a.body&&<small>{a.body}</small>}</span><time>{ago(Date.parse(a.createdAt))}</time></li>)}</ul>
-    {d&&!d.alerts.length&&<p className="os-muted">No alerts yet. Q checks sites, builds and gold every 15 min.</p>}
+    {/* Unseen only, newest first; repeats of the same alert (e.g. each morning brief) collapse into the latest one. */}
+    <ul className="os-al-list">{feed.slice(0,5).map(a=><li key={a.id}><i className={a.level}/><span><b>{a.title}</b>{a.body&&<small>{a.body}</small>}</span><time>{ago(Date.parse(a.createdAt))}</time></li>)}</ul>
+    {d&&!feed.length&&<p className="os-muted">All clear. Q checks sites, builds and gold every 15 min.</p>}
+    <div className="os-al-foot"><a href="/alerts">All alerts →</a>{feed.length>0&&<button onClick={()=>run("ack",()=>post({action:"ack",id:"all"}))} disabled={!!busy}>{busy==="ack"?"…":"Mark all seen"}</button>}</div>
     <button className="os-al-check" onClick={()=>run("check",()=>post({action:"check"}))} disabled={!!busy}>{busy==="check"?"Checking…":"Check now"}</button>
   </section>;
 }

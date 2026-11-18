@@ -55,6 +55,8 @@ async function liveCheck(url:string):Promise<ApiResult<{deployments?:Array<{stat
     return {data:{deployments:[{state:r.status<500?"READY":"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
   catch(e){return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
 }
+/* "Merge pull request #4 from x/y" says nothing: use the PR title (third line) instead. */
+function commitTitle(m?:string){const lines=(m??"").split("\n").map(l=>l.trim()).filter(Boolean);const pr=/^Merge pull request #(\d+)/.exec(lines[0]??"");return pr&&lines[1]?`${lines[1]} (#${pr[1]})`:lines[0];}
 export async function GET() {
   if(!await readSession())return NextResponse.json({error:"Unauthorized"},{status:401,headers:{"Cache-Control":"no-store"}});
   const ghToken=process.env.GITHUB_TOKEN;
@@ -79,7 +81,7 @@ export async function GET() {
       openIssues:issues.data?issues.data.filter(item=>!item.pull_request).length:null,
       issuesError:issues.error??null,
       issuesDataStatus:issues.status,
-      lastCommit:commits.data?.[0]?{message:commits.data[0].commit?.message?.split("\n")[0],date:commits.data[0].commit?.author?.date,url:commits.data[0].html_url}:null,
+      lastCommit:commits.data?.[0]?{message:commitTitle(commits.data[0].commit?.message),date:commits.data[0].commit?.author?.date,url:commits.data[0].html_url}:null,
       commitError:commits.error??null,
       commitDataStatus:commits.status,
       deployment:latest?{state:latest.state??"UNKNOWN",url:latest.url?`https://${latest.url}`:null,created:latest.created??null,target:latest.target??null,inspectorUrl:latest.inspectorUrl??null,sourceRepo,sourceMatches}:null,

@@ -59,7 +59,7 @@ export async function notify(a:{level:AlertRow["level"];title:string;body:string
 
 export async function recentAlerts(limit=20):Promise<AlertRow[]>{
   await ensure();
-  const {rows}=await db().query("SELECT id,level,title,body,url,created_at FROM q_alerts ORDER BY id DESC LIMIT $1",[limit]);
+  const {rows}=await db().query("SELECT id,level,title,body,url,created_at FROM q_alerts WHERE acknowledged_at IS NULL ORDER BY id DESC LIMIT $1",[limit]);
   return rows.map(r=>({id:Number(r.id),level:r.level,title:r.title,body:r.body,url:r.url,createdAt:new Date(r.created_at).toISOString()}));
 }
 
@@ -146,9 +146,11 @@ async function checkGold(out:string[]){
       await notify({level:"amber",title:`🥇 Gold ${r.direction==="above"?"above":"below"} ${r.price}`,body:`XAU/USD now ${price.toFixed(2)} (${gold.value.changePct>=0?"+":""}${gold.value.changePct.toFixed(2)}%). Level is now off. Set it again in Q.`,url:"/dashboard#markets"});
     }
   }
-  if(Math.abs(gold.value.changePct)>=1.5&&await transition(`goldmove:${today()}`,"sent")===null){
+  /* Move alerts at 1.5% and again at 3% (one each per day), with the actual move in the title. */
+  const move=Math.abs(gold.value.changePct),tier=move>=3?3:move>=1.5?1.5:0;
+  if(tier&&await transition(`goldmove:${today()}:${tier}`,"sent")===null){
     out.push("gold:move");
-    await notify({level:"amber",title:`🥇 Gold ${gold.value.changePct>0?"up":"down"} ${Math.abs(gold.value.changePct).toFixed(1)}% today`,body:`XAU/USD ${price.toFixed(2)}.`,url:"/dashboard#markets"});
+    await notify({level:"amber",title:`🥇 Gold ${gold.value.changePct>0?"up":"down"} ${move.toFixed(1)}% today`,body:`XAU/USD ${price.toFixed(2)}.`,url:"/dashboard#markets"});
   }
 }
 
