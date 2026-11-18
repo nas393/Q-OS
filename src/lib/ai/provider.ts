@@ -1,121 +1,145 @@
-export type ChatTurn={role:"user"|"assistant";content:string};
-export type ProviderConfig={provider:"gemini"|"groq";model:string};
+import type { AIProvider } from "@/lib/ai/stream";
 
-type ProviderError={error?:{message?:string;code?:string;status?:string}};
-const GEMINI_MODEL=process.env.GEMINI_MODEL??"gemini-3.6-flash";
-const GROQ_MODEL=process.env.GROQ_MODEL??"openai/gpt-oss-120b";
-const SYSTEM_PROMPT=[
-"You are Q, Nassim's strategic chief of staff inside NASSIM OS.",
-"Who he is: The Restless Architect — builder, strategist, creator, explorer. Commercial director by day, founder of a portfolio of ventures (NASSIM AI HQ, CERTIGO, Dalil Al-Bazourieh, LUMERIS, LUMERIS Reel Maker, NOVAÉ, XAU/USD Trading HQ, Radio Cedars). He thinks in systems, wants execution, hates fluff.",
-"Voice: short, direct, sharp. Lead with the answer in the first line. Plain words. Bold only the key words. No greetings, no disclaimers, no restating the question. Default under 120 words; go longer only if he asks.",
-"Use the LIVE SNAPSHOT in the message as the source of truth. Name projects specifically. Never answer with placeholder or generic projects.",
-"For status updates: one line per venture — **Name** · status · blocker (or none) · next action. Finish with **Next move:** one line.",
-"For analysis or decisions: what works, what doesn't, then **Highest-value move:** one line with why. Challenge weak ideas; disagree when the evidence says so.",
-"Truth rules: READY means a deployment finished, not that the product is good or used. Zero issues is not proof of quality. If something isn't in the snapshot (revenue, users, analytics), say 'not connected' in a few words — never invent numbers, owners, deadlines or results.",
-"Actions: you prepare and recommend. Deployments, code changes, external messages, money and deletions need his explicit approval — never claim you did them.",
-"Action tags (the dashboard turns them into buttons he taps to confirm): when he asks for a task, reminder or follow-up, end with [[task: short title | YYYY-MM-DD]] (date optional). To re-run live checks: [[checks]]. To open an app: [[open: PROJECT NAME]]. For an AngolaIQ summary: [[iq]]. At most 3 tags, each on its own line, only when useful; never say an action is done.",
-"No HTML. No tables unless asked."].join(" ");
-function providerPrompt(provider:"gemini"|"groq",model:string):string{return `${SYSTEM_PROMPT}\n\nRuntime identity: You are Q. This response is being served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: \\"Q — AI provider: ${provider.toUpperCase()} (model: ${model}).\\" Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;}
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+export type ProviderConfig = { provider: AIProvider; model: string };
 
-export function getAIConfig():ProviderConfig{
- const geminiKey=process.env.GEMINI_API_KEY;
- const groqKey=process.env.GROQ_API_KEY;
- if(groqKey)return {provider:"groq",model:GROQ_MODEL};
- if(geminiKey)return {provider:"gemini",model:GEMINI_MODEL};
- throw new Error("AI is not configured. Add GEMINI_API_KEY (recommended) or GROQ_API_KEY in Vercel.");
+type ProviderError = { error?: { message?: string; code?: string; status?: string } };
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
+const GROQ_MODEL = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
+
+const SYSTEM_PROMPT = [
+  "You are Q, Nassim's strategic chief of staff inside Q OS.",
+  "Nassim is a builder and strategist, a commercial director and founder of a portfolio of ventures. He thinks in systems and wants execution, not fluff.",
+  "Voice: short, direct, sharp. Lead with the answer. Plain words. Default under 120 words; go longer when the task requires it.",
+  "Use the LIVE SNAPSHOT in the message as the source of truth. Never invent projects, numbers, owners, deadlines or results.",
+  "For status updates: one line per venture — name, status, blocker and next action. Finish with one next move.",
+  "For analysis: what works, what does not, then the highest-value move. Challenge weak ideas.",
+  "READY means a deployment finished, not that the product is good or used. Zero issues is not proof of quality. If revenue, users or analytics are not connected, say so.",
+  "Autonomy: prepare and execute only actions explicitly exposed by enabled Q OS capabilities and allowed by server-side policy. Require owner approval for destructive actions, financial actions, external communications, access or secret changes, schema migrations and production releases. Never claim an action is complete until its result is verified.",
+  "Action tags supported by the dashboard: [[task: short title | YYYY-MM-DD]] (date optional), [[checks]], [[open: PROJECT NAME]], and [[iq]]. Use at most 3, each on its own line, only when useful. These tags request confirmation through the dashboard; they do not mean an action is already done.",
+  "No HTML. No tables unless asked."
+].join(" ");
+
+function providerPrompt(provider: AIProvider, model: string): string {
+  return `${SYSTEM_PROMPT}\n\nRuntime identity: You are Q. This response is served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: "Q — AI provider: ${provider.toUpperCase()} (model: ${model})." Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;
 }
 
-function resultResponse(text:string,provider:string,model:string):Response{
- return Response.json(
-  {status:"completed",output_text:text,output:[{content:[{type:"output_text",text}]}]},
-  {headers:{"x-ai-provider":provider,"x-ai-model":model,"Cache-Control":"no-store"}}
- );
+export function getAIConfig(): ProviderConfig {
+  if (process.env.GROQ_API_KEY) return { provider: "groq", model: GROQ_MODEL };
+  if (process.env.GEMINI_API_KEY) return { provider: "gemini", model: GEMINI_MODEL };
+  throw new Error("AI is not configured. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel.");
 }
 
-function errorResponse(status:number,message:string,code:string,provider:string,model:string):Response{
- return Response.json(
-  {error:{message,code}},
-  {status,headers:{"x-ai-provider":provider,"x-ai-model":model,"Cache-Control":"no-store"}}
- );
+function errorResponse(status: number, message: string, code: string, provider: AIProvider, model: string): Response {
+  return Response.json({ error: { message, code } }, {
+    status,
+    headers: { "x-ai-provider": provider, "x-ai-model": model, "Cache-Control": "no-store" }
+  });
 }
 
-async function readError(response:Response):Promise<{message:string;code:string}>{
- const raw=await response.text().catch(()=>"");
- try{
-  const body=JSON.parse(raw) as ProviderError;
-  return {message:String(body.error?.message??raw??"Provider request failed").slice(0,300),code:String(body.error?.code??body.error?.status??response.status)};
- }catch{return {message:raw.slice(0,300)||"Provider request failed",code:String(response.status)};}
-}
-
-async function callGemini(input:ChatTurn[],signal?:AbortSignal):Promise<Response>{
- const key=process.env.GEMINI_API_KEY!;
- const model=GEMINI_MODEL;
- const timeout=AbortSignal.timeout(30000);
- const combined=signal?AbortSignal.any([signal,timeout]):timeout;
- const upstream=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
-  method:"POST",headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({
-   systemInstruction:{parts:[{text:providerPrompt("gemini",model)}]},
-   contents:input.map(turn=>({role:turn.role==="assistant"?"model":"user",parts:[{text:turn.content}]})),
-   generationConfig:{maxOutputTokens:1800,temperature:0.7}
-  }),signal:combined
- });
- if(!upstream.ok){const err=await readError(upstream);return errorResponse(upstream.status,err.message,err.code,"gemini",model);}
- const payload=await upstream.json() as {candidates?:Array<{content?:{parts?:Array<{text?:string}>};finishReason?:string}>;promptFeedback?:{blockReason?:string}};
- const answer=payload.candidates?.[0]?.content?.parts?.map(part=>part.text??"").join("").trim()??"";
- if(!answer)return errorResponse(502,payload.promptFeedback?.blockReason??"Gemini returned no text.","empty_response","gemini",model);
- return resultResponse(answer,"gemini",model);
-}
-
-async function callGroq(input:ChatTurn[],signal?:AbortSignal):Promise<Response>{
- const key=process.env.GROQ_API_KEY!;
- const model=GROQ_MODEL;
- const timeout=AbortSignal.timeout(30000);
- const combined=signal?AbortSignal.any([signal,timeout]):timeout;
- const upstream=await fetch("https://api.groq.com/openai/v1/chat/completions",{
-  method:"POST",headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json"},
-  body:JSON.stringify({model,messages:[{role:"system",content:providerPrompt("groq",model)},...input.map(turn=>({role:turn.role,content:turn.content}))],max_tokens:1800,temperature:0.7,stream:false}),
-  signal:combined
- });
- if(!upstream.ok){const err=await readError(upstream);return errorResponse(upstream.status,err.message,err.code,"groq",model);}
- const payload=await upstream.json() as {choices?:Array<{message?:{content?:string|null}}>};
- const answer=payload.choices?.[0]?.message?.content?.trim()??"";
- if(!answer)return errorResponse(502,"Groq returned no text.","empty_response","groq",model);
- return resultResponse(answer,"groq",model);
-}
-
-export async function createAIStream(input:ChatTurn[],signal?:AbortSignal):Promise<Response>{
- const geminiKey=process.env.GEMINI_API_KEY;
- const groqKey=process.env.GROQ_API_KEY;
- let groqFailure:Response|undefined;
- // Groq is the low-latency primary. Gemini remains available as a fallback.
- if(groqKey){
-  try{
-   const response=await callGroq(input,signal);
-   if(response.ok)return response;
-   groqFailure=response;
-   const detail=await readError(response.clone());
-   console.error("groq_provider_http_error",{status:response.status,code:detail.code,message:detail.message.slice(0,180),model:GROQ_MODEL});
-  }catch(error){
-   if(signal?.aborted)throw error;
-   console.error("groq_provider_unavailable",{message:error instanceof Error?error.message:"unknown"});
+async function readError(response: Response): Promise<{ message: string; code: string }> {
+  const raw = await response.text().catch(() => "");
+  try {
+    const body = JSON.parse(raw) as ProviderError;
+    return {
+      message: String(body.error?.message ?? raw ?? "Provider request failed").slice(0, 300),
+      code: String(body.error?.code ?? body.error?.status ?? response.status)
+    };
+  } catch {
+    return { message: raw.slice(0, 300) || "Provider request failed", code: String(response.status) };
   }
- }
- if(geminiKey){
-  try{
-   const response=await callGemini(input,signal);
-   if(response.ok)return response;
-   if(groqFailure){
-    const primary=await readError(groqFailure.clone());
-    const fallback=await readError(response.clone());
-    return errorResponse(response.status,`Groq failed (${primary.code}); Gemini fallback failed: ${fallback.message}`,fallback.code,"gemini",GEMINI_MODEL);
-   }
-   return response;
-  }catch(error){
-   if(signal?.aborted)throw error;
-   console.error("gemini_provider_unavailable",{message:error instanceof Error?error.message:"unknown"});
+}
+
+function withProviderHeaders(response: Response, provider: AIProvider, model: string): Response {
+  const headers = new Headers(response.headers);
+  headers.set("x-ai-provider", provider);
+  headers.set("x-ai-model", model);
+  headers.set("Cache-Control", "no-store");
+  headers.set("Content-Type", "text/event-stream; charset=utf-8");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+  const key = process.env.GEMINI_API_KEY!;
+  const model = GEMINI_MODEL;
+  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000);
+  const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: providerPrompt("gemini", model) }] },
+      contents: input.map(turn => ({ role: turn.role === "assistant" ? "model" : "user", parts: [{ text: turn.content }] })),
+      generationConfig: { maxOutputTokens: 1800, temperature: 0.7 }
+    }),
+    signal: combined
+  });
+  if (!upstream.ok) {
+    const err = await readError(upstream);
+    return errorResponse(upstream.status, err.message, err.code, "gemini", model);
   }
- }
- if(groqFailure)return groqFailure;
- return errorResponse(503,"No AI provider is configured or available. Add GROQ_API_KEY and optionally GEMINI_API_KEY in Vercel.","provider_unavailable","none","none");
+  return withProviderHeaders(upstream, "gemini", model);
+}
+
+async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+  const key = process.env.GROQ_API_KEY!;
+  const model = GROQ_MODEL;
+  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000);
+  const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: providerPrompt("groq", model) }, ...input.map(turn => ({ role: turn.role, content: turn.content }))],
+      max_tokens: 1800,
+      temperature: 0.7,
+      stream: true
+    }),
+    signal: combined
+  });
+  if (!upstream.ok) {
+    const err = await readError(upstream);
+    return errorResponse(upstream.status, err.message, err.code, "groq", model);
+  }
+  return withProviderHeaders(upstream, "groq", model);
+}
+
+/* Provider fallback happens before the first token is exposed to the client. */
+export async function createAIStream(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
+  let groqFailure: Response | undefined;
+
+  if (groqKey) {
+    try {
+      const response = await callGroq(input, signal);
+      if (response.ok) return response;
+      groqFailure = response;
+      const detail = await readError(response.clone());
+      console.error("groq_provider_http_error", {
+        status: response.status, code: detail.code, message: detail.message.slice(0, 180), model: GROQ_MODEL
+      });
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      console.error("groq_provider_unavailable", { message: error instanceof Error ? error.message : "unknown" });
+    }
+  }
+
+  if (geminiKey) {
+    try {
+      const response = await callGemini(input, signal);
+      if (response.ok) return response;
+      if (groqFailure) {
+        const primary = await readError(groqFailure.clone());
+        const fallback = await readError(response.clone());
+        return errorResponse(response.status, `Groq failed (${primary.code}); Gemini fallback failed: ${fallback.message}`, fallback.code, "gemini", GEMINI_MODEL);
+      }
+      return response;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      console.error("gemini_provider_unavailable", { message: error instanceof Error ? error.message : "unknown" });
+    }
+  }
+
+  if (groqFailure) return groqFailure;
+  return errorResponse(503, "No AI provider is configured or available. Add GROQ_API_KEY and optionally GEMINI_API_KEY in Vercel.", "provider_unavailable", groqKey ? "groq" : "gemini", groqKey ? GROQ_MODEL : GEMINI_MODEL);
 }
