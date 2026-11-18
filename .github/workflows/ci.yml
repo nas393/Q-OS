@@ -3,7 +3,7 @@ on:
   push:
     branches: ["stage1/implementation", "q/core-foundation", "q/core-foundation-sync", "q/stabilization"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "q/stabilization"]
 permissions:
   contents: read
 jobs:
