@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
+import { PORTFOLIO_PROJECTS as projects } from "@/lib/portfolio/registry";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const TEAM_ID = "team_sWS7qi1gaGUI9lifKbbjERXj";
 type ApiResult<T> = { data:T; error?:never; status:"VERIFIED" } | { data:null; error:string; status:"FETCH_ERROR"|"AUTH_REQUIRED"|"NOT_CONFIGURED"|"NOT_LINKED" };
-const projects = [
-  { id:"q-jarvis", name:"NASSIM AI HQ / Q", repo:"q-jarvis", repoVisibility:"public", vercel:"prj_G87tunS7S6xoJAZyZzEmRIhHAru4", priority:"P1", next:"Complete Stage 1 Preview validation, confirm portfolio intelligence and system health, then define the next approved phase.", area:"Personal HQ" },
-  { id:"certigo", name:"CERTIGO", repo:"certigo-institute", repoVisibility:"public", vercel:"prj_ZxaLAJyMIXizGz8HqpflWC0TjSfG", priority:"P1", next:"Validate the mobile lesson reader and course quality before adding features.", area:"Education" },
-  { id:"dalil", name:"DALIL AL-BAZOURIEH", repo:"dalil-al-bazourieh", repoVisibility:"private", vercel:"prj_y4i0VPZXxzUhKLvNFOCxwdTSr94v", priority:"P2", next:"Protect the approved design baseline and validate the current mobile experience.", area:"Directory" },
-  { id:"lumeris", name:"LUMERIS", repo:"lumeris", repoVisibility:"private", vercel:"prj_9en6kfMm515bnbkmAgXSpEumh88r", priority:"P1", next:"One site live (home, guide, welcome, posts, studio). Next: Instagram stats into Q.", area:"Media" },
-  { id:"xauusd", name:"XAU/USD TRADING HQ", repo:"counter-trader", repoVisibility:"private", vercel:"prj_Yj88nFe9nAEY97iUndUUZs42zAhs", priority:"P2", next:"Validate market data, chart interactions, signal integrity and risk controls.", area:"Trading" },
-  { id:"novae", name:"NOVAÉ", repo:"novae-site", repoVisibility:"public", vercel:"prj_Vkri4LKQpL3r24l9FpAIfoWBpx38", priority:"P2", next:"Maintain the agency platform and revisit growth work after P1 delivery.", area:"Agency" },
-  { id:"lep", name:"LUANDA EDGE PULSE", repo:null, repoVisibility:null, vercel:null, url:"https://luanda-edge-pulse.base44.app", priority:"P2", next:"Angola market intelligence (Base44). Keep live; review data sources and Devil's Advocate.", area:"Intelligence" },
-  { id:"radio", name:"RADIO CEDARS", repo:"Radio-Cedars-", repoVisibility:"public", vercel:"prj_QRS67OXbiBMasOqgG2zVcrdHYJOR", priority:"P3", next:"Review the roadmap and define the next release milestone.", area:"Media" }
-];
+
 
 async function github<T>(path:string, token?:string):Promise<ApiResult<T>> {
   try {
@@ -53,7 +45,7 @@ async function vercel(projectId:string, token?:string):Promise<ApiResult<{deploy
 async function liveCheck(url:string):Promise<ApiResult<{deployments?:Array<{state?:string;url?:string;created?:number;target?:string|null;inspectorUrl?:string;meta?:Record<string,string>}>}>>{
   try{const r=await fetch(url,{cache:"no-store",redirect:"manual",signal:AbortSignal.timeout(8000)});
     return {data:{deployments:[{state:r.status<500?"READY":"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
-  catch(e){return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
+  catch{return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
 }
 /* "Merge pull request #4 from x/y" says nothing: use the PR title (third line) instead. */
 function commitTitle(m?:string){const lines=(m??"").split("\n").map(l=>l.trim()).filter(Boolean);const pr=/^Merge pull request #(\d+)/.exec(lines[0]??"");return pr&&lines[1]?`${lines[1]} (#${pr[1]})`:lines[0];}
