@@ -62,7 +62,7 @@ function withProviderHeaders(response: Response, provider: AIProvider, model: st
 async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
   const key = process.env.GEMINI_API_KEY!;
   const model = GEMINI_MODEL;
-  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000);
+  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
   const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -83,7 +83,7 @@ async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Resp
 async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
   const key = process.env.GROQ_API_KEY!;
   const model = GROQ_MODEL;
-  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000);
+  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
   const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
