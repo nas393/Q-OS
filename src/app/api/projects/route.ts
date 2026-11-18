@@ -45,7 +45,7 @@ async function vercel(projectId:string, token?:string):Promise<ApiResult<{deploy
 async function liveCheck(url:string):Promise<ApiResult<{deployments?:Array<{state?:string;url?:string;created?:number;target?:string|null;inspectorUrl?:string;meta?:Record<string,string>}>}>>{
   try{const r=await fetch(url,{cache:"no-store",redirect:"manual",signal:AbortSignal.timeout(8000)});
     return {data:{deployments:[{state:r.status<500?"READY":"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
-  catch(e){return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
+  catch{return {data:{deployments:[{state:"ERROR",url:url.replace(/^https:\/\//,""),created:Date.now(),target:"external"}]},status:"VERIFIED"};}
 }
 /* "Merge pull request #4 from x/y" says nothing: use the PR title (third line) instead. */
 function commitTitle(m?:string){const lines=(m??"").split("\n").map(l=>l.trim()).filter(Boolean);const pr=/^Merge pull request #(\d+)/.exec(lines[0]??"");return pr&&lines[1]?`${lines[1]} (#${pr[1]})`:lines[0];}
