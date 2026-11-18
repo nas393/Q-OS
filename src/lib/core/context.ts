@@ -2,6 +2,7 @@ import { listTasks } from "@/lib/tasks";
 import { recentAlerts } from "@/lib/alerts";
 import { loadMetrics } from "@/lib/metrics";
 import { PORTFOLIO_PROJECTS } from "@/lib/portfolio/registry";
+import { listIntegrationHealth } from "@/lib/integrations/registry";
 import type { QContextMetric, QServerContext } from "@/lib/core/contracts";
 
 type MetricEntry = { value: unknown; source: string; updatedAt: string };
@@ -73,6 +74,10 @@ export async function loadServerContext(ownerId = "owner"): Promise<QServerConte
     tasks,
     alerts,
     metrics,
+    integrations: listIntegrationHealth().map(integration => ({
+      id: integration.id, provider: integration.provider, purpose: integration.purpose,
+      capabilities: integration.capabilities, status: integration.status
+    })),
     availability: {
       tasks: tasksAvailable ? "available" : "unavailable",
       alerts: alertsAvailable ? "available" : "unavailable",
@@ -90,6 +95,7 @@ export function formatServerContext(context: QServerContext): string {
     `Portfolio configuration: ${JSON.stringify(context.portfolio)}`,
     `Open tasks: ${JSON.stringify(context.tasks)}`,
     `Unacknowledged alerts: ${JSON.stringify(context.alerts)}`,
-    `Stored metrics: ${JSON.stringify(context.metrics)}`
+    `Stored metrics: ${JSON.stringify(context.metrics)}`,
+    `Integration configuration (configured does not mean connectivity verified): ${JSON.stringify(context.integrations)}`
   ].join("\n").slice(0, 7600);
 }
