@@ -1,6 +1,6 @@
-# Q JARVIS — Stage 1 Foundation
+# Q OS — Stage 1 Foundation
 
-Stage 1 establishes the secure, cloud-first foundation for the Q JARVIS command centre. It is intentionally limited to the approved foundation scope.
+Stage 1 establishes the secure, cloud-first foundation for Q OS. It is intentionally limited to the approved foundation scope.
 
 ## Stage 1 scope
 
