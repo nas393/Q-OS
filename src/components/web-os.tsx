@@ -18,7 +18,7 @@ const ACT=/\[\[(task|checks|open|iq)(?::([^\]]*))?\]\]/g;
 const parseActions=(t:string):QAction[]=>[...t.matchAll(ACT)].map(m=>{const [a,d]=(m[2]??"").split("|").map(x=>x.trim());return {kind:m[1] as QAction["kind"],arg:a??"",due:/^\d{4}-\d{2}-\d{2}$/.test(d??"")?d:undefined};});
 const stripActions=(t:string)=>t.replace(ACT,"").trim();
 type Msg={role:"user"|"q";text:string};
-type NewsItem={id:string|number;title:string;url:string;publisher:string|null;geography:"Angola"|"Lebanon"|"Global";published_at:string|null;retrieved_at:string};
+type NewsItem={id:string|number;title:string;url:string;publisher:string|null;geography:"Angola"|"Lebanon"|"Global";category?:string|null;impact?:string|null;published_at:string|null;retrieved_at:string};
 type NewsStream="Angola"|"Lebanon"|"Global";
 
 const LOGOS:Record<string,string>={"NASSIM AI HQ / Q":"/os/logo-q.webp","CERTIGO":"/os/logo-certigo.webp","DALIL AL-BAZOURIEH":"/os/logo-dalil.webp","LUMERIS":"/os/logo-lumeris.webp","NOVAÉ":"/os/logo-novae.webp","XAU/USD TRADING HQ":"/os/logo-xau.webp","RADIO CEDARS":"/os/logo-radio.webp"};
@@ -51,7 +51,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const dueRef=useRef<HTMLInputElement>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
- const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsLoading,setNewsLoading]=useState(true),[newsRefreshing,setNewsRefreshing]=useState(false),[newsError,setNewsError]=useState("");
+ const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsCategory,setNewsCategory]=useState("All"),[newsLoading,setNewsLoading]=useState(true),[newsRefreshing,setNewsRefreshing]=useState(false),[newsError,setNewsError]=useState("");
  const [weather,setWeather]=useState<{t:number;code:number}|null>(null),[search,setSearch]=useState<string|null>(null),[drawer,setDrawer]=useState(false);
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
@@ -209,10 +209,11 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    </section>
 
-   <section className="os-panel os-news" aria-label="Top news">
-    <div className="os-news-head"><h3><Ico d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/>Top News</h3><div className="os-news-controls"><button className="os-news-refresh" type="button" onClick={refreshNews} disabled={newsRefreshing||newsLoading}><Ico d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.5-2L20 12M4 12l2.9 5a7 7 0 0 0 11.5-2" s={13}/>{newsRefreshing?"Refreshing…":"Refresh"}</button><div className="os-news-tabs" role="tablist" aria-label="News stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(stream=><button key={stream} type="button" role="tab" aria-selected={newsStream===stream} className={newsStream===stream?"on":""} onClick={()=>setNewsStream(stream)}>{stream}</button>)}</div></div></div>
-    {newsError?<p className="os-muted">{newsError}</p>:newsLoading?<p className="os-muted">Loading headlines…</p>:<ol className="os-news-list">{news.filter(item=>item.geography===newsStream).slice(0,8).map(item=><li key={item.id}><a href={item.url} target="_blank" rel="noreferrer"><b>{item.title}</b><small>{item.publisher||"Unknown source"} · {ago(item.published_at||item.retrieved_at)}</small></a><Ico d="M7 17 17 7M8 7h9v9" s={14}/></li>)}</ol>}
-    {!newsLoading&&!newsError&&!news.some(item=>item.geography===newsStream)&&<p className="os-muted">No headlines in this stream yet.</p>}
+   <section className="os-panel os-news" aria-label="Q Global Radar">
+    <div className="os-news-head"><div><h3><Ico d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/>Q Global Radar</h3><p className="os-news-kicker">Global intelligence. Strategic awareness.</p></div><div className="os-news-controls"><button className="os-news-refresh" type="button" onClick={refreshNews} disabled={newsRefreshing||newsLoading}><Ico d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.5-2L20 12M4 12l2.9 5a7 7 0 0 0 11.5-2" s={13}/>{newsRefreshing?"Refreshing…":"Refresh"}</button><div className="os-news-tabs" role="tablist" aria-label="Geographic stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(stream=><button key={stream} type="button" role="tab" aria-selected={newsStream===stream} className={newsStream===stream?"on":""} onClick={()=>setNewsStream(stream)}>{stream}</button>)}</div></div></div>
+    <div className="os-radar-categories" role="group" aria-label="Intelligence category">{["All","Commodities","Economy","Geopolitics","Security","Technology"].map(category=><button key={category} type="button" className={newsCategory===category?"on":""} aria-pressed={newsCategory===category} onClick={()=>setNewsCategory(category)}>{category}</button>)}</div>
+    {newsError?<p className="os-muted">{newsError}</p>:newsLoading?<p className="os-muted">Loading intelligence…</p>:<ol className="os-news-list">{news.filter(item=>item.geography===newsStream&&(newsCategory==="All"||({Commodities:["oil_gas","agriculture"],Economy:["finance","trade","economy"],Geopolitics:["politics","geopolitics"],Security:["security"],Technology:["technology"]} as Record<string,string[]>)[newsCategory]?.includes(item.category??""))).slice(0,8).map(item=><li key={item.id}><a href={item.url} target="_blank" rel="noreferrer"><b>{item.title}</b><small>{item.category?.replace(/_/g," ")||"General"} · {item.publisher||"Unknown source"} · {ago(item.published_at||item.retrieved_at)}</small></a><Ico d="M7 17 17 7M8 7h9v9" s={14}/></li>)}</ol>}
+    {!newsLoading&&!newsError&&!news.some(item=>item.geography===newsStream&&(newsCategory==="All"||({Commodities:["oil_gas","agriculture"],Economy:["finance","trade","economy"],Geopolitics:["politics","geopolitics"],Security:["security"],Technology:["technology"]} as Record<string,string[]>)[newsCategory]?.includes(item.category??"")))&&<p className="os-muted">No matching intelligence in this stream. Try another category or refresh.</p>}
    </section>
 
    <section className="os-panels">
