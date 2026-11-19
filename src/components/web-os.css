@@ -285,3 +285,16 @@
 .os-news-detail-note{margin:18px 0;color:var(--muted);font-size:12px;line-height:1.5}
 .os-news-dialog>a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:10px;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;font-size:12px;font-weight:700}
 @media(max-width:640px){.os-news-dialog{padding:17px}.os-news-dialog-backdrop{align-items:end;padding:10px}.os-news-dialog{max-height:88svh}}
+
+
+/* Q Assistant: persistent context, responsive focused workspace */
+.os-qhead{position:relative;padding-right:44px}
+.os-q-close{display:none;width:44px;height:44px;border:1px solid var(--line2);border-radius:11px;background:#ffffff08;color:#fff;font-size:24px}
+.os-q-mobile-open{position:fixed!important;z-index:90;top:18px;right:18px;bottom:18px;width:min(460px,calc(100vw - 36px));height:auto!important;max-height:calc(100svh - 36px);overflow:auto;padding:20px!important;border:1px solid #8b7cff66!important;border-radius:22px!important;background:#101018!important;box-shadow:0 0 0 100vmax #000b,0 28px 90px #000c}
+.os-q-mobile-open .os-q-close{display:block;position:absolute;right:0;top:0}
+.os-q-mobile-open .os-thread{max-height:48vh}
+@media(max-width:1060px){
+ .os-q-mobile-open{inset:0!important;width:100%!important;height:100dvh!important;max-height:100dvh!important;border:0!important;border-radius:0!important;padding:calc(18px + env(safe-area-inset-top)) 16px calc(90px + env(safe-area-inset-bottom))!important;box-shadow:0 0 0 100vmax #000e!important}
+ .os-q-mobile-open .os-thread{max-height:none;min-height:24vh;max-height:48dvh}
+ .os-q-mobile-open .os-ask{position:sticky;bottom:0;padding:8px 0;background:#101018}
+}
