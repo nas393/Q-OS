@@ -94,7 +94,7 @@ export default function QNewsClient() {
 
   return (
     <>
-      <Head title="Q News" desc="One intelligence feed across Angola, Lebanon and the world. Headlines link to their publishers; GDELT is an index, not a verification service.">
+      <Head title="Q Global Radar" desc="Global intelligence across Angola, Lebanon and the world. Headlines link to their publishers; GDELT is an index, not a verification service.">
         <button className="iq-btn pri" onClick={refresh} disabled={busy || loading}>
           {busy ? "Refreshing…" : `↻ Refresh ${stream === "All" ? "all streams" : stream}`}
         </button>
