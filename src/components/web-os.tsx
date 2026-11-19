@@ -18,6 +18,8 @@ const ACT=/\[\[(task|checks|open|iq)(?::([^\]]*))?\]\]/g;
 const parseActions=(t:string):QAction[]=>[...t.matchAll(ACT)].map(m=>{const [a,d]=(m[2]??"").split("|").map(x=>x.trim());return {kind:m[1] as QAction["kind"],arg:a??"",due:/^\d{4}-\d{2}-\d{2}$/.test(d??"")?d:undefined};});
 const stripActions=(t:string)=>t.replace(ACT,"").trim();
 type Msg={role:"user"|"q";text:string};
+type NewsItem={id:string|number;title:string;url:string;publisher:string|null;geography:"Angola"|"Lebanon"|"Global";published_at:string|null;retrieved_at:string};
+type NewsStream="Angola"|"Lebanon"|"Global";
 
 const LOGOS:Record<string,string>={"NASSIM AI HQ / Q":"/os/logo-q.webp","CERTIGO":"/os/logo-certigo.webp","DALIL AL-BAZOURIEH":"/os/logo-dalil.webp","LUMERIS":"/os/logo-lumeris.webp","NOVAÉ":"/os/logo-novae.webp","XAU/USD TRADING HQ":"/os/logo-xau.webp","RADIO CEDARS":"/os/logo-radio.webp"};
 const NAV:{label:string;href?:string;icon:string;tab?:boolean}[]=[
@@ -49,6 +51,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const dueRef=useRef<HTMLInputElement>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
+ const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsLoading,setNewsLoading]=useState(true),[newsError,setNewsError]=useState("");
  const [weather,setWeather]=useState<{t:number;code:number}|null>(null),[search,setSearch]=useState<string|null>(null),[drawer,setDrawer]=useState(false);
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
@@ -67,6 +70,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   const on=()=>setOnline(navigator.onLine);on();window.addEventListener("online",on);window.addEventListener("offline",on);
   return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};
  },[loadTasks]);
+ useEffect(()=>{let live=true;fetch("/api/iq/q-news?stream=All",{cache:"no-store"}).then(async r=>{if(!r.ok)throw new Error(r.status===401?"Sign in to view news":"News feed unavailable");return r.json();}).then(j=>{if(live){setNews(Array.isArray(j.items)?j.items:[]);setNewsError("");}}).catch(e=>{if(live)setNewsError(e instanceof Error?e.message:"News feed unavailable");}).finally(()=>{if(live)setNewsLoading(false);});return()=>{live=false;};},[]);
  useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandOpen(v=>!v);setCommandQuery("");}if(e.key==="Escape"){setSheet(false);setDrawer(false);setCommandOpen(false);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
  useEffect(()=>{qRef.current?.scrollTo({top:qRef.current.scrollHeight,behavior:"smooth"})},[qMsgs]);
 
@@ -115,6 +119,15 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   }catch(e){setQState("offline");setQMsgs(m=>{const c=[...m];c[c.length-1]={role:"q",text:`⚠ ${e instanceof Error?e.message:"Q is unavailable"}`};return c;});}
   finally{setQBusy(false);}}
 
+
+ const commandActions=[
+  {label:"Ask Q for today's priorities",detail:"Strategic briefing",run:()=>askQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
+  {label:"What matters in today’s news?",detail:"Analyse latest Angola, Lebanon and Global headlines",run:async()=>{const r=await fetch("/api/iq/q-news?stream=All",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const headlines=(j.items??[]).slice(0,18).map((x:NewsItem)=>x.geography+" | "+x.title+" | "+(x.publisher??"Unknown source")+" | "+x.url);askQ("What matters in today’s news? Analyse only these latest Q News headlines. Identify the 3 most consequential developments, implications, risks and actions. Separate facts from inference.\n"+headlines.join("\n"));document.getElementById("q")?.scrollIntoView({behavior:"smooth"});}},
+  {label:"Run system checks",detail:"Refresh alerts and project telemetry",run:()=>{fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>refresh());}},
+  {label:"Open portfolio",detail:"Projects and deployments",run:()=>document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"})},
+  {label:"Open priority queue",detail:"Tasks requiring attention",run:()=>document.getElementById("agenda")?.scrollIntoView({behavior:"smooth"})},
+  {label:"Open market pulse",detail:"XAU/USD monitoring",run:()=>document.getElementById("markets")?.scrollIntoView({behavior:"smooth"})}
+ ];
  const navLink=(n:typeof NAV[number],cls:string)=>n.href?<a key={n.label} href={n.href} className={`${cls}${n.label==="Command Center"?" on":""}`} onClick={()=>setDrawer(false)}><Ico d={n.icon}/><span>{n.label}</span></a>:<span key={n.label} className={`${cls} soon`} aria-disabled="true"><Ico d={n.icon}/><span>{n.label}</span><em>Soon</em></span>;
 
  return <main className="os" id="top">
@@ -192,6 +205,13 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      {!data&&loading&&Array.from({length:7},(_,i)=><div key={i} className="os-card ghost"/>)}
      {data&&!filtered.length&&<p className="os-muted">No project matches “{search}”.</p>}
     </div>
+
+   </section>
+
+   <section className="os-panel os-news" aria-label="Top news">
+    <div className="os-news-head"><h3><Ico d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/>Top News</h3><div className="os-news-tabs" role="tablist" aria-label="News stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(stream=><button key={stream} type="button" role="tab" aria-selected={newsStream===stream} className={newsStream===stream?"on":""} onClick={()=>setNewsStream(stream)}>{stream}</button>)}</div></div>
+    {newsError?<p className="os-muted">{newsError}</p>:newsLoading?<p className="os-muted">Loading headlines…</p>:<ol className="os-news-list">{news.filter(item=>item.geography===newsStream).slice(0,8).map(item=><li key={item.id}><a href={item.url} target="_blank" rel="noreferrer"><b>{item.title}</b><small>{item.publisher||"Unknown source"} · {ago(item.published_at||item.retrieved_at)}</small></a><Ico d="M7 17 17 7M8 7h9v9" s={14}/></li>)}</ol>}
+    {!newsLoading&&!newsError&&!news.some(item=>item.geography===newsStream)&&<p className="os-muted">No headlines in this stream yet.</p>}
    </section>
 
    <section className="os-panels">
@@ -230,7 +250,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=>{const acts=m.role==="q"&&!(qBusy&&i===qMsgs.length-1)?parseActions(m.text):[];return <div key={i} className={`os-msg ${m.role}`}>{m.text?(m.role==="q"?<QMd text={stripActions(m.text)}/>:m.text):(qBusy&&i===qMsgs.length-1?"Thinking…":"")}
      {acts.length>0&&<div className="os-acts">{acts.map((a,k)=>{const key=`${i}-${k}`,st=doneActs[key];return <button key={key} disabled={!!st&&st!=="Failed"} onClick={()=>runAction(a,key)}>{st&&st!=="…"?st:a.kind==="task"?`＋ Task: ${a.arg}${a.due?` (${a.due})`:""}`:a.kind==="checks"?"Run checks":a.kind==="open"?`Open ${a.arg}`:"Summarise AngolaIQ"}</button>;})}</div>}</div>;})}</div>}
     <form className="os-ask" onSubmit={e=>{e.preventDefault();askQ(qInput)}}><input value={qInput} onChange={e=>setQInput(e.target.value)} placeholder="How can I help you today?" maxLength={2000} aria-label="Ask Q"/><button type="submit" disabled={qBusy||!qInput.trim()} aria-label="Send"><Ico d="M5 12h14M13 6l6 6-6 6"/></button></form>
-    <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
+    <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><button onClick={()=>commandActions.find(x=>x.label.startsWith("What matters"))?.run()} disabled={qBusy}><Ico d="M4 5h16v14H4zM8 9h8M8 13h8" s={16}/>What matters in today’s news?</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
    </section>
    <section className="os-panel os-agenda" id="agenda">
     <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
@@ -255,15 +275,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <button className="os-close" onClick={()=>setSheet(false)}>Close</button></nav></div>}
   {commandOpen&&<div className="os-command-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setCommandOpen(false);}}>
    <section className="os-command" role="dialog" aria-modal="true" aria-label="Q command palette">
-    <div className="os-command-search"><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={20}/><input autoFocus value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Search projects, tasks or commands…" onKeyDown={e=>{if(e.key==="Escape")setCommandOpen(false);}}/><kbd>ESC</kbd></div>
+    <form className="os-command-search" onSubmit={e=>{e.preventDefault();const q=commandQuery.trim();if(!q)return;const action=commandActions.find(x=>(x.label+" "+x.detail).toLowerCase().includes(q.toLowerCase()));const project=projects.find(p=>clean(p.name).toLowerCase().includes(q.toLowerCase()));if(action){setCommandOpen(false);action.run();}else if(project){setCommandOpen(false);const href=project.url??apps?.find(a=>a.id===project.vercel)?.url;if(href)window.open(href,"_blank","noopener");else document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}else{setCommandOpen(false);askQ(q);window.setTimeout(()=>document.getElementById("q")?.scrollIntoView({behavior:"smooth"}),0);}}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={20}/><input autoFocus enterKeyHint="go" value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Search or ask Q…"/><kbd>GO</kbd></form>
     <div className="os-command-group"><small>QUICK COMMANDS</small>
-     {[
-      {label:"Ask Q for today's priorities",detail:"Strategic briefing",run:()=>askQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
-      {label:"Run system checks",detail:"Refresh alerts and project telemetry",run:()=>{setCommandOpen(false);fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>refresh());}},
-      {label:"Open portfolio",detail:"Projects and deployments",run:()=>{setCommandOpen(false);document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}},
-      {label:"Open priority queue",detail:"Tasks requiring attention",run:()=>{setCommandOpen(false);document.getElementById("agenda")?.scrollIntoView({behavior:"smooth"});}},
-      {label:"Open market pulse",detail:"XAU/USD monitoring",run:()=>{setCommandOpen(false);document.getElementById("markets")?.scrollIntoView({behavior:"smooth"});}}
-     ].filter(x=>(x.label+" "+x.detail).toLowerCase().includes(commandQuery.toLowerCase())).map(x=><button key={x.label} onClick={()=>{setCommandOpen(false);x.run();}}><span><b>{x.label}</b><small>{x.detail}</small></span><kbd>↵</kbd></button>)}
+     {commandActions.filter(x=>(x.label+" "+x.detail).toLowerCase().includes(commandQuery.toLowerCase())).map(x=><button key={x.label} onClick={()=>{setCommandOpen(false);x.run();}}><span><b>{x.label}</b><small>{x.detail}</small></span><kbd>↵</kbd></button>)}
+     {commandQuery.trim()&&<button className="os-command-ask" onClick={()=>{const q=commandQuery.trim();setCommandOpen(false);askQ(q);window.setTimeout(()=>document.getElementById("q")?.scrollIntoView({behavior:"smooth"}),0);}}><span><b>Ask Q: “{commandQuery.trim()}”</b><small>Send this question to your assistant</small></span><kbd>↵</kbd></button>}
     </div>
     <div className="os-command-group"><small>PROJECTS</small>
      {projects.filter(p=>clean(p.name).toLowerCase().includes(commandQuery.toLowerCase())).slice(0,5).map(p=><button key={p.id} onClick={()=>{setCommandOpen(false);const href=p.url??apps?.find(a=>a.id===p.vercel)?.url;if(href)window.open(href,"_blank","noopener");else document.getElementById("ecosystem")?.scrollIntoView({behavior:"smooth"});}}><span><b>{clean(p.name)}</b><small>{p.area} · {p.deployment?.state??"Status unavailable"}</small></span><kbd>↗</kbd></button>)}
