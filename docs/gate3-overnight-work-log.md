@@ -1,40 +1,58 @@
 # OPEN QUESTION FOR NEXT SESSION
 
-**Should the first implementation slice remain limited to the verified 44px touch-target corrections in the Q OS navigation, header tools, Global Radar filters, and refresh control, or should we start with the larger Global Radar card redesign?**
+**No decision is required to start. Proceed in the approved order: finish the small accessibility/responsive fixes first, then Global Radar, task queue, and Q Assistant. If a later change requires altering product behavior, data contracts, authentication, database schema, or the approved scope, stop and ask.**
 
-## Gate 3 work log — 2026-11-19
+## Gate 3 execution log — 2026-11-19
 
-### Branch
-- `q-os/ux-refactor-gate3-2026-11-19`
-- Created from `main`.
-- No changes made to `main`.
-- No merge or production deployment performed.
+### Branch and PR
+- Branch: `q-os/ux-refactor-gate3-2026-11-19`
+- Draft PR: https://github.com/nas393/Q-OS/pull/23
+- Base: `main` at `f3100f0620c7b18e36547664ed59478db4c49711`
+- No merge; no production deployment; no changes to `main`.
 
-### Confirmed implementation evidence
-- `src/components/web-os.css` currently defines:
-  - `.os-nav` minimum height: 42px.
-  - `.os-tools > *` width/height: 38px.
-  - `.os-news-tabs button` minimum height: 30px.
-  - `.os-news-refresh` minimum height: 30px.
-  - `.os-radar-categories button` minimum height: 27px.
-- These are below the approved 44px minimum touch-target objective.
-- `package.json` exposes `lint`, `typecheck`, `build`, and `test` scripts.
+### Completed
+1. Created the dedicated branch.
+2. Added this execution log.
+3. Extended the existing GitHub Actions CI push trigger to include this branch. Existing CI steps are npm install, typecheck, test, lint, and build.
+4. Applied a scoped CSS override in `src/components/web-os.css` to raise these interactive targets to at least 44px:
+   - Sidebar navigation
+   - Header tool buttons
+   - Global Radar region tabs
+   - Global Radar refresh button
+   - Global Radar category filters
 
-### Execution constraints
-- The connected GitHub interface supports repository reads and branch/file commits, but does not provide a shell or local Node.js runtime.
-- Therefore `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` have **not** been executed in this session.
-- A preview deployment or remote CI result must not be represented as a test result unless the corresponding checks are visible and successful.
-- No application code changes have been made yet. This is intentional: the requested test-after-each-step control cannot currently be met from the available execution environment.
+### Commits
+- `1d56aa1` — initial Gate 3 execution log.
+- `be6a725` — enable CI push trigger on this branch.
+- `3b9aee9` — 44px interactive target correction.
 
-### Next controlled steps
-1. Obtain the user's answer to the open question above.
-2. Confirm available GitHub Actions / Vercel preview checks for the dedicated branch.
-3. Make one small CSS-only touch-target change, then verify with the available automated checks.
-4. Proceed to Global Radar, task queue, and Q Assistant in separate, reviewable slices.
-5. Keep any unverified or failing change isolated on this branch with a clear note.
-6. Do not merge or deploy to production without separate explicit approval.
+### Verification status
+- Vercel preview for latest commit: queued at last check. Preview alias: https://q-os-git-q-os-ux-refactor-gate3-2026-11-19-nas393s-projects.vercel.app
+- The initial branch documentation preview reached READY. The latest CSS commit preview has not yet completed.
+- GitHub workflow-run lookup returned no run records; commit status endpoint returned no status checks. CI execution is therefore **not verified**.
+- No local shell/Node runtime is available in this session. npm test, lint, typecheck and build were not run locally.
+- Do not describe these changes as tested or production-ready until checks complete.
+
+### Next steps — continue without another scope decision
+1. Confirm CI and Vercel preview result for `3b9aee9`. If either fails, inspect logs and fix only the failure; rerun checks.
+2. Inspect and improve Global Radar card hierarchy, line limits, deduplication, region tabs and article detail experience without changing API contracts or fabricating content.
+3. Run checks after the Radar slice.
+4. Improve task queue grouping and detail/create flows without changing persistence semantics or schema.
+5. Run checks after the task slice.
+6. Improve Q Assistant desktop drawer and mobile full-height sheet while preserving streaming, history, providers and orchestration.
+7. Run checks after the assistant slice.
+8. Review alerts/apps, then perform responsive QA at 375, 768, 1280 and 1920 widths.
+9. Record each failed/unverified item and keep it isolated on this branch.
+10. Keep PR #23 in draft until all checks pass and the user separately authorizes merge/deployment.
+
+### Safety boundaries
+- Never merge or deploy to production without separate explicit approval.
+- Do not modify authentication, database schema, secrets, environment variables, external API contracts, or project identities.
+- If a change requires altering the plan or cannot be safely undone, stop and ask.
 
 ### Current status
 - Gate 1: completed.
 - Gate 2: approved.
-- Gate 3: branch created; implementation is awaiting a test-capable execution path and the scope decision above.
+- Gate 3: active on dedicated branch.
+- Accessibility target-size slice: committed; verification pending.
+- Global Radar / tasks / Q Assistant: not yet implemented.
