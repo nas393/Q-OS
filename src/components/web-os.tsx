@@ -84,6 +84,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const gold=metrics.xauusd;
  const activity=useMemo(()=>[...projects.filter(p=>p.lastCommit).map(p=>({t:new Date(p.lastCommit!.date).getTime(),title:`${clean(p.name)} — ${p.lastCommit!.message}`,src:"GitHub",href:p.lastCommit!.url})),...(gold?[{t:new Date(gold.updatedAt).getTime(),title:`Trading HQ — gold updated ${gold.value.price.toFixed(2)}`,src:"Counter-Trader",href:""}]:[])].sort((a,b)=>b.t-a.t).slice(0,6),[projects,gold]);
  const open=(tasks??[]).filter(t=>!t.done);
+ const focusTasks=[...open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10))].sort((a,b)=>{const overdueA=!!a.due&&a.due<today()?1:0,overdueB=!!b.due&&b.due<today()?1:0;if(overdueA!==overdueB)return overdueB-overdueA;const rank={high:0,normal:1,low:2};const priority=(rank[a.priority??"normal"]??1)-(rank[b.priority??"normal"]??1);if(priority)return priority;return (a.due??"9999").localeCompare(b.due??"9999");}).slice(0,6);
  const overdue=open.filter(t=>t.due&&t.due<today()).length,redCount=alerts.filter(a=>a.level==="red").length;
  const agenda=[...open.filter(t=>t.due&&t.due<=today()).map(t=>({id:t.id,time:t.due===today()?(t.dueTime??"Today"):"Overdue",title:t.title,hot:t.due!==today()})),...alerts.filter(a=>a.level==="red").map(a=>({id:a.title,time:"Now",title:a.title,hot:true}))].slice(0,6);
  const filtered=search?projects.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())):projects;
@@ -222,10 +223,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    <section className="os-panels">
     <article className="os-panel os-focus">
-     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>Next 15 days</span></h3>
+     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>{open.length} open · {overdue} overdue</span></h3>
      {taskErr&&<p className="os-err">{taskErr}</p>}
      {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
-     <ul>{open.filter(t=>!t.due||t.due<=new Date(Date.now()+15*864e5).toISOString().slice(0,10)).slice(0,6).map(t=>editing?.id===t.id?
+     <ul>{focusTasks.map(t=>editing?.id===t.id?
       <li key={t.id}><form className="os-edit" onSubmit={saveEdit}><input autoFocus value={editing.title} onChange={e=>setEditing({...editing,title:e.target.value})} maxLength={160} aria-label="Task title"/><input type="date" value={editing.due} onChange={e=>setEditing({...editing,due:e.target.value})} aria-label="Due date"/><button type="submit">Save</button><button type="button" onClick={()=>setEditing(null)} aria-label="Cancel edit">✕</button></form></li>:
       <li key={t.id} className={`pri-${t.priority??"normal"}`}><input type="checkbox" checked={t.done} onChange={()=>toggleT(t)} aria-label={`Done: ${t.title}`}/><button className="os-ttl" onClick={()=>setEditing({id:t.id,title:t.title,due:t.due??""})} title="Tap to edit">{t.priority==="high"&&<i className="os-pri" title="High priority">!</i>}{t.title}{t.recur&&<small className="os-rec" title={`Repeats ${t.recur}`}> ↻</small>}</button>{t.due&&<time className={t.due<today()?"late":""}>{new Date(t.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</time>}<button className="os-snz" onClick={()=>snoozeT(t,1)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day">+1d</button><button className="os-snz os-del" onClick={()=>delT(t)} aria-label={`Delete ${t.title}`} title="Delete">✕</button></li>)}</ul>
      <form onSubmit={addT} className="os-add os-add1"><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a focus item" maxLength={160} aria-label="New focus item"/>
