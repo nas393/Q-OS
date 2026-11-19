@@ -40,6 +40,8 @@ export function parseGdeltDate(value?: string): string | null {
 export function classifyNewsCategory(title: string): string {
   const value = title.toLowerCase();
   const rules: Array<[string, RegExp]> = [
+    ["security", /\b(security|military|attack|strike|war|conflict|terror|defence|defense|missile|ceasefire|hostage)\b/],
+    ["geopolitics", /\b(geopolitic|sanction|diplomacy|treaty|summit|border dispute)\b/],
     ["oil_gas", /\b(oil|gas|petroleum|opec|lng|crude)\b/],
     ["agriculture", /\b(agriculture|farmer|harvest|crop|maize|corn|wheat|rice|sugar|soybean)\b/],
     ["finance", /\b(bank|banking|inflation|currency|forex|interest rate|debt|bond|stock market)\b/],
