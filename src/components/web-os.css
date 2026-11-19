@@ -249,3 +249,17 @@
 @media(max-width:640px){.os-news-controls{width:100%;justify-content:space-between}}
 
 .os-news-kicker{margin:4px 0 0;color:var(--muted);font-size:10.5px;letter-spacing:.04em}.os-radar-categories{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.os-radar-categories button{min-height:27px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#ffffff05;color:var(--sub);font-size:10.5px;font-weight:600}.os-radar-categories button.on{border-color:#ff3b4e66;background:#ff3b4e18;color:#fff}@media(max-width:640px){.os-radar-categories{gap:5px}.os-radar-categories button{flex:1 0 auto}}
+
+/* ---- Accessibility: minimum interactive target sizes ----
+ * Keep the visual treatment compact while making controls reliably tappable.
+ * Applied as a scoped override to avoid changing layout or component behavior.
+ */
+.os .os-nav{min-height:44px}
+.os .os-tools>*{width:44px;height:44px;min-width:44px;min-height:44px}
+.os .os-news-tabs button{min-height:44px}
+.os .os-news-refresh{min-height:44px;padding-inline:12px}
+.os .os-radar-categories button{min-height:44px;padding-inline:12px}
+@media(max-width:640px){
+  .os .os-news-tabs button{min-height:44px}
+  .os .os-radar-categories button{min-height:44px}
+}
