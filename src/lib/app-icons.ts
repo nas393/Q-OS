@@ -37,11 +37,18 @@ export function pickIcon(html:string,pageUrl:string):string{
   catch{return new URL("/favicon.ico",base).href;}
 }
 
+/** True when two URLs are on the same site, ignoring a leading "www." (example.com -> www.example.com is fine). */
+export function sameSite(a:string,b:string):boolean{
+  try{const h=(u:string)=>new URL(u).hostname.toLowerCase().replace(/^www\./,"");return h(a)===h(b);}catch{return false;}
+}
+
 /** Fetches the homepage (cached for a day by Next's fetch cache) and returns its icon URL; null on any failure. */
 export async function discoverIcon(url:string):Promise<string|null>{
   try{
     const r=await fetch(url,{redirect:"follow",signal:AbortSignal.timeout(4000),headers:{Accept:"text/html"},next:{revalidate:86400}} as RequestInit);
     if(!r.ok)return null;
+    /* A redirect to another site (e.g. a sign-in wall) would hand us that site's logo: keep only the app's own. */
+    if(r.url&&!sameSite(r.url,url))return null;
     const html=(await r.text()).slice(0,200_000);
     const head=html.split(/<\/head>/i)[0];
     const icon=pickIcon(head,r.url||url);

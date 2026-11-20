@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {pickIcon} from "../src/lib/app-icons.ts";
+import {pickIcon,sameSite} from "../src/lib/app-icons.ts";
 
 const page="https://certigo-gray.vercel.app/";
 
@@ -27,4 +27,11 @@ test("resolves relative hrefs and absolute CDN hrefs", () => {
 test("falls back to /favicon.ico and ignores data: URIs", () => {
   assert.equal(pickIcon(`<title>x</title>`,page),"https://certigo-gray.vercel.app/favicon.ico");
   assert.equal(pickIcon(`<link rel="icon" href="data:image/png;base64,AAA">`,page),"https://certigo-gray.vercel.app/favicon.ico");
+});
+
+test("only the app's own site counts after redirects", () => {
+  assert.equal(sameSite("https://certigo-gray.vercel.app/","https://certigo-gray.vercel.app/fr"),true);
+  assert.equal(sameSite("https://www.example.com/","https://example.com/"),true);
+  assert.equal(sameSite("https://vercel.com/login?next=x","https://certigo-gray.vercel.app/"),false);
+  assert.equal(sameSite("not a url","https://example.com/"),false);
 });
