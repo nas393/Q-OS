@@ -1,4 +1,4 @@
-/* Q Live Studio: the owner's personal look for Q OS. Saved per device (localStorage); never required for the page to work. */
+/* Studio: the owner's personal look for every Q OS section. Saved per device (localStorage); never required for the page to work. */
 export type Theme="obsidian"|"aurora"|"graphite"|"light";
 export type Accent="halo"|"red"|"purple"|"blue"|"emerald"|"amber"|"rose";
 export type CardStyle="glass"|"solid"|"outline";
@@ -22,16 +22,21 @@ export const ACCENTS:{id:Accent;name:string;hex:string}[]=[
 export const STACK_NAMES:Record<StackCard,string>={crit:"Needs you",brief:"Q briefing",today:"Today",eco:"Ecosystem",mkt:"Markets",world:"World radar"};
 export const SIG_NAMES:Record<SigType,string>={attn:"Attention",radar:"Global Radar",mk:"Markets",sys:"System activity"};
 
-export const DEFAULT_STUDIO:Studio={theme:"obsidian",accent:"halo",cards:"glass",motion:"full",density:"comfortable",
+/* Calm by default: solid cards and calm motion (Full and Glass stay one tap away in Studio). */
+export const DEFAULT_STUDIO:Studio={theme:"obsidian",accent:"halo",cards:"solid",motion:"calm",density:"comfortable",
   stackOrder:["crit","brief","today","eco","mkt","world"],stackHidden:[],sigHidden:[]};
 
-const KEY="qlive.studio.v1";
+const KEY="qos.studio.v2",OLD="qlive.studio.v1";
 const pick=<T extends string>(v:unknown,allowed:readonly T[],fb:T):T=>allowed.includes(v as T)?v as T:fb;
 
 /** Reads saved settings, validating every field so a corrupted entry can never break the dashboard. */
 export function loadStudio():Studio{
   let raw:Partial<Studio>={};
-  try{raw=JSON.parse(localStorage.getItem(KEY)??"{}")??{};}catch{raw={};}
+  try{
+    raw=JSON.parse(localStorage.getItem(KEY)??"null")??null;
+    /* One-time move from the first Studio: keep theme, accent, density and layout; adopt the calm card and motion defaults. */
+    if(!raw){const old=JSON.parse(localStorage.getItem(OLD)??"{}")??{};raw={...old,cards:undefined,motion:old.motion==="off"?"off":undefined};}
+  }catch{raw={};}
   const all=DEFAULT_STUDIO.stackOrder;
   const order=Array.isArray(raw.stackOrder)?raw.stackOrder.filter((k):k is StackCard=>all.includes(k as StackCard)):[];
   const s:Studio={

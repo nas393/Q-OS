@@ -35,3 +35,13 @@ test("only the app's own site counts after redirects", () => {
   assert.equal(sameSite("https://vercel.com/login?next=x","https://certigo-gray.vercel.app/"),false);
   assert.equal(sameSite("not a url","https://example.com/"),false);
 });
+
+test("manifest icons: SVG first, else the largest raster; relative to the manifest", async () => {
+  const {manifestHref,pickManifestIcon}=await import("../src/lib/app-icons.ts");
+  assert.equal(manifestHref('<link rel="manifest" href="/manifest.webmanifest">',"https://a.example/"),"https://a.example/manifest.webmanifest");
+  assert.equal(manifestHref('<link rel="icon" href="/x.png">',"https://a.example/"),null);
+  const m={icons:[{src:"/icon-192.png",sizes:"192x192"},{src:"/icon-512.png",sizes:"512x512"}]};
+  assert.equal(pickManifestIcon(m,"https://a.example/app/manifest.json"),"https://a.example/icon-512.png");
+  assert.equal(pickManifestIcon({icons:[{src:"quest-icon.svg",sizes:"any",type:"image/svg+xml"},{src:"/big.png",sizes:"1024x1024"}]},"https://q.example/manifest.webmanifest"),"https://q.example/quest-icon.svg");
+  assert.equal(pickManifestIcon({},"https://a.example/m.json"),null);
+});

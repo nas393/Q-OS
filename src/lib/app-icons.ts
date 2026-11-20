@@ -37,6 +37,26 @@ export function pickIcon(html:string,pageUrl:string):string{
   catch{return new URL("/favicon.ico",base).href;}
 }
 
+/** The web app manifest declared in `html`, as an absolute URL, or null. */
+export function manifestHref(html:string,pageUrl:string):string|null{
+  for(const tag of html.match(/<link\b[^>]*>/gi)??[]){
+    if(attr(tag,"rel").toLowerCase()!=="manifest")continue;
+    const href=attr(tag,"href");
+    try{return href?new URL(href,pageUrl).href:null;}catch{return null;}
+  }
+  return null;
+}
+
+/** Best icon in a web app manifest: an SVG ("any" size) first, else the largest raster; absolute URL or null. */
+export function pickManifestIcon(manifest:unknown,manifestUrl:string):string|null{
+  const icons=(manifest as {icons?:{src?:string;sizes?:string;type?:string}[]})?.icons;
+  if(!Array.isArray(icons))return null;
+  const rank=(i:{src?:string;sizes?:string;type?:string})=>/svg/.test(i.type??"")||/\.svg(\?|$)/i.test(i.src??"")?1e6:
+    Math.max(0,...(i.sizes??"").split(/\s+/).map(s=>Number(s.split("x")[0])||0));
+  const best=icons.filter(i=>typeof i.src==="string"&&i.src&&!/^data:/i.test(i.src)).sort((a,b)=>rank(b)-rank(a))[0];
+  try{return best?.src?new URL(best.src,manifestUrl).href:null;}catch{return null;}
+}
+
 /** True when two URLs are on the same site, ignoring a leading "www." (example.com -> www.example.com is fine). */
 export function sameSite(a:string,b:string):boolean{
   try{const h=(u:string)=>new URL(u).hostname.toLowerCase().replace(/^www\./,"");return h(a)===h(b);}catch{return false;}
@@ -51,7 +71,13 @@ export async function discoverIcon(url:string):Promise<string|null>{
     if(r.url&&!sameSite(r.url,url))return null;
     const html=(await r.text()).slice(0,200_000);
     const head=html.split(/<\/head>/i)[0];
-    const icon=pickIcon(head,r.url||url);
+    let icon=pickIcon(head,r.url||url);
+    /* A bare favicon.ico is often a platform default (e.g. a site builder's logo): prefer the app's manifest icon. */
+    const man=/\.ico(\?|$)/i.test(icon)?manifestHref(head,r.url||url):null;
+    if(man&&sameSite(man,url)){
+      const m=await fetch(man,{signal:AbortSignal.timeout(3000),next:{revalidate:86400}} as RequestInit).then(x=>x.ok?x.json():null).catch(()=>null);
+      icon=pickManifestIcon(m,man)??icon;
+    }
     return icon.startsWith("https://")?icon:null;
   }catch{return null;}
 }

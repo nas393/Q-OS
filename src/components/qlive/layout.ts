@@ -22,8 +22,9 @@ export const nodeWidth=(name:string)=>64+8.6*shortName(name).length;
  * A node that would touch an already-placed node steps to an outer or inner orbit.
  */
 export function orbitLayout<T extends OrbitInput>(nodes:T[],w:number,h:number){
-  const panelW=w<=1320?300:340,H=Math.max(h,820);
-  const cx=w/2,top=76,bottom=H-196,cy=top+(bottom-top)/2;
+  const panelW=w<=1320?300:340,H=Math.max(h,720);
+  /* The stage sits below the shell's top bar: 24px of air above, 196px below for the Q dock. */
+  const cx=w/2,top=24,bottom=H-196,cy=top+(bottom-top)/2;
   const RX=Math.max(170,Math.min((w-2*(24+panelW+16))/2-78,330)),RY=Math.max(170,Math.min((bottom-top)/2-26,300));
   const ring=(a:number,k:number)=>({x:Math.cos(a)*RX*k,y:Math.sin(a)*RY*k});
   const crit=nodes.filter(n=>n.state==="crit"),ok=nodes.filter(n=>n.state!=="crit");

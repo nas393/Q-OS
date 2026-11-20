@@ -1,0 +1,71 @@
+/* =====================================================================
+   Q OS DESIGN TOKENS: the single source of truth for every section
+   (Command centre, Q Assistant, AngolaIQ, Morning brief, Alerts).
+   The shell root carries class "os" plus data-theme / data-accent / data-cards / data-density / data-motion,
+   set by Studio. Nothing outside this file defines a colour, size or radius that a section could drift from.
+   Colour discipline: neutral canvas and surfaces; 1px structural borders; the accent only on primary actions
+   and the active item; red / amber / green / blue only for status.
+   Every text token below is at least 4.5:1 on every surface of its theme; --control-line is at least 3:1.
+   ===================================================================== */
+.os{
+  /* Type: Inter for everything; Instrument Serif only for the Q briefing headline. Modular scale 12-32. */
+  --sans:var(--font-sans),Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:var(--font-serif),"Instrument Serif",Georgia,serif;
+  --fs-xs:12px;--lh-xs:16px;--fs-sm:13px;--lh-sm:20px;--fs-md:14px;--lh-md:22px;--fs-lg:16px;--lh-lg:24px;
+  --fs-xl:20px;--lh-xl:28px;--fs-2xl:24px;--lh-2xl:32px;--fs-3xl:32px;--lh-3xl:40px;
+  /* Space: 4px grid */
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;--s-10:40px;--s-12:48px;
+  /* Radius */
+  --r-xs:6px;--r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--r-full:999px;
+  /* Controls and frame */
+  --h-sm:32px;--h-md:40px;--h-lg:48px;
+  --rail:64px;--rail-open:232px;--topbar:56px;--tabbar:68px;--page-max:1200px;--page-pad:32px;
+  /* Motion */
+  --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.22,1.18,.36,1);--dur-1:.12s;--dur-2:.2s;--dur-3:.32s;
+  /* Section rhythm (density) */
+  --pad:20px;--gap:16px;--row:46px;
+  /* Back-compat names used by the Command centre */
+  --r-lg-legacy:20px;
+}
+@media (max-width:860px){.os{--page-pad:16px}}
+
+/* ---------- Themes ---------- */
+.os[data-theme="obsidian"]{--bg:#090A0E;--surface:#12141B;--surface-2:#191C25;--elevated:#202431;--text:#F3F4F6;--text-2:#A1A1AA;--muted:#8B90A0;
+  --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.2);--control-line:rgba(255,255,255,.4);--hover:rgba(255,255,255,.05);--press:rgba(255,255,255,.08);--scrim:rgba(4,5,8,.62);
+  --ok:#22C58B;--ok-ink:#3DD69C;--watch:#E9A23B;--watch-ink:#F0B65E;--crit:#F12D43;--crit-ink:#FF6275;--info:#5797E8;--info-ink:#86B4F2;--q:#A855F7;--q-ink:#C49BFA;
+  --canvas-a:rgba(255,255,255,.035);--canvas-b:rgba(255,255,255,.05);--glass:rgba(17,19,26,.78);--shadow:0 24px 60px -24px rgba(0,0,0,.7);--shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --node-bg:#14161E;--node-line:rgba(255,255,255,.10);--node-text:#F3F4F6;color-scheme:dark}
+.os[data-theme="aurora"]{--bg:#0A0B1D;--surface:#131535;--surface-2:#1A1D45;--elevated:#242858;--text:#F1F2FF;--text-2:#BEC2E8;--muted:#A3A8D6;
+  --line:rgba(170,180,255,.10);--line-2:rgba(170,180,255,.18);--line-3:rgba(170,180,255,.28);--control-line:rgba(190,198,255,.42);--hover:rgba(170,180,255,.07);--press:rgba(170,180,255,.11);--scrim:rgba(5,6,20,.62);
+  --ok:#2BD4A0;--ok-ink:#4FE0B1;--watch:#F0AE4E;--watch-ink:#F5C16F;--crit:#FF3F5E;--crit-ink:#FF7088;--info:#6AA6FF;--info-ink:#93BEFF;--q:#B07CFF;--q-ink:#C9A6FF;
+  --canvas-a:rgba(110,120,255,.10);--canvas-b:rgba(190,140,255,.06);--glass:rgba(20,22,58,.74);--shadow:0 24px 60px -24px rgba(0,0,20,.8);--shadow-sm:0 1px 2px rgba(0,0,20,.5);
+  --node-bg:#171A40;--node-line:rgba(170,180,255,.16);--node-text:#F1F2FF;color-scheme:dark}
+.os[data-theme="graphite"]{--bg:#161718;--surface:#1E1F21;--surface-2:#26272A;--elevated:#2F3034;--text:#F4F4F3;--text-2:#B9B9B6;--muted:#A09F9C;
+  --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.2);--control-line:rgba(255,255,255,.4);--hover:rgba(255,255,255,.05);--press:rgba(255,255,255,.08);--scrim:rgba(0,0,0,.55);
+  --ok:#3CC48F;--ok-ink:#57D3A2;--watch:#E2A44A;--watch-ink:#EDBB6D;--crit:#EE3A4E;--crit-ink:#FF6E7E;--info:#6E9FE0;--info-ink:#94B9EC;--q:#A77BEA;--q-ink:#C2A3F2;
+  --canvas-a:rgba(255,255,255,.03);--canvas-b:rgba(255,255,255,.05);--glass:rgba(32,33,36,.8);--shadow:0 24px 60px -24px rgba(0,0,0,.65);--shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --node-bg:#232427;--node-line:rgba(255,255,255,.10);--node-text:#F4F4F3;color-scheme:dark}
+.os[data-theme="light"]{--bg:#F3F1EC;--surface:#FFFFFF;--surface-2:#F7F5F1;--elevated:#FFFFFF;--text:#15161A;--text-2:#454852;--muted:#5D616D;
+  --line:rgba(20,22,30,.08);--line-2:rgba(20,22,30,.13);--line-3:rgba(20,22,30,.22);--control-line:rgba(20,22,30,.55);--hover:rgba(20,22,30,.045);--press:rgba(20,22,30,.08);--scrim:rgba(30,28,24,.32);
+  --ok:#14986A;--ok-ink:#0B7A53;--watch:#C8800F;--watch-ink:#8F5400;--crit:#D11F35;--crit-ink:#B8172C;--info:#2F6FC6;--info-ink:#1F5FB8;--q:#7C3AED;--q-ink:#6D28D9;
+  --canvas-a:rgba(20,22,30,.025);--canvas-b:rgba(20,22,30,.06);--glass:rgba(255,255,255,.8);--shadow:0 24px 50px -28px rgba(40,34,20,.35);--shadow-sm:0 1px 2px rgba(40,34,20,.12);
+  --node-bg:#FFFFFF;--node-line:rgba(20,22,30,.12);--node-text:#15161A;color-scheme:light}
+
+/* ---------- Accent: primary actions and the active item only ---------- */
+.os[data-accent="halo"]{--accent:#E9DCC4;--accent-solid:#EADFCB;--on-accent:#17140F;--ai-d:#EADFCB;--ai-l:#6E5530;--as-l:#1B1915;--oa-l:#FBF8F2;--accent-rgb:233,220,196}
+.os[data-accent="red"]{--accent:#F12D43;--accent-solid:#D92038;--on-accent:#FFFFFF;--ai-d:#FF6275;--ai-l:#B8172C;--as-l:#C81D33;--oa-l:#FFFFFF;--accent-rgb:241,45,67}
+.os[data-accent="purple"]{--accent:#A855F7;--accent-solid:#9333EA;--on-accent:#FFFFFF;--ai-d:#C49BFA;--ai-l:#7E22CE;--as-l:#7E22CE;--oa-l:#FFFFFF;--accent-rgb:168,85,247}
+.os[data-accent="blue"]{--accent:#5797E8;--accent-solid:#2F6FC6;--on-accent:#FFFFFF;--ai-d:#86B4F2;--ai-l:#1F5FB8;--as-l:#1F5FB8;--oa-l:#FFFFFF;--accent-rgb:87,151,232}
+.os[data-accent="emerald"]{--accent:#22C58B;--accent-solid:#22C58B;--on-accent:#04140D;--ai-d:#3DD69C;--ai-l:#0B7A53;--as-l:#0B7A53;--oa-l:#FFFFFF;--accent-rgb:34,197,139}
+.os[data-accent="amber"]{--accent:#E9A23B;--accent-solid:#E9A23B;--on-accent:#1A1003;--ai-d:#F0B65E;--ai-l:#8F5400;--as-l:#8F5400;--oa-l:#FFFFFF;--accent-rgb:233,162,59}
+.os[data-accent="rose"]{--accent:#F472B6;--accent-solid:#DB2777;--on-accent:#FFFFFF;--ai-d:#F79BCB;--ai-l:#BE185D;--as-l:#BE185D;--oa-l:#FFFFFF;--accent-rgb:244,114,182}
+.os{--accent-ink:var(--ai-d)}
+.os[data-theme="light"]{--accent-ink:var(--ai-l)}
+.os[data-theme="light"][data-accent]{--accent-solid:var(--as-l);--on-accent:var(--oa-l)}
+.os[data-theme="light"][data-accent="halo"]{--accent:#B89A6A}
+
+/* ---------- Cards, density ---------- */
+.os[data-cards="solid"]{--card-bg:var(--surface);--card-line:var(--line-2);--card-blur:none}
+.os[data-cards="glass"]{--card-bg:var(--glass);--card-line:var(--line-2);--card-blur:blur(20px) saturate(140%)}
+.os[data-cards="outline"]{--card-bg:transparent;--card-line:var(--line-3);--card-blur:none}
+.os[data-density="compact"]{--pad:14px;--gap:10px;--row:40px}

@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import {AlertsPanel} from "@/components/alerts-panel";
-import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./qlive/qlive.css";
 import {orbitLayout,shortName} from "./qlive/layout";
-import {ACCENTS,DEFAULT_STUDIO,SIG_NAMES,STACK_NAMES,THEMES,loadStudio,saveStudio,type SigType,type StackCard,type Studio} from "./qlive/studio";
+import {STACK_NAMES,type SigType,type StackCard} from "./qlive/studio";
+import {I} from "./shell/icons";
+import {AppMark} from "./shell/app-mark";
+import {usePageCommands,useShell} from "./shell/app-shell";
 import type { MetricsMap } from "@/lib/metrics";
 import { buildQContext } from "@/lib/q-context";
 import QMd from "@/components/q-md";
@@ -23,7 +25,6 @@ type Msg={role:"user"|"q";text:string};
 type NewsItem={id:string|number;title:string;url:string;publisher:string|null;geography:"Angola"|"Lebanon"|"Global";category?:string|null;impact?:string|null;published_at:string|null;retrieved_at:string};
 type NewsStream="Angola"|"Lebanon"|"Global";
 
-const LOGOS:Record<string,string>={"NASSIM AI HQ / Q":"/os/logo-q.webp","CERTIGO":"/os/logo-certigo.webp","DALIL AL-BAZOURIEH":"/os/logo-dalil.webp","LUMERIS":"/os/logo-lumeris.webp","NOVAÉ":"/os/logo-novae.webp","XAU/USD TRADING HQ":"/os/logo-xau.webp","RADIO CEDARS":"/os/logo-radio.webp"};
 const QUICK:[string,string,string][]=[
  ["Business Analysis","M4 20V10M10 20V4M16 20v-7","Give me a business analysis of my ecosystem: what is working, what is not, and the single highest-value next move."],
  ["Project Update","M12 3l9 5-9 5-9-5zM3 13l9 5 9-5","Give me a status update on all my projects: live status, blockers and the next action for each."],
@@ -36,7 +37,6 @@ const ago=(iso:string|number)=>{const m=Math.round((Date.now()-new Date(iso).get
 const clean=(n:string)=>n.replace(" / Q","");
 /* Polyline points for a series scaled into w×h (2px top/bottom padding). */
 const spark=(s:number[],w:number,h:number)=>{const lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/Math.max(1,s.length-1)*w).toFixed(1)},${(h-2-(v-lo)/r*(h-4)).toFixed(1)}`).join(" ");};
-const initials=(n:string)=>n.split(/[^A-Za-z0-9À-ÿ]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const today=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Luanda"});
 
 export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null}){
@@ -44,9 +44,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const [trend,setTrend]=useState<number|null>(null);
  const [online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
- const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
  const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsCategory,setNewsCategory]=useState("All"),[newsLoading,setNewsLoading]=useState(true),[newsRefreshing,setNewsRefreshing]=useState(false),[newsError,setNewsError]=useState(""),[selectedNews,setSelectedNews]=useState<string|null>(null);
- const [weather,setWeather]=useState<{t:number;code:number}|null>(null);
+ const shell=useShell(),{studio,weather,toast}=shell;
  const [qState,setQState]=useState<"checking"|"online"|"offline">("checking"),[qMsgs,setQMsgs]=useState<Msg[]>([]),[qInput,setQInput]=useState(""),[qBusy,setQBusy]=useState(false),[qConv,setQConv]=useState<string|undefined>();
  const qRef=useRef<HTMLDivElement>(null);
 
@@ -57,16 +56,11 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  useEffect(()=>{loadTasks();
   fetch("/api/apps",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>j&&setApps(j.apps)).catch(()=>{});
   fetch("/api/chat",{cache:"no-store"}).then(r=>setQState(r.ok?"online":"offline")).catch(()=>setQState("offline"));
-  let wx:{at:number;t:number;code:number}|null=null;try{wx=JSON.parse(sessionStorage.getItem("os-wx")??"null");}catch{}
-  if(wx&&Date.now()-wx.at<18e5)setWeather({t:wx.t,code:wx.code}); // 30 min cache: one weather call per session window
-  else fetch("https://api.open-meteo.com/v1/forecast?latitude=-8.84&longitude=13.23&current=temperature_2m,weather_code&timezone=Africa%2FLuanda").then(r=>r.json()).then(j=>{if(!j?.current)return;const w={t:Math.round(j.current.temperature_2m),code:j.current.weather_code};setWeather(w);try{sessionStorage.setItem("os-wx",JSON.stringify({...w,at:Date.now()}));}catch{}}).catch(()=>{});
-  if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(()=>{}); // offline copy of the last dashboard
   const on=()=>setOnline(navigator.onLine);on();window.addEventListener("online",on);window.addEventListener("offline",on);
   return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};
  },[loadTasks]);
  useEffect(()=>{let live=true;const request=async(input:string,init?:RequestInit)=>{let last:unknown;for(let attempt=0;attempt<2;attempt++){try{return await fetch(input,{...init,cache:"no-store",credentials:"same-origin"});}catch(error){last=error;if(attempt===0)await new Promise(resolve=>window.setTimeout(resolve,700));}}throw last instanceof Error?last:new Error("Network request failed");};const read=async()=>{const response=await request("/api/iq/q-news?stream=All");const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error??(response.status===401?"Sign in to view news":`News service returned ${response.status}`));return Array.isArray(body.items)?body.items as NewsItem[]:[];};const load=async()=>{try{let items=await read();if(live){setNews(items);setNewsError("");}const missing=(["Angola","Lebanon","Global"] as NewsStream[]).filter(stream=>!items.some(item=>item.geography===stream));if(missing.length){const response=await request("/api/iq/q-news",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({stream:"All"})});const result=await response.json().catch(()=>({}));if(!response.ok&&result.status!=="partial")throw new Error(result.error??"Automatic news refresh failed");items=await read();if(live)setNews(items);if(result.status==="partial"&&live){const failures=Object.entries(result.results??{}).filter(([,value])=>(value as {error?:string}).error).map(([name,value])=>`${name}: ${(value as {error:string}).error}`);if(failures.length)setNewsError(`Some sources need attention — ${failures.join(" · ")}`);}}}catch(error){if(live)setNewsError(error instanceof TypeError?"Connection to Q Global Radar failed. Check your connection and tap Refresh.":error instanceof Error?error.message:"News feed unavailable");}finally{if(live)setNewsLoading(false);}};void load();return()=>{live=false;};},[]);
  const refreshNews=async()=>{setNewsRefreshing(true);setNewsError("");try{const response=await fetch("/api/iq/q-news",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({stream:newsStream}),cache:"no-store",credentials:"same-origin"});const payload=await response.json().catch(()=>({}));if(!response.ok&&payload.status!=="partial")throw new Error(payload.error??`News refresh returned ${response.status}`);const latest=await fetch("/api/iq/q-news?stream=All",{cache:"no-store",credentials:"same-origin"});const data=await latest.json().catch(()=>({}));if(!latest.ok)throw new Error(data.error??`Could not reload headlines (${latest.status})`);setNews(Array.isArray(data.items)?data.items:[]);if(payload.status==="partial"){const failures=Object.entries(payload.results??{}).filter(([,value])=>(value as {error?:string}).error).map(([name,value])=>`${name}: ${(value as {error:string}).error}`);if(failures.length)setNewsError(`Some sources failed — ${failures.join(" · ")}`);}}catch(error){setNewsError(error instanceof TypeError?"Connection to Q Global Radar failed. Check your connection and retry.":error instanceof Error?error.message:"News refresh failed");}finally{setNewsRefreshing(false);}};
- useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandOpen(v=>!v);setCommandQuery("");}if(e.key==="Escape")setCommandOpen(false);};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
  useEffect(()=>{qRef.current?.scrollTo({top:qRef.current.scrollHeight,behavior:"smooth"})},[qMsgs]);
 
  const projects=useMemo(()=>data?.projects??[],[data]);
@@ -136,38 +130,31 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
 
  /* ===================== Q LIVE: presentation layer (data + actions above are unchanged) ===================== */
- const [studio,setStudio]=useState<Studio>(DEFAULT_STUDIO);
- useEffect(()=>{setStudio(loadStudio());},[]);
- const setS=(p:Partial<Studio>)=>setStudio(s=>{const n={...s,...p};saveStudio(n);return n;});
  const [panel,setPanel]=useState<Panel|null>(null);
  const [qOpen,setQOpen]=useState(false);
  const [focusId,setFocusId]=useState<string|null>(null);
  const [region,setRegion]=useState<"All"|NewsStream>("All");
  const [sigType,setSigType]=useState<"all"|SigType>("all");
  const [card,setCard]=useState(0);
- const [toasts,setToasts]=useState<{id:number;msg:string;undo?:()=>void}[]>([]);
  const [stage,setStage]=useState({w:1440,h:900});
  const [arcOn,setArcOn]=useState(false);
  const [flashId,setFlashId]=useState("");
  const stageRef=useRef<HTMLElement>(null),pRef=useRef<HTMLDivElement>(null),stackRef=useRef<HTMLDivElement>(null),qInputRef=useRef<HTMLInputElement>(null),addDateRef=useRef<HTMLInputElement>(null);
  const motion=studio.motion;
 
- useEffect(()=>{const el=stageRef.current;const read=()=>setStage({w:window.innerWidth,h:window.innerHeight});read();
+ useEffect(()=>{const el=stageRef.current;const read=()=>setStage(el&&el.clientWidth>0?{w:el.clientWidth,h:el.clientHeight}:{w:window.innerWidth,h:window.innerHeight});read();
   const ro=el?new ResizeObserver(read):null;if(el&&ro)ro.observe(el);window.addEventListener("resize",read);
   const t=window.setTimeout(()=>setArcOn(true),120);return()=>{ro?.disconnect();window.removeEventListener("resize",read);window.clearTimeout(t);};},[]);
- /* Keep the page background (overscroll, notch areas) in the Studio theme. */
- useEffect(()=>{const bg={obsidian:"#090A0E",aurora:"#0A0B1D",graphite:"#161718",light:"#F3F1EC"}[studio.theme];const prev=document.body.style.background;document.body.style.background=bg;return()=>{document.body.style.background=prev;};},[studio.theme]);
  useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==="Escape"){setPanel(null);setQOpen(false);setFocusId(null);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
- useEffect(()=>{if(qOpen&&window.innerWidth>860)qInputRef.current?.focus({preventScroll:true});},[qOpen]);
+ useEffect(()=>{if(qOpen&&window.innerWidth>1180)qInputRef.current?.focus({preventScroll:true});},[qOpen]);
 
- const toast=useCallback((msg:string,undo?:()=>void)=>{const id=Date.now()+Math.random();setToasts(t=>[...t,{id,msg,undo}]);window.setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4800);},[]);
  const flash=(id:string)=>{setFlashId(id);window.setTimeout(()=>setFlashId(""),1300);};
  const openQ=(prompt?:string)=>{setPanel(null);setQOpen(true);if(prompt)askQ(prompt);};
  /* One place decides where an action link goes: in-app panels, anchors, or the real external page. */
  const go=(href:string)=>{
   if(href==="#agenda")setPanel("priorities");
-  else if(href==="#markets"){setPanel(null);if(window.innerWidth<=860){const i=stackOrder.indexOf("mkt");if(i>=0)goCard(i);}else flash("mkt");}
-  else if(href==="/alerts")setPanel("alerts");
+  else if(href==="#markets"){setPanel(null);if(window.innerWidth<=1180){const i=stackOrder.indexOf("mkt");if(i>=0)goCard(i);}else flash("mkt");}
+  else if(href==="/alerts")shell.openPanel("alerts");
   else if(/^https?:/.test(href))window.open(href,"_blank","noopener");
   else window.location.href=href;
  };
@@ -180,24 +167,24 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    const st=p.deployment?.state;
    const state:ONode["state"]=st==="READY"?"ok":st==="ERROR"?"crit":st==="BUILDING"||st==="QUEUED"||st==="INITIALIZING"?"dep":"idle";
    const name=p.name==="NASSIM AI HQ / Q"?"NASSIM AI HQ":clean(p.name);
-   return {id:p.id,name,area:p.area,state,url:p.url??app?.url??null,icon:app?.icon??null,logo:LOGOS[p.name]??null,pages:app?.pages??[],
+   return {id:p.id,name,area:p.area,state,url:p.url??app?.url??null,icon:app?.icon??null,keys:[p.id,p.vercel,app?.name],pages:app?.pages??[],
     updated:p.lastCommit?.date??null,deployAt:p.deployment?.created??null,inspector:p.deployment?.inspectorUrl??null,issues:p.openIssues,commit:p.lastCommit?.message??null,commitUrl:p.lastCommit?.url??null,repo:p.repo};
   });
   const extra=(apps??[]).filter(a=>a.url&&!projects.some(p=>p.vercel===a.id||(!!p.url&&p.url===a.url))).map(a=>({id:a.id,
    name:a.name.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase()),area:"App",state:(a.state==="ERROR"?"crit":a.state==="READY"||a.state==="EXTERNAL"?"ok":"idle") as ONode["state"],
-   url:a.url,icon:a.icon??null,logo:null,pages:a.pages??[],updated:null,deployAt:null,inspector:null,issues:null,commit:null,commitUrl:null,repo:null}));
+   url:a.url,icon:a.icon??null,keys:[a.id,a.name],pages:a.pages??[],updated:null,deployAt:null,inspector:null,issues:null,commit:null,commitUrl:null,repo:null}));
   return [...fromRegistry,...extra];
  },[projects,apps]);
  const liveCount=nodes.filter(n=>n.state==="ok").length;
  const focus=focusId?nodes.find(n=>n.id===focusId)??null:null;
 
  /* ---------- Orbit geometry (desktop) ---------- */
- const isWide=stage.w>860;
+ const isWide=stage.w>1116; /* the orbit layout shows above 1180px of viewport (see qlive.css) */
  const {cx,cy,RX,RY,placed}=orbitLayout(nodes,stage.w,stage.h);
  const fpos=focus?placed.find(p=>p.n.id===focus.id)??null:null;
  const worldTransform=fpos?`translate(${-170-fpos.x*1.12}px,${-fpos.y*1.12}px) scale(1.12)`:"none";
  const S2=Math.max(RX,RY)+180,C=2*Math.PI*78;
- const glow=critical.length?"rgba(241,45,67,.26)":watch.length?"rgba(233,162,59,.22)":"rgba(var(--accent-rgb),.22)";
+ const glow=critical.length?"rgba(241,45,67,.16)":watch.length?"rgba(233,162,59,.12)":"rgba(var(--accent-rgb),.10)";
 
  /* Signal particles travel along the spokes into Q (decorative; off with Motion: Off or reduced motion). */
  useEffect(()=>{
@@ -241,24 +228,19 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   if(r.ok){setNewTask("");setNewDue("");setNewRecur("");setNewPri("normal");loadTasks();toast(`Added “${title.slice(0,40)}”`);}else setTaskErr((await r.json().catch(()=>({}))).error??"Could not save");}
  async function complete(t:Task){await toggleT(t);if(!t.done)toast(`Done · ${t.title.slice(0,36)}`,()=>{toggleT({...t,done:true});});}
  async function snooze(t:Task){await snoozeT(t,1);toast(`Snoozed “${t.title.slice(0,30)}” to tomorrow`);}
- async function signOut(){await fetch("/api/auth/logout",{method:"POST"}).catch(()=>{});try{if("caches" in window)await Promise.all((await caches.keys()).map(k=>caches.delete(k)));}catch{}window.location.replace("/login");}
  const pickDue=()=>{const el=addDateRef.current;if(!el)return;try{el.showPicker();}catch{el.focus();}};
 
- const cmdActions=[
-  {label:"Ask Q for today's priorities",detail:"Strategic briefing from live data",run:()=>openQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
-  {label:"What matters in today’s news?",detail:"Analyse latest Angola, Lebanon and Global headlines",run:async()=>{setQOpen(true);const r=await fetch("/api/iq/q-news?stream=All",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const headlines=(j.items??[]).slice(0,18).map((x:NewsItem)=>x.geography+" | "+x.title+" | "+(x.publisher??"Unknown source")+" | "+x.url);askQ("What matters in today’s news? Analyse only these latest Q News headlines. Identify the 3 most consequential developments, implications, risks and actions. Separate facts from inference.\n"+headlines.join("\n"));}},
-  {label:"Run system checks",detail:"Refresh alerts and project telemetry",run:()=>{fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>{refresh();toast("Checks complete");});}},
-  {label:"Open applications",detail:"Every app, status and page",run:()=>setPanel("apps")},
-  {label:"Open priorities",detail:"Add, edit, complete, snooze",run:()=>setPanel("priorities")},
-  {label:"Open alerts",detail:"Push, gold levels, history",run:()=>setPanel("alerts")},
-  {label:"Open Studio",detail:"Theme, accent, cards, motion, sections",run:()=>setPanel("studio")},
-  {label:studio.theme==="light"?"Switch to dark (Obsidian)":"Switch to Light Executive",detail:"Theme",run:()=>setS({theme:studio.theme==="light"?"obsidian":"light"})}
- ];
- const cq=commandQuery.trim().toLowerCase();
- const cmdShown=cmdActions.filter(x=>(x.label+" "+x.detail).toLowerCase().includes(cq));
- const appShown=nodes.filter(n=>n.name.toLowerCase().includes(cq)).slice(0,6);
- const runCommand=(e:FormEvent)=>{e.preventDefault();const q=commandQuery.trim();if(!q)return;setCommandOpen(false);
-  if(cmdShown[0])cmdShown[0].run();else if(appShown[0]){if(appShown[0].url)window.open(appShown[0].url,"_blank","noopener");else setPanel("apps");}else openQ(q);};
+ /* Command centre actions in the global palette (Ctrl/Cmd K); "Ask Q" from the palette opens Q here. */
+ usePageCommands([
+  {id:"cc-priorities",label:"Ask Q for today's priorities",detail:"Strategic briefing from live data",icon:"spark",run:()=>openQ("Review my live Q OS dashboard data. Identify the single most important priority today, explain why, and recommend the next action.")},
+  {id:"cc-news",label:"What matters in today's news?",detail:"Q reads the latest Angola, Lebanon and Global headlines",icon:"globe",run:async()=>{setQOpen(true);const r=await fetch("/api/iq/q-news?stream=All",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const headlines=(j.items??[]).slice(0,18).map((x:NewsItem)=>x.geography+" | "+x.title+" | "+(x.publisher??"Unknown source")+" | "+x.url);askQ("What matters in today's news? Analyse only these latest Q News headlines. Identify the 3 most consequential developments, implications, risks and actions. Separate facts from inference.\n"+headlines.join("\n"));}},
+  {id:"cc-checks",label:"Run system checks",detail:"Refresh alerts and app status now",icon:"activity",run:()=>{fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check"})}).then(()=>{refresh();toast("Checks complete");});}},
+  {id:"cc-open-pri",label:"Open priorities",detail:"Add, edit, complete, snooze",icon:"list",run:()=>setPanel("priorities")},
+  {id:"cc-apps",label:"Application status",detail:"Every app with status, pages and build logs",icon:"grid",run:()=>setPanel("apps")}
+ ]);
+ const askHere=useRef(openQ);askHere.current=openQ;
+ const {setAskHandler}=shell;
+ useEffect(()=>{setAskHandler(q=>askHere.current(q));return()=>setAskHandler(null);},[setAskHandler]);
 
  /* ---------- Shared bits ---------- */
  const sevTag=(s:"crit"|"watch"|"info"|"ok",label?:string)=><span className={`tag ${s}`}><I n={s==="crit"?"alert":s==="watch"?"clock":s==="ok"?"check":"info"}/>{label??(s==="crit"?"Critical":s==="watch"?"Watch":s==="ok"?"OK":"Info")}</span>;
@@ -273,7 +255,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <button className="snz press" onClick={()=>snooze(t)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day"><I n="clock"/></button></div>;
  const addRow=(phone=false)=><form className="addrow" onSubmit={addTask}><I n="plus"/>
    <input type="text" value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a priority…" aria-label="Add a priority" maxLength={160} enterKeyHint="done"/>
-   {!phone&&<><button type="button" className={`tg press${newDue?" set":""}`} onClick={pickDue} aria-label="Due date" title="Due date">{newDue?new Date(newDue+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):<I n="cal"/>}<input ref={addDateRef} type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} tabIndex={-1} aria-hidden="true"/></button>
+   {!phone&&<><span className="tg-wrap"><button type="button" className={`tg press${newDue?" set":""}`} onClick={pickDue} aria-label={newDue?`Due ${newDue}. Change due date`:"Set a due date"} title="Due date">{newDue?new Date(newDue+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):<I n="cal"/>}</button><input ref={addDateRef} className="tg-date" type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} tabIndex={-1} aria-hidden="true"/></span>
    <button type="button" className={`tg press${newPri!=="normal"?" set":""}`} onClick={()=>setNewPri(p=>p==="normal"?"high":p==="high"?"low":"normal")} aria-label={`Priority ${newPri}`} title={`Priority: ${newPri}`}>{newPri==="high"?<I n="up"/>:newPri==="low"?<I n="down"/>:<I n="flag"/>}</button></>}
   </form>;
  const goldSeries=gold?.value.series??[];
@@ -288,7 +270,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   :<Link className={`btn ${cls} primary press`} href="/brief">Open brief<I n="arrow"/></Link>;
  const verifiedPct=projects.length?Math.round(verified/projects.length*100):null;
  const trendEl=trend!==null&&trend!==0?<span className={trend>0?"up":"down"}>{trend>0?"▲":"▼"} {Math.abs(trend)}</span>:null;
- const bellCount=attention.length;
 
  const sigRow=(s:Sig)=><div key={s.id} className={`sig ${s.type==="attn"?s.sev:s.type}`}>
    <span className="ic"><I n={s.type==="attn"?(s.sev==="crit"?"alert":s.sev==="watch"?"clock":"info"):s.type==="radar"?"globe":s.type==="mk"?"chart":"activity"}/></span>
@@ -316,12 +297,12 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const moment=(k:StackCard)=>{
   if(k==="crit")return crit0?<article key={k} className="moment m-crit" aria-label={`Needs you: ${crit0.title}`}>
     <div className="mh">{sevTag("crit")}<span className="num" style={{fontSize:12.5,color:"var(--text-2)"}}>{crit0.when}</span></div>
-    <div className="aq">{critNode?<AppMark n={critNode} big/>:<span className="mono">!</span>}<div><b>{critNode?.name??crit0.app}</b><small>{crit0.app}</small></div></div>
+    <div className="aq">{critNode?<Mark n={critNode} size={52}/>:<span className="mono">!</span>}<div><b>{critNode?.name??crit0.app}</b><small>{crit0.app}</small></div></div>
     <h2>{crit0.title.replace(/^.*? production build failed$/,"Production build failed.")}{/production build failed/.test(crit0.title)?" Releases are blocked.":""}</h2>
     <dl className="stats3"><div><dt>Apps live</dt><dd className="num">{liveCount}/{nodes.length}</dd></div><div><dt>Health</dt><dd className="num">{health??"—"}</dd></div><div><dt>Open for</dt><dd className="num">{crit0.when?crit0.when.replace(" ago",""):"—"}</dd></div></dl>
     <div className="qnote"><I n="spark"/><span><b>Q:</b> {liveCount} other app{liveCount===1?" is":"s are"} unaffected. {crit0.advice}.</span></div>
     <div className="grow"/>
-    <div className="m-acts"><button className="btn danger press" onClick={()=>go(crit0.href)}>{crit0.action}<I n="arrow"/></button><button className="btn press" onClick={()=>openQ(`${crit0.title}. Using the live snapshot, list the likely causes, what to check first and the fastest safe fix.`)}><I n="spark"/>Ask Q</button><button className="btn press" onClick={()=>setPanel("alerts")}><I n="bell"/>Alerts</button></div>
+    <div className="m-acts"><button className="btn danger press" onClick={()=>go(crit0.href)}>{crit0.action}<I n="arrow"/></button><button className="btn press" onClick={()=>openQ(`${crit0.title}. Using the live snapshot, list the likely causes, what to check first and the fastest safe fix.`)}><I n="spark"/>Ask Q</button><button className="btn press" onClick={()=>shell.openPanel("alerts")}><I n="bell"/>Alerts</button></div>
    </article>
    :<article key={k} className="moment m-clear" aria-label="All clear">
     <div className="mh">{sevTag("ok","All clear")}<span style={{fontSize:12.5,color:"var(--text-2)"}}>{time}</span></div>
@@ -361,7 +342,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <dl className="lv"><div><dt>Open</dt><dd className="num">{goldSeries[0]?.toFixed(1)??"—"}</dd></div><div><dt>Low</dt><dd className="num">{goldSeries.length?Math.min(...goldSeries).toFixed(1):"—"}</dd></div><div><dt>High</dt><dd className="num">{goldSeries.length?Math.max(...goldSeries).toFixed(1):"—"}</dd></div></dl></>
      :<p className="feed-empty">Waiting for Counter-Trader.</p>}
     <div className="grow"/>
-    <button className="btn press" onClick={()=>setPanel("alerts")}><I n="bell"/>Price alerts</button></article>;
+    <button className="btn press" onClick={()=>shell.openPanel("alerts")}><I n="bell"/>Price alerts</button></article>;
   return <article key={k} className="moment m-world" aria-label="World radar">
     <div className="mh"><span className="ey">Global Radar</span><button className="btn sm ghost press" style={{height:36,marginRight:-8}} onClick={refreshNews} disabled={newsRefreshing}>{newsRefreshing?"Refreshing…":"Refresh"}</button></div>
     <div className="seg" role="tablist" aria-label="Radar stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(r=><button key={r} role="tab" className="press" aria-selected={newsStream===r} onClick={()=>{setNewsStream(r);setNewsCategory("All");}}>{r}</button>)}</div>
@@ -372,30 +353,13 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  };
 
  /* ---------- Drawer content ---------- */
- const drawerTitle:Record<Panel,[string,string]>={studio:["Studio","Make Q OS yours. Saved on this device."],apps:["Applications",`${liveCount} of ${nodes.length} operational`],alerts:["Alerts","Push, gold levels and recent alerts"],priorities:["Priorities",`${open.length} open${overdue?` · ${overdue} overdue`:""}${doneWeek!==null?` · ${doneWeek} done this week`:""}`],more:["More","Every Q OS destination"]};
- const ord=(key:"stackOrder",names:Record<string,string>,hiddenKey:"stackHidden")=><div className="ord">{studio[key].map((k,i)=>{const offK=studio[hiddenKey].includes(k);return <div key={k} className={`o${offK?" off":""}`}><span className="n num">{i+1}</span><span>{names[k]}</span>
-   <button className="press" aria-label={`Move ${names[k]} up`} disabled={i===0} onClick={()=>{const a=[...studio[key]];[a[i-1],a[i]]=[a[i],a[i-1]];setS({[key]:a} as Partial<Studio>);}}><I n="up"/></button>
-   <button className="press" aria-label={`Move ${names[k]} down`} disabled={i===studio[key].length-1} onClick={()=>{const a=[...studio[key]];[a[i+1],a[i]]=[a[i],a[i+1]];setS({[key]:a} as Partial<Studio>);}}><I n="down"/></button>
-   <button className="press" aria-label={`${offK?"Show":"Hide"} ${names[k]}`} aria-pressed={!offK} onClick={()=>setS({[hiddenKey]:offK?studio[hiddenKey].filter(x=>x!==k):[...studio[hiddenKey],k]} as Partial<Studio>)}><I n={offK?"eyeoff":"eye"}/></button></div>;})}</div>;
- const seg=<K extends "cards"|"motion"|"density">(key:K,opts:[Studio[K],string][],label:string)=><div className="seg" role="group" aria-label={label} style={{marginTop:0}}>{opts.map(([v,l])=><button key={v} className="press" aria-pressed={studio[key]===v} onClick={()=>setS({[key]:v} as Partial<Studio>)}>{l}</button>)}</div>;
+ const drawerTitle:Record<Panel,[string,string]>={apps:["Application status",`${liveCount} of ${nodes.length} operational`],priorities:["Priorities",`${open.length} open${overdue?` · ${overdue} overdue`:""}${doneWeek!==null?` · ${doneWeek} done this week`:""}`]};
  const drawerBody=(p:Panel)=>{
-  if(p==="studio")return <>
-   <div className="st-sec"><h4>Theme</h4><div className="themes">{THEMES.map(t=><button key={t.id} className="th press" aria-pressed={studio.theme===t.id} onClick={()=>setS({theme:t.id})}>
-     <span className="pv" style={{background:t.sw[0]}}><i style={{left:8,top:8,width:"42%",height:16,background:t.sw[1]}}/><i style={{left:8,top:30,width:"62%",height:16,background:t.sw[1]}}/><i style={{right:8,top:8,width:22,height:22,borderRadius:"50%",background:t.sw[2]}}/></span>
-     <b>{t.name}<I n="check"/></b><small>{t.note}</small></button>)}</div></div>
-   <div className="st-sec"><h4>Signature accent<span style={{textTransform:"none",letterSpacing:0,fontWeight:500}}>{ACCENTS.find(a=>a.id===studio.accent)?.name}</span></h4><div className="swatches">{ACCENTS.map(a=><button key={a.id} className="sw press" aria-pressed={studio.accent===a.id} aria-label={`Accent ${a.name}`} onClick={()=>setS({accent:a.id})}><i style={{background:a.hex,color:["halo","amber","emerald"].includes(a.id)?"#111":"#fff"}}><I n="check"/></i>{a.name}</button>)}</div></div>
-   <div className="st-sec"><h4>Cards</h4>{seg("cards",[["glass","Glass"],["solid","Solid"],["outline","Outline"]],"Card style")}</div>
-   <div className="st-sec"><h4>Motion</h4>{seg("motion",[["full","Full"],["calm","Calm"],["off","Off"]],"Motion")}</div>
-   <div className="st-sec"><h4>Density</h4>{seg("density",[["comfortable","Comfortable"],["compact","Compact"]],"Density")}</div>
-   <div className="st-sec"><h4>Phone Smart Stack</h4>{ord("stackOrder",STACK_NAMES,"stackHidden")}</div>
-   <div className="st-sec"><h4>Signals feed</h4><div className="ord">{(Object.keys(SIG_NAMES) as SigType[]).map(k=>{const offK=studio.sigHidden.includes(k);return <div key={k} className={`o${offK?" off":""}`}><span>{SIG_NAMES[k]}</span><button className="switch" role="switch" aria-checked={!offK} aria-label={`Show ${SIG_NAMES[k]}`} onClick={()=>setS({sigHidden:offK?studio.sigHidden.filter(x=>x!==k):[...studio.sigHidden,k]})}/></div>;})}</div></div>
-  </>;
   if(p==="apps")return <div className="applist">{nodes.map(n=><div key={n.id} className={`ap${flashId==="app-"+n.id?" flash":""}`}>
-    <div className="ap-h"><span className="plate">{n.logo?<img src={n.logo} alt=""/>:<AppMark n={n}/>}</span><div className="tx"><b>{n.name}</b><small>{n.area} · {statusText(n)}{n.updated?` · ${ago(n.updated)}`:""}</small></div>
+    <div className="ap-h"><Mark n={n} size={40}/><div className="tx"><b>{n.name}</b><small>{n.area} · {statusText(n)}{n.updated?` · ${ago(n.updated)}`:""}</small></div>
      {n.url&&<a className="btn sm press" href={n.url} target="_blank" rel="noreferrer">Open<I n="ext"/></a>}</div>
     {(n.pages.length>0||(n.state==="crit"&&n.inspector))&&<div className="pages">{n.state==="crit"&&n.inspector&&<a className="page press" style={{color:"var(--crit-ink)"}} href={n.inspector.startsWith("http")?n.inspector:`https://${n.inspector}`} target="_blank" rel="noreferrer">Build log<I n="ext"/></a>}{n.pages.map(pg=><a key={pg.url} className="page press" href={pg.url} target="_blank" rel="noreferrer">{pg.label}<I n="ext"/></a>)}</div>}
    </div>)}{!nodes.length&&<p className="feed-empty">{loading?"Loading applications…":error||"No applications found."}</p>}</div>;
-  if(p==="alerts")return <><AlertsPanel goldPrice={gold?.value.price}/><Link className="btn press" style={{marginTop:14,width:"100%"}} href="/alerts">Full alert history<I n="arrow"/></Link></>;
   if(p==="priorities")return <div className="prilist">
    {taskErr&&<p className="banner err" style={{margin:"10px 0"}}>{taskErr}</p>}
    {(tasks??[]).filter(t=>!t.done).map(t=>editing?.id===t.id
@@ -408,24 +372,12 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <div className="st-sec"><h4>Add</h4>{addRow()}
     <div className="seg" role="group" aria-label="Repeat" style={{marginTop:10}}>{([["","Once"],["daily","Daily"],["weekdays","Weekdays"],["weekly","Weekly"],["monthly","Monthly"]] as const).map(([v,l])=><button key={l} className="press" aria-pressed={newRecur===v} onClick={()=>setNewRecur(v)}>{l}</button>)}</div></div>
   </div>;
-  return <div className="navlist">
-   <button onClick={()=>{setPanel(null);window.scrollTo({top:0,behavior:"smooth"});}}><I n="home"/>Command centre<I n="chev" c="chev"/></button>
-   <button onClick={()=>setPanel("apps")}><I n="grid"/>Applications<I n="chev" c="chev"/></button>
-   <Link href="/iq/q-news"><I n="globe"/>Global Radar<I n="chev" c="chev"/></Link>
-   <button onClick={()=>setPanel("priorities")}><I n="list"/>Priorities<I n="chev" c="chev"/></button>
-   <button onClick={()=>openQ()}><I n="spark"/>Q Assistant<I n="chev" c="chev"/></button>
-   <Link href="/chat"><I n="file"/>Q conversations<I n="chev" c="chev"/></Link>
-   <Link href="/alerts"><I n="bell"/>Alerts history<I n="chev" c="chev"/></Link>
-   <Link href="/brief"><I n="sunrise"/>Morning Brief<I n="chev" c="chev"/></Link>
-   <Link href="/iq"><I n="map"/>AngolaIQ<I n="chev" c="chev"/></Link>
-   <button onClick={()=>setPanel("studio")}><I n="sliders"/>Studio · Settings<I n="chev" c="chev"/></button>
-   <button onClick={signOut} style={{color:"var(--crit-ink)"}}><I n="logout"/>Sign out</button>
-  </div>;
+  return null;
  };
 
- return <div className="ql" data-theme={studio.theme} data-accent={studio.accent} data-cards={studio.cards} data-motion={motion} data-density={studio.density}>
+ return <div className="ql" data-narrow={stage.w<=1320?"":undefined}>
   <svg width="0" height="0" style={{position:"absolute"}} aria-hidden="true"><defs>
-   <linearGradient id="ql-hgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style={{stopColor:"var(--accent)"}}/><stop offset="1" stopColor="#A855F7"/></linearGradient>
+   <linearGradient id="ql-hgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style={{stopColor:"var(--accent)"}}/><stop offset="1" style={{stopColor:"var(--accent-ink)"}}/></linearGradient>
    <linearGradient id="ql-up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22C58B" stopOpacity=".28"/><stop offset="1" stopColor="#22C58B" stopOpacity="0"/></linearGradient>
    <linearGradient id="ql-down" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#E9A23B" stopOpacity=".3"/><stop offset="1" stopColor="#E9A23B" stopOpacity="0"/></linearGradient>
   </defs></svg>
@@ -449,14 +401,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <div className="health" style={{top:104}} title={healthParts.map(([l,v])=>`${l}: ${v??"—"}`).join(" · ")}><div className="big num">{health===null?"—":hm}<small>/100</small></div><div className="lbl">Ecosystem health{trend!==null&&trend!==0&&<> · <b className={trend>0?"up":"down"}>{trend>0?"▲ +":"▼ "}{Math.abs(trend)}</b></>}</div></div>
      {placed.map(p=><button key={p.n.id} className={`node press${p.n.state==="crit"?" crit":""}${focus?.id===p.n.id?" focus":""}`} style={{transform:`translate(${p.x}px,${p.y}px) translate(-50%,-50%)`}} aria-label={`${p.n.name}: ${statusText(p.n)}`} onClick={()=>setFocusId(p.n.id)}>
       {p.n.state==="crit"?<I n="alert" c="qwarn"/>:<span className={`sdot${p.n.state==="idle"?" idle":p.n.state==="dep"?" dep":""}`} aria-hidden="true"/>}
-      <AppMark n={p.n}/>
+      <Mark n={p.n}/>
       <span className="nm">{shortName(p.n.name)}</span></button>)}
      {placed.filter(p=>p.n.state==="crit").map(p=><div key={"f"+p.n.id} className="node-flag" style={{transform:`translate(${p.x}px,${p.y+34}px) translate(-50%,0)`}}><I n="alert"/>Build failed{p.n.deployAt?` · ${ago(p.n.deployAt)}`:""}</div>)}
      {!placed.length&&<div className="health" style={{top:150}}><div className="lbl">{loading?"Connecting to your ecosystem…":error||"No applications"}</div></div>}
     </div>}
     {focus&&fpos&&<section className="focus-card card cpad on" style={{left:cx-170+100+28,top:Math.max(84,cy-190)}} aria-live="polite">
      <button className="icon-btn press fc-x" aria-label="Close" onClick={()=>setFocusId(null)}><I n="x"/></button>
-     <div className="fc-h"><span className="plate">{focus.logo?<img src={focus.logo} alt=""/>:<AppMark n={focus} big/>}</span><div><div className="t">{focus.name}</div><div className="c">{focus.area}</div></div></div>
+     <div className="fc-h"><Mark n={focus} size={52}/><div><div className="t">{focus.name}</div><div className="c">{focus.area}</div></div></div>
      <dl className="fc-grid"><div><dt>Status</dt><dd>{focus.state==="crit"?sevTag("crit","Failed"):focus.state==="ok"?sevTag("ok","Live"):sevTag("watch",statusText(focus))}</dd></div>
       <div><dt>{focus.state==="crit"?"Failed":"Last deploy"}</dt><dd className="num">{focus.deployAt?ago(focus.deployAt):focus.updated?ago(focus.updated):"—"}</dd></div>
       <div><dt>Open issues</dt><dd className="num">{focus.issues??"—"}</dd></div><div><dt>Pages</dt><dd className="num">{focus.pages.length}</dd></div></dl>
@@ -468,28 +420,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     </section>}
    </main>
 
-   <header className="qtop">
-    <div className="brand"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><span>Q OS</span><small>Live</small></div>
-    <nav className="nav" aria-label="Primary">
-     <button className="on press" onClick={()=>{setPanel(null);setFocusId(null);setQOpen(false);}}>Command centre</button>
-     <button className="press" onClick={()=>setPanel("apps")}>Applications</button>
-     <button className="press" onClick={()=>{setSigType("radar");flash("sig");}}>Global Radar</button>
-     <button className="press" onClick={()=>setPanel("priorities")}>Priorities</button>
-     <button className="press" onClick={()=>openQ()}>Q Assistant</button>
-     <button className="press" onClick={()=>setPanel("alerts")}>Alerts</button>
-     <Link className="press" href="/brief">Morning Brief</Link>
-     <Link className="press" href="/iq">AngolaIQ</Link>
-     <button className="press" onClick={()=>setPanel("studio")}>Settings</button>
-    </nav>
-    <div className="top-r">
-     <span className="meta dt num">{date&&`${date.split(" ").slice(0,3).join(" ")} · ${time}`}</span>
-     {weather&&<span className="meta"><I n={weather.code<3?"sun":"cloud"}/>Luanda {weather.t}°</span>}
-     <button className="icon-btn press" aria-label="Search or command (Ctrl K)" title="Search or command · Ctrl K" onClick={()=>{setCommandQuery("");setCommandOpen(true);}}><I n="search"/></button>
-     <button className="icon-btn press" aria-label="Studio: personalise Q OS" title="Studio" onClick={()=>setPanel("studio")}><I n="sliders"/></button>
-     <button className="icon-btn press" aria-label={`Alerts, ${bellCount} need attention`} onClick={()=>setPanel("alerts")}><I n="bell"/>{bellCount>0&&<b className="badge">{bellCount}</b>}</button>
-     <button className="qav press" aria-label="More and sign out" onClick={()=>setPanel("more")}>N</button>
-    </div>
-   </header>
 
    <aside className="qpanel left" aria-label="Briefing and today">
     {(!online||error||metricsError)&&<p className={`banner ${!online?"wn":"err"}`}>{!online?"Offline: showing the last saved data.":error||metricsError}</p>}
@@ -514,7 +444,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <div className="chead"><span className="ey">Gold · XAU/USD</span><span style={{fontSize:12,color:"var(--muted)"}}>{gold?ago(gold.updatedAt):""}</span></div>
      {gold?<><div className="px"><b className="num">{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span className={goldUp?"up":"down"}><I n={goldUp?"up":"down"}/>{Math.abs(gold.value.changePct).toFixed(2)}% today</span></div>
       <Spark d={sparkD(300,56)} w={300} h={56} up={goldUp} id="d"/>
-      <div className="lv"><span>Open <b className="num">{goldSeries[0]?.toFixed(1)??"—"}</b></span><span>Low <b className="num">{goldSeries.length?Math.min(...goldSeries).toFixed(1):"—"}</b></span><button onClick={()=>setPanel("alerts")} style={{color:"var(--accent-ink)",fontSize:12}}>Price alerts</button></div></>
+      <div className="lv"><span>Open <b className="num">{goldSeries[0]?.toFixed(1)??"—"}</b></span><span>Low <b className="num">{goldSeries.length?Math.min(...goldSeries).toFixed(1):"—"}</b></span><button onClick={()=>shell.openPanel("alerts")} style={{color:"var(--accent-ink)",fontSize:12}}>Price alerts</button></div></>
       :<p className="feed-empty">Waiting for Counter-Trader.</p>}
     </section>
    </aside>
@@ -535,13 +465,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   <div className="m-app">
    <div className="m-bg"/>
    <header className="m-head">
-    <img src="/os/q-emblem.webp" alt="Q OS" width={36} height={36}/>
     <div className="tx"><b>{greet}, Nassim</b><span className="num">{date&&`${date.split(" ").slice(0,3).join(" ")} · ${time}`}{weather?` · Luanda ${weather.t}°`:""}</span></div>
-    <button className="icon-btn press" aria-label="Search or command" onClick={()=>{setCommandQuery("");setCommandOpen(true);}}><I n="search"/></button>
-    <button className="icon-btn press" aria-label="Studio: personalise Q OS" onClick={()=>setPanel("studio")}><I n="sliders"/></button>
    </header>
    {(!online||error||metricsError)&&<div className="m-banner"><p className={`banner ${!online?"wn":"err"}`}>{!online?"Offline: showing the last saved data.":error||metricsError}</p></div>}
-   <div className="m-status" aria-label="Ecosystem status">
+   <div className="m-status" role="group" aria-label="Ecosystem status" tabIndex={0}>
     <span className="pill"><span className="sdot"/><b className="num">{health??"—"}</b> health {trendEl}</span>
     <span className="pill"><b className="num">{data?`${liveCount}/${nodes.length}`:"—"}</b> live</span>
     {critical.length>0&&<span className="pill crit"><I n="alert"/><b>{critical.length} critical</b></span>}
@@ -559,13 +486,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     </div>
     <div className="feed">{feedBody}</div>
    </section>
-   <nav className="tabbar" aria-label="Tabs">
-    <button className="press" aria-current={!panel&&!qOpen?"page":undefined} onClick={()=>{setPanel(null);setQOpen(false);window.scrollTo({top:0,behavior:"smooth"});goCard(0);}}><I n="home"/>Today</button>
-    <button className="press" aria-current={panel==="apps"?"page":undefined} onClick={()=>setPanel("apps")}><I n="grid"/>Apps</button>
-    <button className="orb press" aria-label="Ask Q" onClick={()=>openQ()}><span className="ob"><img src="/os/q-emblem.webp" alt="" width={40} height={40}/></span><span>Ask Q</span></button>
-    <button className="press" aria-current={panel==="alerts"?"page":undefined} onClick={()=>setPanel("alerts")}><I n="bell"/>Alerts{bellCount>0&&<b className="badge">{bellCount}</b>}</button>
-    <button className="press" aria-current={panel==="more"?"page":undefined} onClick={()=>setPanel("more")}><I n="more"/>More</button>
-   </nav>
   </div>
 
   {/* ======================= Q (dock on desktop, full sheet on phone) ======================= */}
@@ -588,7 +508,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <form className="qbar" onSubmit={e=>{e.preventDefault();if(!qInput.trim())return;setQOpen(true);askQ(qInput);}}>
     <img src="/os/q-emblem.webp" alt="" width={38} height={38}/>
     <label className="sr" htmlFor="ql-q">Ask Q</label>
-    <input id="ql-q" ref={qInputRef} value={qInput} onChange={e=>setQInput(e.target.value)} onFocus={()=>{if(window.innerWidth>860&&qMsgs.length)setQOpen(true);}} placeholder="Ask Q anything about your ecosystem…" autoComplete="off" enterKeyHint="send" maxLength={2000}/>
+    <input id="ql-q" ref={qInputRef} value={qInput} onChange={e=>setQInput(e.target.value)} onFocus={()=>{if(window.innerWidth>1180&&qMsgs.length)setQOpen(true);}} placeholder="Ask Q anything about your ecosystem…" autoComplete="off" enterKeyHint="send" maxLength={2000}/>
     <kbd className="kbd">⌘K</kbd>
     <button className="send press" aria-label="Send to Q" disabled={qBusy||!qInput.trim()}><I n="send"/></button>
    </form>
@@ -600,17 +520,9 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <div className="grab"/>
    {panel&&<><div className="dr-h"><div style={{flex:1}}><h3>{drawerTitle[panel][0]}</h3><p>{drawerTitle[panel][1]}</p></div><button className="icon-btn press" aria-label="Close" onClick={()=>setPanel(null)}><I n="x"/></button></div>
     <div className="dr-b">{drawerBody(panel)}</div>
-    {panel==="studio"&&<div className="dr-f"><button className="btn ghost press" onClick={()=>{const prev=studio;setS({...DEFAULT_STUDIO});toast("Studio reset to defaults",()=>setS(prev));}}><I n="reset"/>Reset</button><button className="btn primary press" onClick={()=>setPanel(null)}>Done</button></div>}</>}
+</>}
   </aside>
 
-  {commandOpen&&<div className="cmd-back" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setCommandOpen(false);}}>
-   <section className="cmd" role="dialog" aria-modal="true" aria-label="Search or ask Q">
-    <form onSubmit={runCommand}><I n="search"/><input autoFocus enterKeyHint="go" value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Search apps, run a command, or ask Q…" aria-label="Search or ask Q" onKeyDown={e=>{if(e.key==="Escape")setCommandOpen(false);}}/><kbd className="kbd">ESC</kbd></form>
-    <div className="cmd-g"><small>Commands</small>{cmdShown.map(x=><button key={x.label} onClick={()=>{setCommandOpen(false);x.run();}}><span><b>{x.label}</b><small>{x.detail}</small></span><kbd className="kbd">↵</kbd></button>)}{!cmdShown.length&&<p>No matching command.</p>}</div>
-    <div className="cmd-g"><small>Applications</small>{appShown.map(n=><button key={n.id} onClick={()=>{setCommandOpen(false);if(n.url)window.open(n.url,"_blank","noopener");else setPanel("apps");}}><span><b>{n.name}</b><small>{n.area} · {statusText(n)}</small></span><kbd className="kbd">↗</kbd></button>)}
-     {commandQuery.trim()&&<button className="ask" onClick={()=>{const q=commandQuery.trim();setCommandOpen(false);openQ(q);}}><span><b>Ask Q → “{commandQuery.trim()}”</b><small>Send this question to your assistant</small></span><kbd className="kbd">↵</kbd></button>}</div>
-    <footer><span>Ctrl K to toggle</span><span>Q OS</span></footer>
-   </section></div>}
 
   {selectedNewsItem&&<div className="nd-back" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedNews(null);}}>
    <article className="nd" role="dialog" aria-modal="true" aria-labelledby="ql-nd-t">
@@ -622,52 +534,17 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="nd-acts"><a className="btn primary press" href={selectedNewsItem.url} target="_blank" rel="noreferrer">Read original<I n="ext"/></a><button className="btn press" onClick={()=>{const n=selectedNewsItem;setSelectedNews(null);openQ(`Brief me on this headline and why it matters for my ventures: "${n.title}" (${n.geography}, ${n.publisher??"unknown source"}). Separate facts from inference.`);}}><I n="spark"/>Ask Q</button></div>
    </article></div>}
 
-  <div className="toasts" aria-live="polite">{toasts.map(t=><div key={t.id} className="toast"><I n="check"/><span>{t.msg}</span>{t.undo&&<button onClick={()=>{t.undo?.();setToasts(x=>x.filter(y=>y.id!==t.id));}}>Undo</button>}</div>)}</div>
  </div>;
 }
 
 /* ===================== Q Live helpers ===================== */
-type Panel="studio"|"apps"|"alerts"|"priorities"|"more";
-type ONode={id:string;name:string;area:string;state:"ok"|"crit"|"dep"|"idle";url:string|null;icon:string|null;logo:string|null;pages:{label:string;url:string}[];updated:string|null;deployAt:number|null;inspector:string|null;issues:number|null;commit:string|null;commitUrl:string|null;repo:string|null};
+type Panel="apps"|"priorities";
+type ONode={id:string;name:string;area:string;state:"ok"|"crit"|"dep"|"idle";url:string|null;icon:string|null;keys:(string|null|undefined)[];pages:{label:string;url:string}[];updated:string|null;deployAt:number|null;inspector:string|null;issues:number|null;commit:string|null;commitUrl:string|null;repo:string|null};
 type Sig={id:string;type:SigType;sev:"crit"|"watch"|"info"|"ok";region?:NewsStream;src:string;title:string;sub?:string;t:number|null;href?:string;action?:string;when?:string;news?:NewsItem;impact?:string|null;cat?:string;gold?:boolean};
 
-const IC:Record<string,ReactNode>={
- check:<path d="M20 6 9 17l-5-5"/>,clock:<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,plus:<path d="M12 5v14M5 12h14"/>,
- arrow:<path d="M5 12h14M13 6l6 6-6 6"/>,up:<path d="M12 19V5M6 11l6-6 6 6"/>,down:<path d="M12 5v14M6 13l6 6 6-6"/>,
- alert:<><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></>,
- info:<><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></>,
- spark:<><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></>,
- sliders:<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>,
- bell:<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></>,x:<path d="M18 6 6 18M6 6l12 12"/>,
- eye:<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>,
- eyeoff:<path d="M9.9 4.2A10 10 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.2 3.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6M2 2l20 20M9.9 9.9a3 3 0 0 0 4.2 4.2"/>,
- ext:<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>,chart:<><path d="M3 3v18h18"/><path d="m7 14 4-4 4 3 5-6"/></>,
- globe:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
- home:<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1Z"/>,
- grid:<><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></>,
- more:<><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></>,
- file:<><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></>,
- sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
- cloud:<path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3 3 0 0 0 7 18z"/>,
- repeat:<><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></>,
- activity:<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>,send:<path d="M12 19V5M5 12l7-7 7 7"/>,
- sunrise:<path d="M17 18a5 5 0 0 0-10 0M12 2v7M4.2 10.2l1.4 1.4M1 18h2M21 18h2M18.4 11.6l1.4-1.4M23 22H1M8 6l4-4 4 4"/>,
- map:<><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15M15 6v15"/></>,list:<><path d="M9 6h12M9 12h12M9 18h12"/><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></>,
- chev:<path d="m9 6 6 6-6 6"/>,search:<><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></>,reset:<><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></>,
- trash:<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>,
- cal:<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></>,
- flag:<path d="M4 22V4M4 4h12l-2 4 2 4H4"/>,
- logout:<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-};
-function I({n,c}:{n:string;c?:string}){return <svg className={`i${c?" "+c:""}`} viewBox="0 0 24 24" aria-hidden="true">{IC[n]}</svg>;}
 
-/* App mark: the app's own icon read from its website, else initials. */
-function AppMark({n,big}:{n:Pick<ONode,"name"|"icon">;big?:boolean}){
- const [failed,setFailed]=useState(false);
- const ini=initials(n.name.replace(/\s*\/.*$/,""))||"?";
- if(n.icon&&!failed)return <img className="mark" src={n.icon} alt="" width={big?52:28} height={big?52:28} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={()=>setFailed(true)} style={big?{width:52,height:52,borderRadius:16}:undefined}/>;
- return <span className="mono" style={big?{width:52,height:52,borderRadius:16,fontSize:16}:undefined}>{ini}</span>;
-}
+/* An app's own logo (see src/lib/app-logos.ts): local copy, live icon, discovered icon, then initials. */
+function Mark({n,size=28}:{n:Pick<ONode,"name"|"icon"|"keys">;size?:number}){return <AppMark name={n.name} keys={n.keys} icon={n.icon} size={size}/>;}
 
 function Spark({d,w,h,up,id}:{d:string;w:number;h:number;up:boolean;id:string}){
  if(!d)return null;const pts=d.split(" "),last=pts[pts.length-1]?.split(",").map(Number)??[w,h/2];
@@ -684,7 +561,7 @@ function MiniOrbit({nodes,health,onPick}:{nodes:ONode[];health:number|null;onPic
   <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="48" rx="38" ry="38" fill="none" stroke="var(--line-2)" vectorEffect="non-scaling-stroke"/></svg>
   {nodes.map((n,i)=>{const a=((i-ci)*step)*Math.PI/180,x=50+Math.cos(a)*38,y=48+Math.sin(a)*38;const above=Math.sin(a)<-0.2;
    return <span key={n.id}><button className={`planet press${n.state==="crit"?" crit":n.state==="ok"?"":" idle"}`} style={{left:`${x}%`,top:`${y}%`}} aria-label={`${n.name}: ${n.state==="crit"?"build failed":n.state==="ok"?"operational":"unverified"}`} onClick={()=>onPick(n.id)}>
-     {n.icon?<AppMark n={n}/>:initials(n.name.replace(/\s*\/.*$/,"")).slice(0,2)}{n.state==="crit"&&<span className="qwarn"><I n="alert"/></span>}</button>
+     <Mark n={n} size={30}/>{n.state==="crit"&&<span className="qwarn"><I n="alert"/></span>}</button>
     <span className={`plabel${n.state==="crit"?" crit":""}`} style={{left:`${x}%`,top:`calc(${y}% + ${above?-44:27}px)`}}>{n.name.split(" ")[0].replace(/\/.*/,"").slice(0,12)}</span></span>;})}
   <div className="mcore" style={{top:"48%"}}><svg viewBox="0 0 92 92" aria-hidden="true"><circle cx="46" cy="46" r="42" fill="none" stroke="var(--line-2)" strokeWidth="3"/><circle cx="46" cy="46" r="42" fill="none" stroke="url(#ql-hgrad)" strokeWidth="3" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C*(1-(health??0)/100)}/></svg><div><b className="num">{health??"—"}</b><small>health</small></div></div>
  </div>;
