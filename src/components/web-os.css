@@ -298,3 +298,14 @@
  .os-q-mobile-open .os-thread{max-height:none;min-height:24vh;max-height:48dvh}
  .os-q-mobile-open .os-ask{position:sticky;bottom:0;padding:8px 0;background:#101018}
 }
+
+
+/* Gate 3 accessibility: bring secondary actions and alert controls to 44px touch targets. */
+.os .os-quick>*,
+.os .os-acts button,
+.os .os-al-row button,
+.os .os-al-check,
+.os .os-al-foot button{min-height:44px}
+.os .os-al-gold select{min-height:44px}
+.os .os-al-gold .os-add button{width:44px;min-width:44px;min-height:44px}
+.os .os-al-gold span button{width:44px;height:44px;min-width:44px;min-height:44px}
