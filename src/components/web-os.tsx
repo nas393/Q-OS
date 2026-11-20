@@ -6,7 +6,7 @@ import {orbitLayout,shortName} from "./qlive/layout";
 import {STACK_NAMES,type SigType,type StackCard} from "./qlive/studio";
 import {I} from "./shell/icons";
 import {AppMark} from "./shell/app-mark";
-import {usePageCommands,useShell} from "./shell/app-shell";
+import {askConfirm,usePageCommands,useShell} from "./shell/app-shell";
 import type { MetricsMap } from "@/lib/metrics";
 import { buildQContext } from "@/lib/q-context";
 import QMd from "@/components/q-md";
@@ -105,7 +105,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const date=clock?clock.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"Africa/Luanda"}):"";
 
  async function toggleT(t:Task){setTasks(ts=>ts?.map(x=>x.id===t.id?{...x,done:!x.done}:x)??null);const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:t.id,done:!t.done})});if(!r.ok)loadTasks();}
- async function delT(t:Task){if(!window.confirm(`Delete “${t.title}”?`))return;setTasks(ts=>ts?.filter(x=>x.id!==t.id)??null);const r=await fetch(`/api/tasks?id=${encodeURIComponent(t.id)}`,{method:"DELETE"});if(!r.ok){setTaskErr("Could not delete");loadTasks();}}
+ async function delT(t:Task){if(!await askConfirm({title:`Delete “${t.title.slice(0,60)}”?`,body:"This priority is removed for good."}))return;setTasks(ts=>ts?.filter(x=>x.id!==t.id)??null);const r=await fetch(`/api/tasks?id=${encodeURIComponent(t.id)}`,{method:"DELETE"});if(!r.ok){setTaskErr("Could not delete");loadTasks();}}
  async function saveEdit(e:FormEvent){e.preventDefault();if(!editing||!editing.title.trim())return;const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:editing.id,title:editing.title.trim(),due:editing.due||null})});setEditing(null);if(!r.ok)setTaskErr("Could not save");loadTasks();}
  async function snoozeT(t:Task,d:number){const r=await fetch("/api/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:t.id,snoozeDays:d})});if(r.ok)loadTasks();else setTaskErr("Could not snooze");}
  async function runAction(a:QAction,key:string){

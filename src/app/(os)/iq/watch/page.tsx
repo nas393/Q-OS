@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import {Badge,Empty,ErrorBox,Field,Head,Loading,Toast,ago,api,useApi} from "../ui";
+import {askConfirm} from "@/components/shell/app-shell";
 
 type W={id:string;keyword:string;category:string;frequency:string;priority:string;active:boolean;match_count:number;last_triggered:string|null};
 type H={created_at:string;keyword:string;title:string;url:string};
@@ -31,7 +32,7 @@ export default function Watch(){
     <ul className="iq-list">{data.watch.map(w=><li key={w.id} className="iq-row"><div><b style={{opacity:w.active?1:.5}}>{w.keyword}</b><div className="iq-tags"><Badge kind={w.priority==="high"?"negative":w.priority==="low"?"neutral":"trusted"}/><span className="iq-sub">{w.frequency} · {w.match_count} matches · last {ago(w.last_triggered)}{w.active?"":" · paused"}</span></div></div>
      <select aria-label="Frequency" value={w.frequency} onChange={e=>patch(w.id,{frequency:e.target.value})} style={{minHeight:34,borderRadius:8,background:"var(--panel)",color:"var(--txt)",border:"1px solid var(--line2)"}}><option value="instant">Instant</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
      <button className="iq-btn sm" onClick={()=>patch(w.id,{active:!w.active})}>{w.active?"Pause":"Resume"}</button>
-     <button className="iq-btn sm danger" aria-label="Remove" onClick={async()=>{if(confirm(`Remove "${w.keyword}"?`)){await api(`/api/iq/watch?id=${w.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
+     <button className="iq-btn sm danger" aria-label="Remove" onClick={async()=>{if(await askConfirm({title:`Remove “${w.keyword}” from the watchlist?`,action:"Remove"})){await api(`/api/iq/watch?id=${w.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
    </section>
    <section className="iq-card"><h3>Alert history</h3>
     {!data?.hits.length?<Empty>No matches yet. They appear after the next news refresh.</Empty>:

@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import {Empty,ErrorBox,Field,Head,Loading,Toast,api,fmt,useApi} from "../ui";
+import {askConfirm} from "@/components/shell/app-shell";
 
 type V={id:string;vessel:string;port:string;terminal:string|null;cargo:string|null;commodity:string|null;tonnage:string|null;origin:string|null;consignee:string|null;eta:string|null;ata:string|null;etd:string|null;atd:string|null;status:string;source:string;source_url:string|null;notes:string|null;updated_at:string};
 const PORTS=["Luanda","Lobito","Namibe","Cabinda","Soyo","Porto Amboim","Caio","Other"];
@@ -68,7 +69,7 @@ export default function Ports(){
       <td>{local(x.eta)}</td><td>{local(x.ata)}</td><td>{x.commodity??x.cargo??"—"}</td><td>{x.tonnage?fmt(x.tonnage):"—"}</td><td>{x.origin??"—"}</td><td>{x.consignee??"—"}</td>
       <td>{x.source_url?<a href={x.source_url} target="_blank" rel="noreferrer" style={{color:"var(--vio2)"}}>{x.source} ↗</a>:x.source}<div className="iq-sub">upd. {new Date(x.updated_at).toLocaleDateString()}</div></td>
       <td><span className="iq-tags" style={{flexWrap:"nowrap"}}><button className="iq-btn sm" onClick={()=>setForm({id:x.id,vessel:x.vessel,port:x.port,terminal:x.terminal??"",status:x.status,eta:x.eta?new Date(new Date(x.eta).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):"",ata:x.ata?new Date(new Date(x.ata).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):"",cargo:x.cargo??"",commodity:x.commodity??"",tonnage:x.tonnage??"",origin:x.origin??"",consignee:x.consignee??"",notes:x.notes??"",source:x.source,source_url:x.source_url??""})}>✎</button>
-       <button className="iq-btn sm danger" aria-label="Delete" onClick={async()=>{if(confirm(`Delete ${x.vessel}?`)){await api(`/api/iq/vessels?id=${x.id}`,"DELETE");reload();}}}>Delete</button></span></td></tr>)}</tbody></table></div></section>)}
+       <button className="iq-btn sm danger" aria-label="Delete" onClick={async()=>{if(await askConfirm({title:`Delete ${x.vessel}?`,body:"The arrival is removed from the list."})){await api(`/api/iq/vessels?id=${x.id}`,"DELETE");reload();}}}>Delete</button></span></td></tr>)}</tbody></table></div></section>)}
   </>}
   <Toast msg={toast} onDone={()=>setToast("")}/>
  </>;

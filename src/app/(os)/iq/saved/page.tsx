@@ -2,6 +2,7 @@
 import {useState} from "react";
 import {Analysis,Empty,ErrorBox,Head,Loading,Toast,ago,api,useApi} from "../ui";
 import {exportReport,type Row} from "../workspace";
+import {askConfirm} from "@/components/shell/app-shell";
 
 type S={id:string;kind:string;ref_id:string|null;title:string;url:string|null;notes:string|null;tags:string[];archived:boolean;created_at:string};
 const KINDS=["news","analysis","project","location","trade","regulation","report","observation"];
@@ -32,7 +33,7 @@ export default function Saved(){
     {s.kind==="analysis"&&<button className="iq-btn sm" onClick={()=>view(s)}>{open?.id===s.id?"Hide":"View"}</button>}
     <button className="iq-btn sm" onClick={()=>setEdit({id:s.id,notes:s.notes??"",tags:s.tags.join(", ")})}>✎ Notes/tags</button>
     <button className="iq-btn sm" onClick={async()=>{await api("/api/iq/saved","PATCH",{id:s.id,archived:!s.archived});reload();setToast(s.archived?"Restored":"Archived");}}>{s.archived?"Restore":"Archive"}</button>
-    <button className="iq-btn sm danger" onClick={async()=>{if(confirm("Delete this saved item? The original record is kept.")){await api(`/api/iq/saved?id=${s.id}`,"DELETE");reload();}}}>✕ Delete</button>
+    <button className="iq-btn sm danger" onClick={async()=>{if(await askConfirm({title:"Delete this saved item?",body:"The original record is kept."})){await api(`/api/iq/saved?id=${s.id}`,"DELETE");reload();}}}>✕ Delete</button>
    </div>
    {open?.id===s.id&&(open.rows.length?open.rows.map(r=><div key={r.id} className="iq-card" style={{marginTop:8}}><div className="iq-tags" style={{marginBottom:8}}><b>v{r.version} · {r.kind}</b><button className="iq-btn sm" onClick={()=>exportReport(r)}>Export</button></div><Analysis out={r.output} meta={r}/></div>):<p className="iq-sub">The analysis was deleted.</p>)}
   </li>)}</ul>}

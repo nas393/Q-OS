@@ -2,6 +2,7 @@
 import {useRouter} from "next/navigation";
 import {useState,type ReactNode} from "react";
 import {Analysis,Empty,ErrorBox,Loading,Toast,ago,api,useApi} from "./ui";
+import {askConfirm} from "@/components/shell/app-shell";
 
 export type Row={id:string;kind:string;title:string;input:Record<string,unknown>;output:Record<string,unknown>;provider:string;model:string;parent_id:string|null;version:number;created_at:string};
 
@@ -32,7 +33,7 @@ export function Workspace({kind,form,actions=["save","devil","project","export"]
    {hist.loading&&!hist.data?<Loading/>:hist.error?<ErrorBox msg={hist.error} retry={hist.reload}/>:!hist.data?.analyses.length?<Empty>Nothing yet.</Empty>:
    <ul className="iq-list">{hist.data.analyses.map(r=><li key={r.id} className="iq-row"><div><button className="iq-btn sm" style={{border:0,background:"none",padding:0,textAlign:"left",fontWeight:600}} onClick={()=>{setCur(r);setTimeout(()=>document.getElementById("iq-result")?.scrollIntoView({behavior:"smooth"}),50);}}>{r.title}</button>
     <div className="iq-sub">{ago(r.created_at)}{r.version>1?` · v${r.version}`:""}{r.output.verdict?` · ${String(r.output.verdict)}`:""}</div></div>
-    <button className="iq-btn sm danger" aria-label="Delete" onClick={()=>{if(confirm("Delete this analysis?"))act("delete",r);}}>Delete</button></li>)}</ul>}
+    <button className="iq-btn sm danger" aria-label="Delete" onClick={async()=>{if(await askConfirm({title:"Delete this analysis?",body:"Saved copies and exports you already made are kept."}))act("delete",r);}}>Delete</button></li>)}</ul>}
   </section>
   <Toast msg={toast} onDone={()=>setToast("")}/>
  </div>;
