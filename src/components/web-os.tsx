@@ -187,6 +187,17 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <em className={gold?(gold.value.changePct>=0?"ok":"bad"):""}>{gold?`${gold.value.changePct>=0?"▲ +":"▼ "}${gold.value.changePct.toFixed(2)}% today`:"No feed"}</em></a>
    </section>
 
+   <section className="os-attention" aria-labelledby="os-attention-title">
+    <div className="os-attention-head">
+     <div><p className="os-section-eyebrow">EXECUTION SIGNALS</p><h2 id="os-attention-title">Attention required</h2></div>
+     <a href="/alerts">All alerts <span aria-hidden="true">→</span></a>
+    </div>
+    {!data&&!tasks?<p className="os-attention-empty">Checking live systems and priorities…</p>:
+     alerts.length>0?<ul>{alerts.slice(0,3).map(a=>{const project=projects.find(p=>a.title.startsWith(clean(p.name)));return <li key={a.title} className={a.level==="red"?"critical":"watch"}><span className="os-attention-severity">{a.level==="red"?"Critical":"Watch"}</span><div><b>{a.title}</b><small>{project?.area??"Portfolio telemetry"}{project?.deployment?.created?" · "+ago(project.deployment.created):""}</small></div><a href={project?"#ecosystem":"/alerts"} aria-label={"Review "+a.title}>Review</a></li>;})}</ul>:
+     focusTasks.length>0?<ul>{focusTasks.slice(0,2).map(task=><li key={task.id} className={task.due&&task.due<today()?"critical":"watch"}><span className="os-attention-severity">{task.due&&task.due<today()?"Overdue":task.priority==="high"?"High priority":"Next"}</span><div><b>{task.title}</b><small>{task.project??"Personal priority"}{task.due?" · Due "+new Date(task.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""}</small></div><a href="#agenda">Open queue</a></li>)}</ul>:
+     <p className="os-attention-empty">{data?"No current exceptions in connected project telemetry.":"Live telemetry is not available yet."}</p>}
+   </section>
+
    <section className="os-eco" id="ecosystem">
     <div className="os-eco-h"><h2>Portfolio</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
     <div className="os-grid">
@@ -198,6 +209,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
        <div className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt={clean(p.name)} loading="lazy" decoding="async" width={170} height={60}/>:<span className="os-word">{clean(p.name)}</span>}</div>
        {LOGOS[p.name]&&p.name==="NASSIM AI HQ / Q"&&<strong>NASSIM AI HQ</strong>}
        <small>{p.area}</small>
+       {p.lastCommit&&<small className="os-card-activity">Updated {ago(p.lastCommit.date)}</small>}
        {pages.length>0&&<p className="os-card-pg">{pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>}
        <em className={st}><i/>{st==="ok"?"Active":st==="bad"?"Failed":"Unverified"}</em>
       </div>;})}
@@ -218,7 +230,6 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      {newsError?<p className="os-muted">{newsError}</p>:newsLoading?<p className="os-muted">Loading intelligence…</p>:<ol className="os-news-list">{visibleNews.map(item=><li key={item.id}><button className="os-news-open" type="button" onClick={()=>setSelectedNews(String(item.id))}><b>{item.title}</b><small>{item.category?.replace(/_/g," ")||"General"} · {item.publisher||"Unknown source"} · {ago(item.published_at||item.retrieved_at)}</small>{item.impact&&<span>{item.impact}</span>}</button><Ico d="M7 17 17 7M8 7h9v9" s={14}/></li>)}</ol>}
      {!newsLoading&&!newsError&&!visibleNews.length&&<p className="os-muted">No matching intelligence in this stream. Try another category or refresh.</p>}
      {selectedNewsItem&&<div className="os-news-dialog-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedNews(null);}}><article className="os-news-dialog" role="dialog" aria-modal="true" aria-labelledby="os-news-detail-title"><div className="os-news-dialog-head"><span>Q GLOBAL RADAR · {selectedNewsItem.geography}</span><button type="button" onClick={()=>setSelectedNews(null)} aria-label="Close article details">×</button></div><h4 id="os-news-detail-title">{selectedNewsItem.title}</h4><p className="os-news-detail-meta">{selectedNewsItem.publisher||"Unknown source"} · {selectedNewsItem.category?.replace(/_/g," ")||"General"} · {ago(selectedNewsItem.published_at||selectedNewsItem.retrieved_at)}</p>{selectedNewsItem.impact&&<div className="os-news-impact"><b>Impact signal</b><p>{selectedNewsItem.impact}</p></div>}<p className="os-news-detail-note">Open the original source for the full report. Q OS does not infer missing article content.</p><a href={selectedNewsItem.url} target="_blank" rel="noreferrer">Read original source <Ico d="M7 17 17 7M8 7h9v9" s={14}/></a></article></div>}
-    {!newsLoading&&!newsError&&!news.some(item=>item.geography===newsStream&&(newsCategory==="All"||({Commodities:["oil_gas","agriculture"],Economy:["finance","trade","economy"],Geopolitics:["politics","geopolitics"],Security:["security"],Technology:["technology"]} as Record<string,string[]>)[newsCategory]?.includes(item.category??"")))&&<p className="os-muted">No matching intelligence in this stream. Try another category or refresh.</p>}
    </section>
 
    <section className="os-panels">
