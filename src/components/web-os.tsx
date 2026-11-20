@@ -50,7 +50,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [clock,setClock]=useState<Date|null>(null),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const dueRef=useRef<HTMLInputElement>(null);
- const [cardView,setCardView]=useState<"grid"|"list">("grid"),[showAllQ,setShowAllQ]=useState(false),[trend,setTrend]=useState<number|null>(null);
+ const [heroAsk,setHeroAsk]=useState("");
+ const [cardView,setCardView]=useState<"grid"|"list">("list"),[showAllQ,setShowAllQ]=useState(false),[trend,setTrend]=useState<number|null>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
  const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsCategory,setNewsCategory]=useState("All"),[newsLoading,setNewsLoading]=useState(true),[newsRefreshing,setNewsRefreshing]=useState(false),[newsError,setNewsError]=useState(""),[selectedNews,setSelectedNews]=useState<string|null>(null);
@@ -108,6 +109,8 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   ...projects.filter(p=>(p.openIssues??0)>0).map(p=>({id:"i"+p.id,sev:"watch" as const,title:`${clean(p.name)}: ${p.openIssues} open issue${p.openIssues===1?"":"s"}`,app:p.area,when:"",advice:"Triage on GitHub",action:"View issues",href:p.repo?`https://github.com/nas393/${p.repo}/issues`:"/alerts"})),
   ...(gold&&Math.abs(gold.value.changePct)>=1.5?[{id:"gold",sev:"info" as const,title:`Gold ${gold.value.changePct>0?"up":"down"} ${Math.abs(gold.value.changePct).toFixed(1)}% today`,app:"XAU/USD Trading HQ",when:ago(gold.updatedAt),advice:"Review positions and levels",action:"View market",href:"#markets"}]:[])
  ].slice(0,5);
+ const firstTask=focusTasks[0];
+ const nextAction=attention[0]?{title:attention[0].title,action:attention[0].action,href:attention[0].href}:firstTask?{title:firstTask.title,action:"Open priorities",href:"#agenda"}:{title:"Read today's brief",action:"Open brief",href:"/brief"};
  const critical=attention.filter(a=>a.sev==="critical"),watch=attention.filter(a=>a.sev==="watch");
  /* Q suggestions follow the current situation; the full list stays one tap away. */
  const qSuggest:{label:string;prompt:string;ctx?:boolean}[]=[
@@ -154,7 +157,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   {label:"Open priority queue",detail:"Tasks requiring attention",run:()=>document.getElementById("agenda")?.scrollIntoView({behavior:"smooth"})},
   {label:"Open market pulse",detail:"XAU/USD monitoring",run:()=>document.getElementById("markets")?.scrollIntoView({behavior:"smooth"})}
  ];
- const navLink=(n:typeof NAV[number],cls:string)=>n.href?<a key={n.label} href={n.href} className={`${cls}${n.label==="Command Center"?" on":""}`} onClick={()=>setDrawer(false)}><Ico d={n.icon}/><span>{n.label}</span></a>:<span key={n.label} className={`${cls} soon`} aria-disabled="true"><Ico d={n.icon}/><span>{n.label}</span><em>Soon</em></span>;
+ const navLink=(n:typeof NAV[number],cls:string)=>n.href?<a key={n.label} href={n.href} title={n.label} className={`${cls}${n.label==="Command Center"?" on":""}`} onClick={()=>setDrawer(false)}><Ico d={n.icon}/><span>{n.label}</span></a>:<span key={n.label} className={`${cls} soon`} aria-disabled="true"><Ico d={n.icon}/><span>{n.label}</span><em>Soon</em></span>;
 
  return <main className="os" id="top">
   <aside className="os-side">
@@ -176,31 +179,40 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="os-clock"><strong>{time}</strong><small>{date}</small></div>
    </header>
 
-   <section className="os-hello">
-    <div>
-     <p className="os-kicker"><span className="os-live-dot"/>Q OS · Command centre · {date}</p>
+   <section className="os-hero" aria-label="Q briefing">
+    <div className="os-hero-main">
+     <p className="os-kicker"><span className="os-live-dot"/>Q briefing · {date}</p>
      <h1>{clock&&clock.getHours()<12?"Good morning":clock&&clock.getHours()<18?"Good afternoon":"Good evening"}, Nassim.</h1>
-     <p className="os-hello-sub">{data?`${ready} of ${projects.length} apps live`:"Loading portfolio"}{tasks?` · ${dueNow} due today`:""}{overdue?` · ${overdue} overdue`:""}{gold?` · gold ${gold.value.changePct>=0?"+":""}${gold.value.changePct.toFixed(2)}%`:""}</p>
+     <ol className="os-brief">
+      <li className={failed?"bad":"ok"}><span>Ecosystem</span><b>{!data?"Checking live systems…":failed?`${failed} of ${projects.length} apps need attention`:`All ${projects.length} apps operating`}</b></li>
+      <li className={critical.length?"bad":attention.length?"warn":"ok"}><span>Needs you</span><b>{!data&&!tasks?"Checking…":attention.length?`${attention.length} item${attention.length===1?"":"s"}${critical.length?` · ${critical.length} critical`:""}`:"Nothing urgent"}</b></li>
+      <li className="next"><span>Next action</span><b>{nextAction.title}</b><a href={nextAction.href} {...(nextAction.href.startsWith("http")?{target:"_blank",rel:"noreferrer"}:{})}>{nextAction.action} <span aria-hidden="true">→</span></a></li>
+     </ol>
     </div>
-    <button className="os-cmdk" onClick={()=>{setCommandOpen(true);setCommandQuery("");}} aria-label="Open command palette"><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" s={16}/><span>Search or ask Q…</span><kbd>Ctrl K</kbd></button>
+    <a className="os-hero-score" href="/brief" aria-label={`Ecosystem health ${health??"unknown"} out of 100. Open morning brief`}>
+     <span className="os-ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" className="trk"/><circle cx="32" cy="32" r="27" className={`val ${health===null?"":health>=85?"ok":health>=65?"warn":"bad"}`} strokeDasharray={`${(health??0)/100*169.6} 169.6`}/></svg><b>{health??"—"}</b></span>
+     <small>Ecosystem health</small>
+     <em>{health===null?"Loading":`${health>=85?"Healthy":health>=65?"Stable":"Needs attention"}`}{trend!==null&&trend!==0?` · ${trend>0?"▲ +":"▼ "}${trend}`:""}</em>
+    </a>
+    <form className="os-askbar" onSubmit={e=>{e.preventDefault();const t=heroAsk.trim();if(!t)return;setHeroAsk("");setQDrawer(true);askQ(t);}}>
+     <img src="/os/q-emblem.webp" alt="" width={32} height={32}/>
+     <input value={heroAsk} onChange={e=>setHeroAsk(e.target.value)} placeholder="Ask Q about your ecosystem, markets or priorities…" aria-label="Ask Q" enterKeyHint="send" maxLength={2000}/>
+     <button type="submit" disabled={qBusy||!heroAsk.trim()} aria-label="Ask Q"><Ico d="M5 12h14M13 6l6 6-6 6"/></button>
+    </form>
+    <div className="os-hero-chips">{qSuggest.map(x=><button key={x.label} type="button" className={x.ctx?"ctx":""} disabled={qBusy} onClick={()=>{setQDrawer(true);askQ(x.prompt);}}>{x.label}</button>)}</div>
    </section>
    {!online&&<p className="os-offline" role="status">Offline: showing the last saved data.</p>}
    {(error||metricsError)&&<p className="os-err">{error||metricsError}</p>}
 
    <section className="os-summary" aria-label="Executive summary">
-    <a className="os-score" href="/brief" aria-label={`Ecosystem health ${health??"unknown"} out of 100. Open morning brief`}>
-     <span className="os-ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" className="trk"/><circle cx="32" cy="32" r="27" className={`val ${health===null?"":health>=85?"ok":health>=65?"warn":"bad"}`} strokeDasharray={`${(health??0)/100*169.6} 169.6`}/></svg></span>
-     <span className="os-score-t"><small>Ecosystem health</small><b>{health??"—"}<span>/100</span></b>
-      <em>{health===null?"Loading live data":`${health>=85?"Healthy":health>=65?"Stable":"Needs attention"}${trend===null?" · first reading today":trend===0?" · no change since yesterday":` · ${trend>0?"▲ +":"▼ "}${trend} since yesterday`}`}</em></span>
-     <ul className="os-score-parts" aria-label="Health breakdown">{healthParts.filter(([l])=>l!=="Data verified").map(([l,v])=><li key={l}><span>{l}</span><b>{v===null?"—":v}</b></li>)}</ul>
-    </a>
     <a className="os-kpi" href="#ecosystem"><small>Apps live</small><b>{data?ready:"—"}<span>/{data?projects.length:"—"}</span></b><em className={failed?"bad":"ok"}>{data?(failed?`${failed} need${failed===1?"s":""} attention`:"All operational"):"Checking…"}</em></a>
     <a className="os-kpi" href="#attention"><small>Critical issues</small><b className={critical.length?"bad":""}>{data?critical.length:"—"}</b><em>{critical.length?"Act first":"None open"}</em></a>
     <a className="os-kpi" href="#attention"><small>Watch</small><b className={watch.length?"warn":""}>{data?watch.length:"—"}</b><em>{watch.length?"Monitor today":"Nothing to monitor"}</em></a>
     <a className="os-kpi" href="/brief"><small>Data verified</small><b>{projects.length?Math.round(verified/projects.length*100):"—"}<span>%</span></b><em>{verified}/{projects.length||"—"} live sources</em></a>
    </section>
 
-   <section className="os-attention" id="attention" aria-labelledby="os-attention-title">
+   <div className="os-row">
+   <section className="os-attention os-c7" id="attention" aria-labelledby="os-attention-title">
     <div className="os-sec-h"><h2 id="os-attention-title">Attention required</h2><a href="/alerts">All alerts <span aria-hidden="true">→</span></a></div>
     {!data&&!tasks?<p className="os-muted">Checking live systems and priorities…</p>:attention.length?<ul>{attention.map(a=><li key={a.id} className={a.sev}>
       <span className="os-sev"><i aria-hidden="true"/>{a.sev==="critical"?"Critical":a.sev==="watch"?"Watch":"Info"}</span>
@@ -208,6 +220,20 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
       <a href={a.href} {...(a.href.startsWith("http")?{target:"_blank",rel:"noreferrer"}:{})}>{a.action}</a></li>)}</ul>
      :<p className="os-ok-msg"><i aria-hidden="true"/>No exceptions. All connected systems and priorities are on track.</p>}
    </section>
+    <article className="os-panel os-focus os-c5" id="agenda">
+     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>{open.length} open · {overdue} overdue</span></h3>
+     {taskErr&&<p className="os-err">{taskErr}</p>}
+     {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
+     <ul>{focusTasks.map(t=>editing?.id===t.id?
+      <li key={t.id}><form className="os-edit" onSubmit={saveEdit}><input autoFocus value={editing.title} onChange={e=>setEditing({...editing,title:e.target.value})} maxLength={160} aria-label="Task title"/><input type="date" value={editing.due} onChange={e=>setEditing({...editing,due:e.target.value})} aria-label="Due date"/><button type="submit">Save</button><button type="button" onClick={()=>setEditing(null)} aria-label="Cancel edit">✕</button></form></li>:
+      <li key={t.id} className={`pri-${t.priority??"normal"}`}><input type="checkbox" checked={t.done} onChange={()=>toggleT(t)} aria-label={`Done: ${t.title}`}/><button className="os-ttl" onClick={()=>setEditing({id:t.id,title:t.title,due:t.due??""})} title="Tap to edit">{t.priority==="high"&&<i className="os-pri" title="High priority">!</i>}{t.title}{t.recur&&<small className="os-rec" title={`Repeats ${t.recur}`}> ↻</small>}</button>{t.due&&<time className={t.due<today()?"late":""}>{new Date(t.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</time>}<button className="os-snz" onClick={()=>snoozeT(t,1)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day">+1d</button><button className="os-snz os-del" onClick={()=>delT(t)} aria-label={`Delete ${t.title}`} title="Delete">✕</button></li>)}</ul>
+     <form onSubmit={addT} className="os-add os-add1"><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a focus item" maxLength={160} aria-label="New focus item"/>
+      <span className="os-datebtn"><button type="button" onClick={()=>{const el=dueRef.current;if(!el)return;try{el.showPicker();}catch{el.focus();}}} aria-label="Pick due date" title="Due date" className={newDue?"set":""}>{newDue?new Date(newDue+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):<Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" s={16}/>}</button><input ref={dueRef} type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} tabIndex={-1} aria-hidden="true"/></span>
+      <button type="button" className={newPri!=="normal"?"set":""} onClick={()=>setNewPri(p=>p==="normal"?"high":p==="high"?"low":"normal")} aria-label={`Priority: ${newPri}`} title={`Priority: ${newPri}`}>{newPri==="high"?"!":newPri==="low"?"↓":"–"}</button>
+      <button type="button" className={newRecur?"set":""} onClick={()=>setNewRecur(r=>({"":"daily",daily:"weekdays",weekdays:"weekly",weekly:"monthly",monthly:""} as Record<string,string>)[r])} aria-label={`Repeat: ${newRecur||"none"}`} title={`Repeat: ${newRecur||"none"}`}>{newRecur?newRecur.slice(0,2):"↻"}</button>
+      <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
+    </article>
+   </div>
 
    <section className="os-eco" id="ecosystem">
     <div className="os-sec-h"><h2>Applications <span>{data?`${ready} of ${projects.length} operational`:""}</span></h2>
@@ -235,46 +261,40 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
    </section>
 
-   <section className="os-panel os-news" aria-label="Q Global Radar">
+   <div className="os-row">
+   <section className="os-panel os-news os-c7" aria-label="Q Global Radar">
     <div className="os-news-head"><div><h3><Ico d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/>Q Global Radar</h3><p className="os-news-kicker">Global intelligence. Strategic awareness.</p></div><div className="os-news-controls"><button className="os-news-refresh" type="button" onClick={refreshNews} disabled={newsRefreshing||newsLoading}><Ico d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.5-2L20 12M4 12l2.9 5a7 7 0 0 0 11.5-2" s={13}/>{newsRefreshing?"Refreshing…":"Refresh"}</button><div className="os-news-tabs" role="tablist" aria-label="Geographic stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(stream=><button key={stream} type="button" role="tab" aria-selected={newsStream===stream} className={newsStream===stream?"on":""} onClick={()=>setNewsStream(stream)}>{stream}</button>)}</div></div></div>
     <div className="os-radar-categories" role="group" aria-label="Intelligence category">{["All","Commodities","Economy","Geopolitics","Security","Technology"].map(category=><button key={category} type="button" className={newsCategory===category?"on":""} aria-pressed={newsCategory===category} onClick={()=>setNewsCategory(category)}>{category}</button>)}</div>
      {newsError?<div className="os-news-error" role="alert"><p>{newsError}</p><button type="button" onClick={refreshNews} disabled={newsRefreshing}>{newsRefreshing?"Retrying…":"Retry"}</button></div>:newsLoading?<ol className="os-news-list os-news-skeleton" aria-label="Loading intelligence">{Array.from({length:4},(_,i)=><li key={i}><span/><span/><span/></li>)}</ol>:<ol className="os-news-list">{visibleNews.map(item=><li key={item.id}><button className="os-news-open" type="button" onClick={()=>setSelectedNews(String(item.id))}><b>{item.title}</b><small>{item.category?.replace(/_/g," ")||"General"} · {item.publisher||"Unknown source"} · {ago(item.published_at||item.retrieved_at)}</small>{item.impact&&<span>{item.impact}</span>}</button><Ico d="M7 17 17 7M8 7h9v9" s={14}/></li>)}</ol>}
      {!newsLoading&&!newsError&&!visibleNews.length&&<p className="os-muted">No matching intelligence in this stream. Try another category or refresh.</p>}
      {selectedNewsItem&&<div className="os-news-dialog-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedNews(null);}}><article className="os-news-dialog" role="dialog" aria-modal="true" aria-labelledby="os-news-detail-title"><div className="os-news-dialog-head"><span>Q GLOBAL RADAR · {selectedNewsItem.geography}</span><button type="button" onClick={()=>setSelectedNews(null)} aria-label="Close article details">×</button></div><h4 id="os-news-detail-title">{selectedNewsItem.title}</h4><p className="os-news-detail-meta">{selectedNewsItem.publisher||"Unknown source"} · {selectedNewsItem.category?.replace(/_/g," ")||"General"} · {ago(selectedNewsItem.published_at||selectedNewsItem.retrieved_at)}</p>{selectedNewsItem.impact&&<div className="os-news-impact"><b>Impact signal</b><p>{selectedNewsItem.impact}</p></div>}<p className="os-news-detail-note">Open the original source for the full report. Q OS does not infer missing article content.</p><a href={selectedNewsItem.url} target="_blank" rel="noreferrer">Read original source <Ico d="M7 17 17 7M8 7h9v9" s={14}/></a></article></div>}
    </section>
-
-   <section className="os-panels">
-    <article className="os-panel os-focus">
-     <h3><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>Priority Queue <span>{open.length} open · {overdue} overdue</span></h3>
-     {taskErr&&<p className="os-err">{taskErr}</p>}
-     {tasks&&!open.length&&<p className="os-muted">No focus items yet. Add your first below.</p>}
-     <ul>{focusTasks.map(t=>editing?.id===t.id?
-      <li key={t.id}><form className="os-edit" onSubmit={saveEdit}><input autoFocus value={editing.title} onChange={e=>setEditing({...editing,title:e.target.value})} maxLength={160} aria-label="Task title"/><input type="date" value={editing.due} onChange={e=>setEditing({...editing,due:e.target.value})} aria-label="Due date"/><button type="submit">Save</button><button type="button" onClick={()=>setEditing(null)} aria-label="Cancel edit">✕</button></form></li>:
-      <li key={t.id} className={`pri-${t.priority??"normal"}`}><input type="checkbox" checked={t.done} onChange={()=>toggleT(t)} aria-label={`Done: ${t.title}`}/><button className="os-ttl" onClick={()=>setEditing({id:t.id,title:t.title,due:t.due??""})} title="Tap to edit">{t.priority==="high"&&<i className="os-pri" title="High priority">!</i>}{t.title}{t.recur&&<small className="os-rec" title={`Repeats ${t.recur}`}> ↻</small>}</button>{t.due&&<time className={t.due<today()?"late":""}>{new Date(t.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</time>}<button className="os-snz" onClick={()=>snoozeT(t,1)} aria-label={`Snooze ${t.title} one day`} title="Snooze 1 day">+1d</button><button className="os-snz os-del" onClick={()=>delT(t)} aria-label={`Delete ${t.title}`} title="Delete">✕</button></li>)}</ul>
-     <form onSubmit={addT} className="os-add os-add1"><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a focus item" maxLength={160} aria-label="New focus item"/>
-      <span className="os-datebtn"><button type="button" onClick={()=>{const el=dueRef.current;if(!el)return;try{el.showPicker();}catch{el.focus();}}} aria-label="Pick due date" title="Due date" className={newDue?"set":""}>{newDue?new Date(newDue+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):<Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" s={16}/>}</button><input ref={dueRef} type="date" value={newDue} onChange={e=>setNewDue(e.target.value)} tabIndex={-1} aria-hidden="true"/></span>
-      <button type="button" className={newPri!=="normal"?"set":""} onClick={()=>setNewPri(p=>p==="normal"?"high":p==="high"?"low":"normal")} aria-label={`Priority: ${newPri}`} title={`Priority: ${newPri}`}>{newPri==="high"?"!":newPri==="low"?"↓":"–"}</button>
-      <button type="button" className={newRecur?"set":""} onClick={()=>setNewRecur(r=>({"":"daily",daily:"weekdays",weekdays:"weekly",weekly:"monthly",monthly:""} as Record<string,string>)[r])} aria-label={`Repeat: ${newRecur||"none"}`} title={`Repeat: ${newRecur||"none"}`}>{newRecur?newRecur.slice(0,2):"↻"}</button>
-      <button type="submit" aria-label="Add focus item" className="os-plus">+</button></form>
-    </article>
-    <article className="os-panel os-activity">
-     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>System Activity</h3>
-     {activity.length?<ol className="os-tl">{activity.map(a=><li key={a.title+a.t}><time title={a.src}>{new Date(a.t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"})}</time><i/><span>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:a.title}<small>{a.src} · {ago(a.t)}</small></span></li>)}</ol>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
-     <p className="os-foot">Q: {activityCount} events · {conversationCount} chats (24h)</p>
-    </article>
-   </section>
-
-   <section className="os-panel os-markets" id="markets">
+   <section className="os-panel os-markets os-c5" id="markets">
     <h3><Ico d="M3 17l6-6 4 4 8-8M15 7h6v6"/>Market Pulse · XAU/USD</h3>
     {gold?<div className="os-gold"><b>{gold.value.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><em className={gold.value.changePct>=0?"ok":"bad"}>{gold.value.changePct>=0?"▲ +":"▼ "}{gold.value.changePct.toFixed(2)}% today</em>{(()=>{const se=gold.value.series,c=(se[se.length-1]/se[0]-1)*100;return <em className={`os-gold2 ${c>=0?"ok":"bad"}`} title="Change across the chart">{c>=0?"+":""}{c.toFixed(2)}% on chart</em>;})()}<small>{gold.source} · {ago(gold.updatedAt)}</small>
      <svg viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="osGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff4d5e" stopOpacity=".35"/><stop offset="1" stopColor="#ff4d5e" stopOpacity="0"/></linearGradient></defs>
       <polygon fill="url(#osGold)" points={`0,80 ${spark(gold.value.series,300,76)} 300,80`}/><polyline fill="none" stroke="#ff4d5e" strokeWidth="2" points={spark(gold.value.series,300,76)}/></svg></div>:<p className="os-muted">Waiting for Counter-Trader.</p>}
    </section>
+   </div>
 
+   <div className="os-row">
+    <article className="os-panel os-activity os-c7">
+     <h3><Ico d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>System Activity</h3>
+     {activity.length?<ol className="os-tl">{activity.map(a=><li key={a.title+a.t}><time title={a.src}>{new Date(a.t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"})}</time><i/><span>{a.href?<a href={a.href} target="_blank" rel="noreferrer">{a.title}</a>:a.title}<small>{a.src} · {ago(a.t)}</small></span></li>)}</ol>:<p className="os-muted">{loading?"Loading…":"No activity found."}</p>}
+     <p className="os-foot">Q: {activityCount} events · {conversationCount} chats (24h)</p>
+    </article>
+    <div className="os-c5 os-stack">
+   <section className="os-panel os-agenda" id="today">
+    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
+    {agenda.length?<ul>{agenda.map(a=><li key={a.id}><i className={a.hot?"hot":""}/><span>{a.title}</span><time>{a.time}</time></li>)}</ul>:<p className="os-muted">{tasks?"Nothing due today. Add focus items with a date.":"Loading…"}</p>}
+   </section>
+   <AlertsPanel goldPrice={gold?.value.price}/>
+    </div>
+   </div>
   </div>
 
-  <aside className="os-right">
-   <section className={`os-q${qDrawer?" os-q-mobile-open":""}`} id="q" aria-label="Q Strategic Assistant">
+  {qDrawer&&<div className="os-q-backdrop" onClick={()=>setQDrawer(false)} aria-hidden="true"/>}
+   <section className={`os-q${qDrawer?" open":""}`} role="dialog" aria-modal={qDrawer} id="q" aria-label="Q Strategic Assistant">
     <div className="os-qhead"><img src="/os/q-emblem.webp" alt="" width={88} height={88} decoding="async"/><div><b>Q</b><span>Your Strategic Assistant</span><em className={qState}><i/>{qState==="online"?"Online":qState==="offline"?"Offline":"Checking"}</em></div><button className="os-q-close" type="button" onClick={()=>setQDrawer(false)} aria-label="Close Q assistant">×</button></div>
     {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=>{const acts=m.role==="q"&&!(qBusy&&i===qMsgs.length-1)?parseActions(m.text):[];return <div key={i} className={`os-msg ${m.role}`}>{m.text?(m.role==="q"?<QMd text={stripActions(m.text)}/>:m.text):(qBusy&&i===qMsgs.length-1?"Thinking…":"")}
      {acts.length>0&&<div className="os-acts">{acts.map((a,k)=>{const key=`${i}-${k}`,st=doneActs[key];return <button key={key} disabled={!!st&&st!=="Failed"} onClick={()=>runAction(a,key)}>{st&&st!=="…"?st:a.kind==="task"?`＋ Task: ${a.arg}${a.due?` (${a.due})`:""}`:a.kind==="checks"?"Run checks":a.kind==="open"?`Open ${a.arg}`:"Summarise AngolaIQ"}</button>;})}</div>}</div>;})}</div>}
@@ -283,12 +303,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <button className="os-more" onClick={()=>setShowAllQ(v=>!v)} aria-expanded={showAllQ}>{showAllQ?"Fewer":"More tools"}</button></div>
     {showAllQ&&<div className="os-quick os-quick-all">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={14}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><button onClick={()=>commandActions.find(x=>x.label.startsWith("What matters"))?.run()} disabled={qBusy}><Ico d="M4 5h16v14H4zM8 9h8M8 13h8" s={16}/>What matters in today’s news?</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>Open Q chat</Link></div>}
    </section>
-   <section className="os-panel os-agenda" id="agenda">
-    <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
-    {agenda.length?<ul>{agenda.map(a=><li key={a.id}><i className={a.hot?"hot":""}/><span>{a.title}</span><time>{a.time}</time></li>)}</ul>:<p className="os-muted">{tasks?"Nothing due today. Add focus items with a date.":"Loading…"}</p>}
-   </section>
-   <AlertsPanel goldPrice={gold?.value.price}/>
-  </aside>
+  {!qDrawer&&<button className="os-qfab" type="button" onClick={()=>setQDrawer(true)} aria-label="Open Q assistant"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><span>Ask Q</span>{qMsgs.length>0&&<i aria-hidden="true"/>}</button>}
 
   <nav className="os-tabs" aria-label="Main">
    <a href="#top" className="on" aria-current="page" onClick={e=>{e.preventDefault();window.scrollTo({top:0,behavior:"smooth"})}}><Ico d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" s={20}/>Today</a>

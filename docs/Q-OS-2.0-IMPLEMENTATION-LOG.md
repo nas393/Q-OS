@@ -81,3 +81,11 @@
 ### Not tested yet
 - Authenticated screens with real data (needs the preview link and owner login).
 - 360/430/768/1024/1920px, keyboard pass, contrast measurements (Phase 6).
+
+## Layout redesign (Claude, 2026-11-20) — PR after #27
+Owner feedback: phases 1–2 looked too similar to the previous version. Layout changed (features unchanged):
+- **Icon rail** (76px) replaces the 232px sidebar; labels show as tooltips; mobile keeps the five-tab bar.
+- **Q briefing hero** answers the brief's three questions: Ecosystem state, What needs me, Next action (with link), plus the health score, a large Ask Q bar and contextual suggestions.
+- **Q as a slide-over panel** (opens from the Ask bar, the floating "Ask Q" button or the mobile Q tab; Escape closes) instead of a permanent right column. Chat input sits at the bottom.
+- **Board grid** (12 columns): Attention | Priorities, Applications status board (list by default, grid toggle), Radar | Market, Activity | Today + Monitoring (alerts panel, push, gold levels).
+- Tested: typecheck, lint (0 errors), tests 31/31, build; rendered with sample data at 1440px and 390px, Q panel open on both.
