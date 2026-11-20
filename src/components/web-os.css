@@ -309,3 +309,129 @@
 .os .os-al-gold select{min-height:44px}
 .os .os-al-gold .os-add button{width:44px;min-width:44px;min-height:44px}
 .os .os-al-gold span button{width:44px;height:44px;min-width:44px;min-height:44px}
+
+
+/* Q OS 2.0 — executive visual system. Scoped to the command centre to protect
+   authentication, AngolaIQ and the other independently styled workspaces. */
+.os{
+ --bg:#090a0e;--panel:#12141b;--panel2:#191c25;--raise:#202431;
+ --line:#ffffff14;--line2:#ffffff26;--txt:#f3f4f6;--sub:#a1a1aa;--muted:#858b98;
+ --red:#f12d43;--red2:#c51f35;--violet:#a855f7;--ok:#22c58b;--warn:#e9a23b;--danger:#f12d43;
+ --r:15px;--num:Inter,system-ui,sans-serif;
+ background:var(--bg);letter-spacing:0;
+}
+.os:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 75% 36% at 48% -18%,#a855f70b,transparent 70%);}
+.os>*{position:relative;z-index:1}
+.os-side{background:#0c0e13;border-color:var(--line);backdrop-filter:none}
+.os-brand{padding-bottom:22px}
+.os-nav{min-height:44px;border-radius:10px;font-size:13px}
+.os-nav.on{background:#f12d4310;box-shadow:inset 2px 0 var(--red);color:var(--txt)}
+.os-nav.on svg{color:var(--red)}
+.os-side-art{height:86px;background:linear-gradient(135deg,#a855f70c,#f12d4308);border-color:var(--line)}
+.os-center{gap:20px}
+.os-top{background:#090a0eeb;backdrop-filter:blur(14px);border-color:var(--line)}
+.os-hello{padding-top:22px}
+.os-kicker{font-size:10px;letter-spacing:.075em}
+.os-live-dot{box-shadow:0 0 0 3px #22c58b1c}
+.os-hello h1{font-size:clamp(27px,2.3vw,32px);font-weight:650;letter-spacing:-.04em}
+.os-hello-sub{font-size:13px;color:var(--sub)}
+.os-cmdk{border-radius:11px;background:var(--panel);border-color:var(--line);min-height:44px}
+.os-cmdk:hover{border-color:#a855f766}
+.os-bento{gap:10px;grid-template-columns:minmax(0,1.05fr) repeat(2,minmax(0,1fr))}
+.os-health,.os-tile{border-radius:14px;background:var(--panel);border-color:var(--line);box-shadow:none}
+.os-health{padding:15px 17px;gap:9px}
+.os-health:before{display:none}
+.os-ring{width:112px;height:112px}
+.os-ring circle{stroke-width:8}
+.os-ring b{font-size:35px}
+.os-health li{font-size:11px;gap:8px}
+.os-health li i{background:#ffffff15}
+.os-health li i b{background:var(--violet)}
+.os-tile{min-height:112px;padding:14px 15px}
+.os-tile>b{font-size:32px}
+.os-tile small{font-size:11px;color:var(--sub)}
+.os-tile-hero{border-color:#f12d4338;background:linear-gradient(145deg,#25131a,#17141a 78%)}
+.os-tile-hero small,.os-tile-hero>em{color:#d6b5ba}
+.os-dots i{height:5px}
+.os-eco{scroll-margin-top:78px}
+.os-eco-h{margin-bottom:10px}
+.os-eco-h h2,.os-panel h3,.os-attention h2{font-size:17px;font-weight:650;letter-spacing:-.025em}
+.os-newbtn{min-height:40px;border-radius:10px;background:var(--panel);border-color:var(--line2)}
+.os-grid{grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
+.os-card{min-height:142px;border-radius:14px;background:var(--panel);border-color:var(--line);box-shadow:none}
+.os-card:hover{transform:translateY(-1px);border-color:#ffffff35}
+.os-logo{height:44px}
+.os-logo img{max-height:40px}
+.os-card strong{font-size:12px}
+.os-card small{font-size:11px}
+.os-card-activity{color:var(--muted);font-size:10px!important}
+.os-card em{font-size:10.5px}
+.os-card em.ok i{background:var(--ok);box-shadow:0 0 0 3px #22c58b1c}
+.os-card em.bad i{background:var(--danger);box-shadow:0 0 0 3px #f12d431c}
+.os-panel{border-radius:14px;background:var(--panel);border-color:var(--line);padding:16px 18px}
+.os-panel h3{margin-bottom:10px}
+.os-panel h3 svg{color:var(--sub)}
+.os-focus li,.os-agenda li{min-height:48px;border-color:var(--line)}
+.os-right{gap:10px}
+.os-q{border-radius:15px;border-color:#a855f733;background:linear-gradient(155deg,#1c1726,#12141b 55%);padding:17px}
+.os-qhead img{animation:none;box-shadow:0 0 0 1px #ffffff20}
+.os-qhead b{font-size:19px}
+.os-ask input{background:#0d0f15;border-color:var(--line2);border-radius:11px}
+.os-ask button{background:var(--red);box-shadow:none;border-radius:11px}
+.os .os-quick>*{min-height:40px;border-radius:9px;background:#ffffff06}
+.os-quick>*:hover{border-color:#a855f766}
+.os-agenda li i.hot{background:var(--red);box-shadow:0 0 0 3px #f12d431b}
+.os-al-row button,.os-al-check{border-radius:9px}
+.os-al-list li>i.info{background:#5797e8}
+.os-news-tabs button.on{background:#f12d4315;color:#fff}
+.os-news-open:hover b,.os-news-open:focus-visible b{color:#fff}
+.os-news-open:focus-visible{outline-color:var(--violet)}
+.os-radar-categories button.on{border-color:#a855f766;background:#a855f714}
+.os-news-dialog{border-radius:16px;background:#151821}
+.os-news-dialog>a{background:var(--red);border-radius:9px}
+.os-command{border-radius:16px;background:#141720}
+.os-command-group>button:hover,.os-command-group>button:focus-visible{border-color:#a855f744;background:#a855f710}
+.os-command-ask{border-color:#a855f744!important;background:#a855f710!important}
+
+/* Decision-first attention panel, populated only from actual alerts or saved tasks. */
+.os-attention{padding:15px 17px;border:1px solid var(--line);border-radius:14px;background:#101219}
+.os-attention-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.os-attention-head>div{display:grid;gap:3px}
+.os-section-eyebrow{margin:0;color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.12em}
+.os-attention h2{margin:0}
+.os-attention-head>a{color:var(--sub);font-size:11px;font-weight:600}
+.os-attention-head>a:hover{color:var(--txt)}
+.os-attention ul{list-style:none;margin:0;padding:0;display:grid}
+.os-attention li{display:grid;grid-template-columns:82px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.os-attention li:first-child{border-top:0}
+.os-attention-severity{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:0 8px;border-radius:6px;background:#e9a23b15;color:var(--warn);font-size:10px;font-weight:700}
+.os-attention li.critical .os-attention-severity{background:#f12d4315;color:#ff6576}
+.os-attention li>div{min-width:0;display:grid;gap:2px}
+.os-attention li b{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.os-attention li small{color:var(--muted);font-size:10px}
+.os-attention li>a{min-height:36px;display:inline-flex;align-items:center;padding:0 10px;border:1px solid var(--line2);border-radius:8px;color:var(--sub);font-size:10.5px;font-weight:600}
+.os-attention li>a:hover{border-color:#ffffff40;color:var(--txt)}
+.os-attention-empty{margin:0;padding:7px 0;color:var(--sub);font-size:12px}
+@media(max-width:1320px){.os-bento{grid-template-columns:repeat(2,minmax(0,1fr))}.os-health{grid-column:1/-1}}
+@media(max-width:1060px){
+ .os-center{gap:15px}
+ .os-right{gap:12px}
+ .os-attention{margin-top:0}
+}
+@media(max-width:640px){
+ .os-hello{padding-top:16px}
+ .os-hello h1{font-size:25px}
+ .os-bento{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .os-health{grid-column:1/-1;display:flex;align-items:stretch}
+ .os-ring{width:112px;height:112px;margin:0 auto}
+ .os-tile{min-height:104px;padding:12px}
+ .os-tile>b{font-size:28px}
+ .os-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .os-attention{padding:13px}
+ .os-attention li{grid-template-columns:70px minmax(0,1fr);gap:8px}
+ .os-attention li>a{grid-column:2;justify-self:start;min-height:36px}
+ .os-panel{padding:14px}
+ .os-q{padding:15px}
+}
+@media(min-width:1600px){.os{grid-template-columns:250px minmax(0,1fr) 360px}.os-center{padding-inline:34px}.os-right{padding-right:24px}}
+@media(prefers-reduced-motion:reduce){.os *, .os *:before, .os *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
