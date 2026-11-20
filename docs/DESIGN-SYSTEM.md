@@ -40,5 +40,6 @@ One shell, one token set, one component layer for every owner section: Command c
 
 ## Checks
 
-- Automated WCAG 2.0/2.1/2.2 A and AA scan (axe-core) on 11 views (dark and light themes, desktop and phone): no violations.
+- Automated WCAG 2.0/2.1/2.2 A and AA scan (axe-core) on 11 views (dark and light themes, desktop and phone), plus all 10 AngolaIQ sub-pages in Obsidian and Light Executive at 1440 and 375 px: no violations, and no page scrolls sideways on a phone.
+- The Command centre builds only the layout that fits the screen (orbit or Smart Stack), not both.
 - 53 unit tests, including orbit layout (no overlaps from 1024 to 1920 px) and app logos (every registry app has its own logo; the local copies exist).

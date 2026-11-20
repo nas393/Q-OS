@@ -26,8 +26,8 @@ export default function Saved(){
    <div className="iq-row"><div><small className="iq-badge">{s.kind.toUpperCase()}</small> {s.url?<a className="t" href={s.url} target="_blank" rel="noreferrer">{s.title}</a>:<b>{s.title}</b>}
     <div className="iq-sub">saved {ago(s.created_at)}{s.tags.length?` · #${s.tags.join(" #")}`:""}</div>{s.notes&&<div className="iq-sub">Note: {s.notes}</div>}</div></div>
    {edit?.id===s.id&&<form className="iq-form two" style={{marginTop:8}} onSubmit={async e=>{e.preventDefault();await api("/api/iq/saved","PATCH",{id:s.id,notes:edit.notes,tags:edit.tags.split(/[ ,#]+/).filter(Boolean).slice(0,10)});setEdit(null);reload();}}>
-    <input value={edit.notes} onChange={e=>setEdit({...edit,notes:e.target.value})} placeholder="Notes" aria-label="Notes" style={{minHeight:38,padding:"0 10px",borderRadius:8,border:"1px solid var(--line2)",background:"var(--panel)",color:"var(--txt)"}}/>
-    <input value={edit.tags} onChange={e=>setEdit({...edit,tags:e.target.value})} placeholder="tags, comma separated" aria-label="Tags" style={{minHeight:38,padding:"0 10px",borderRadius:8,border:"1px solid var(--line2)",background:"var(--panel)",color:"var(--txt)"}}/>
+    <input value={edit.notes} onChange={e=>setEdit({...edit,notes:e.target.value})} placeholder="Notes" aria-label="Notes" className="input"/>
+    <input value={edit.tags} onChange={e=>setEdit({...edit,tags:e.target.value})} placeholder="tags, comma separated" aria-label="Tags" className="input"/>
     <div className="full"><button className="iq-btn sm pri">Save</button></div></form>}
    <div className="iq-tags" style={{marginTop:6}}>
     {s.kind==="analysis"&&<button className="iq-btn sm" onClick={()=>view(s)}>{open?.id===s.id?"Hide":"View"}</button>}

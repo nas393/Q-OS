@@ -29,8 +29,8 @@ export default function Watch(){
   <div className="iq-grid iq-g2" style={{marginTop:12}}>
    <section className="iq-card"><h3>Active watchlist</h3>
     {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:!data?.watch.length?<Empty>No keywords yet.</Empty>:
-    <ul className="iq-list">{data.watch.map(w=><li key={w.id} className="iq-row"><div><b style={{opacity:w.active?1:.5}}>{w.keyword}</b><div className="iq-tags"><Badge kind={w.priority==="high"?"negative":w.priority==="low"?"neutral":"trusted"}/><span className="iq-sub">{w.frequency} · {w.match_count} matches · last {ago(w.last_triggered)}{w.active?"":" · paused"}</span></div></div>
-     <select aria-label="Frequency" value={w.frequency} onChange={e=>patch(w.id,{frequency:e.target.value})} style={{minHeight:34,borderRadius:8,background:"var(--panel)",color:"var(--txt)",border:"1px solid var(--line2)"}}><option value="instant">Instant</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+    <ul className="iq-list">{data.watch.map(w=><li key={w.id} className="iq-row"><div><b className={w.active?undefined:"iq-muted"}>{w.keyword}</b><div className="iq-tags"><span className={`tag ${w.priority==="high"?"watch":w.priority==="low"?"plain":"info"}`}>{w.priority} priority</span><span className="iq-sub">{w.frequency} · {w.match_count} matches · last {ago(w.last_triggered)}{w.active?"":" · paused"}</span></div></div>
+     <select aria-label="Frequency" value={w.frequency} onChange={e=>patch(w.id,{frequency:e.target.value})} className="input sm"><option value="instant">Instant</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
      <button className="iq-btn sm" onClick={()=>patch(w.id,{active:!w.active})}>{w.active?"Pause":"Resume"}</button>
      <button className="iq-btn sm danger" aria-label="Remove" onClick={async()=>{if(await askConfirm({title:`Remove “${w.keyword}” from the watchlist?`,action:"Remove"})){await api(`/api/iq/watch?id=${w.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
    </section>

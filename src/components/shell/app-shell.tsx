@@ -169,7 +169,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
       <nav className="tabbar" aria-label="Q OS sections">
         <Link href="/dashboard" aria-current={section.id==="dashboard"?"page":undefined}><I n="orbit"/>Today</Link>
         <Link href="/iq" aria-current={section.id==="iq"?"page":undefined}><I n="compass"/>AngolaIQ</Link>
-        <Link href="/chat" className="orb" aria-current={section.id==="chat"?"page":undefined} aria-label="Q Assistant"><span className="ob"><img src="/os/q-emblem.webp" alt="" width={34} height={34}/></span><span>Ask Q</span></Link>
+        <Link href="/chat" className="orb" aria-current={section.id==="chat"?"page":undefined} aria-label="Ask Q"><span className="ob"><img src="/os/q-emblem.webp" alt="" width={34} height={34}/></span><span>Ask Q</span></Link>
         <Link href="/alerts" aria-current={section.id==="alerts"?"page":undefined}><I n="bell"/>Alerts{alerts.n>0&&<b className={`badge${alerts.red?"":" watch"}`}>{alerts.n}</b>}</Link>
         <button onClick={()=>openPanel("more")} aria-current={panel==="more"||section.id==="brief"?"page":undefined} aria-haspopup="dialog"><I n="more"/>More</button>
       </nav>

@@ -141,10 +141,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [flashId,setFlashId]=useState("");
  const stageRef=useRef<HTMLElement>(null),pRef=useRef<HTMLDivElement>(null),stackRef=useRef<HTMLDivElement>(null),qInputRef=useRef<HTMLInputElement>(null),addDateRef=useRef<HTMLInputElement>(null);
  const motion=studio.motion;
+ /* Build only the layout that fits (both render until mounted, so server and first paint match):
+    phones no longer render the hidden orbit, and desktops no longer render the hidden Smart Stack. */
+ const [narrow,setNarrow]=useState<boolean|null>(null);
+ useEffect(()=>{const m=window.matchMedia("(max-width:1180px)");const f=()=>setNarrow(m.matches);f();m.addEventListener("change",f);return()=>m.removeEventListener("change",f);},[]);
 
  useEffect(()=>{const el=stageRef.current;const read=()=>setStage(el&&el.clientWidth>0?{w:el.clientWidth,h:el.clientHeight}:{w:window.innerWidth,h:window.innerHeight});read();
   const ro=el?new ResizeObserver(read):null;if(el&&ro)ro.observe(el);window.addEventListener("resize",read);
-  const t=window.setTimeout(()=>setArcOn(true),120);return()=>{ro?.disconnect();window.removeEventListener("resize",read);window.clearTimeout(t);};},[]);
+  const t=window.setTimeout(()=>setArcOn(true),120);return()=>{ro?.disconnect();window.removeEventListener("resize",read);window.clearTimeout(t);};},[narrow]); /* re-measure when the orbit stage mounts */
  useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==="Escape"){setPanel(null);setQOpen(false);setFocusId(null);}};window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[]);
  useEffect(()=>{if(qOpen&&window.innerWidth>1180)qInputRef.current?.focus({preventScroll:true});},[qOpen]);
 
@@ -348,7 +352,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="seg" role="tablist" aria-label="Radar stream">{(["Angola","Lebanon","Global"] as NewsStream[]).map(r=><button key={r} role="tab" className="press" aria-selected={newsStream===r} onClick={()=>{setNewsStream(r);setNewsCategory("All");}}>{r}</button>)}</div>
     <div className="news">{newsLoading&&!news.length?[0,1,2].map(i=><div key={i} style={{padding:"12px 0"}}><span className="skel" style={{width:"35%"}}/><span className="skel" style={{width:"95%",marginTop:8}}/></div>)
      :newsError?<p className="feed-empty">{newsError}</p>
-     :visibleNews.length?visibleNews.slice(0,4).map(n=><button key={n.id} onClick={()=>setSelectedNews(String(n.id))}><div className="mt"><span>{(n.category??"general").replace(/_/g," ")}</span>·<span>{n.publisher??"Source"} · {ago(n.published_at??n.retrieved_at)}</span>{n.impact&&<span style={{marginLeft:"auto",fontWeight:600,color:n.impact.toLowerCase()==="high"?"var(--crit-ink)":"var(--text-2)"}}>{n.impact.toLowerCase()==="high"?"▲ ":""}{n.impact}</span>}</div><h5>{n.title}</h5></button>)
+     :visibleNews.length?visibleNews.slice(0,4).map(n=><button key={n.id} onClick={()=>setSelectedNews(String(n.id))}><div className="mt"><span>{(n.category??"general").replace(/_/g," ")}</span>·<span>{n.publisher??"Source"} · {ago(n.published_at??n.retrieved_at)}</span>{n.impact&&<span style={{marginLeft:"auto",fontWeight:600,color:n.impact.toLowerCase()==="high"?"var(--crit-ink)":"var(--text-2)"}}>{n.impact.toLowerCase()==="high"?"▲ ":""}{n.impact}</span>}</div><h3 className="nt">{n.title}</h3></button>)
      :<p className="feed-empty">No {newsStream} intelligence yet. Refresh to fetch the latest.</p>}</div></article>;
  };
 
@@ -383,7 +387,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   </defs></svg>
 
   {/* ======================= DESKTOP ======================= */}
-  <div className={`d-app${qOpen?" qopen":""}`}>
+  {narrow!==true&&<div className={`d-app${qOpen?" qopen":""}`}>
    <main className="stage" ref={stageRef} aria-label="Ecosystem orbit" onClick={e=>{if(e.target===e.currentTarget||(e.target as HTMLElement).classList.contains("stage-bg"))setFocusId(null);}}>
     <div className="stage-bg"/>
     {isWide&&<div className={`world${focus?" focusing":""}`} style={{left:cx,top:cy,transform:worldTransform}}>
@@ -459,10 +463,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <div className="feed">{feedBody}</div>
     </section>
    </aside>
-  </div>
+  </div>}
 
   {/* ======================= PHONE ======================= */}
-  <div className="m-app">
+  {narrow!==false&&<div className="m-app">
    <div className="m-bg"/>
    <header className="m-head">
     <div className="tx"><b>{greet}, Nassim</b><span className="num">{date&&`${date.split(" ").slice(0,3).join(" ")} · ${time}`}{weather?` · Luanda ${weather.t}°`:""}</span></div>
@@ -486,7 +490,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     </div>
     <div className="feed">{feedBody}</div>
    </section>
-  </div>
+  </div>}
 
   {/* ======================= Q (dock on desktop, full sheet on phone) ======================= */}
   <div className={`qdock${qOpen?" open":""}`}>
