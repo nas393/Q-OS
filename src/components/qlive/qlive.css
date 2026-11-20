@@ -573,7 +573,7 @@
   .ql .m-sig .sig h4{font-size:14.5px}
   .ql .m-sig .sig .acts .btn{height:40px}
   .ql .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);
-    background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border-top:1px solid var(--line)}
+    background:color-mix(in srgb,var(--bg) 95%,transparent);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border-top:1px solid var(--line)}
   .ql .tabbar>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:500;color:var(--muted);position:relative;min-height:56px}
   .ql .tabbar>button svg.i{width:22px;height:22px}
   .ql .tabbar>button[aria-current="page"]{color:var(--text)}
