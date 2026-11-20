@@ -63,3 +63,21 @@
 - Current production is already live from the prior explicit `go live` instruction.
 - All additional Q OS 2.0 work proceeds on a development branch and preview deployment.
 - Do not merge to `main`, promote a production deployment, or change production configuration without a separate explicit approval after preview evidence and a risk report.
+
+## Phases 1–2 completion (Claude, 2026-11-20) — builds on PR #25/#26
+
+### Done
+- **Design system:** one stylesheet (`src/components/web-os.css`, ~340 lines) replaces three stacked layers (713 lines). Tokens follow the brief: bg #090A0E, surfaces #12141B/#191C25/#202431, red #F12D43, AI purple #A855F7, green #22C58B, amber #E9A23B, blue #5797E8. Spacing scale 4–32px, radii 9/12/16px, Inter only, no uppercase labels.
+- **Deviation:** muted text is #8B90A0 instead of #717784, because #717784 on #12141B is about 4.0:1, below WCAG AA for small text.
+- **Executive summary:** compact health score (64px ring, colour by state), trend vs the previous day (stored per device), breakdown, plus Apps live, Critical issues, Watch, Data verified. All values come from live data.
+- **Attention required:** one list built only from real signals: failed production builds (critical, opens the Vercel build), overdue tasks and open GitHub issues (watch), gold moves of 1.5% or more (info). Each row shows severity as text + shape + colour, the affected app, the time, recommended action and a link.
+- **Applications:** standardized cards (fixed logo box, name, category, last update, status pill with text, up to 3 page links), grid/list toggle saved per device. Status labels map existing deployment states only: Operational, Needs attention, Deploying, Unverified.
+- **Q Assistant:** suggestions follow the situation (failing app, overdue tasks, high-impact news), the full tool list is behind "More tools".
+
+### Tested
+- typecheck, lint (0 errors), unit tests 31/31, production build.
+- Rendered with sample data at 1440px and 390px; no horizontal overflow seen at those widths.
+
+### Not tested yet
+- Authenticated screens with real data (needs the preview link and owner login).
+- 360/430/768/1024/1920px, keyboard pass, contrast measurements (Phase 6).

@@ -42,6 +42,7 @@ const ago=(iso:string|number)=>{const m=Math.round((Date.now()-new Date(iso).get
 const clean=(n:string)=>n.replace(" / Q","");
 /* Polyline points for a series scaled into w×h (2px top/bottom padding). */
 const spark=(s:number[],w:number,h:number)=>{const lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/Math.max(1,s.length-1)*w).toFixed(1)},${(h-2-(v-lo)/r*(h-4)).toFixed(1)}`).join(" ");};
+const initials=(n:string)=>n.split(/[^A-Za-z0-9À-ÿ]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const today=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Luanda"});
 function Ico({d,s=18}:{d:string;s?:number}){return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d}/></svg>;}
 
@@ -49,6 +50,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [clock,setClock]=useState<Date|null>(null),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const dueRef=useRef<HTMLInputElement>(null);
+ const [cardView,setCardView]=useState<"grid"|"list">("grid"),[showAllQ,setShowAllQ]=useState(false),[trend,setTrend]=useState<number|null>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
  const [news,setNews]=useState<NewsItem[]>([]),[newsStream,setNewsStream]=useState<NewsStream>("Angola"),[newsCategory,setNewsCategory]=useState("All"),[newsLoading,setNewsLoading]=useState(true),[newsRefreshing,setNewsRefreshing]=useState(false),[newsError,setNewsError]=useState(""),[selectedNews,setSelectedNews]=useState<string|null>(null);
@@ -58,6 +60,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  const refresh=useCallback(async()=>{setLoading(true);setError("");try{const r=await fetch("/api/projects",{cache:"no-store"});if(!r.ok)throw new Error(r.status===401?"Sign in to load live data":`Projects API returned ${r.status}`);setData(await r.json());}catch(e){setError(e instanceof Error?e.message:"Live data unavailable");}finally{setLoading(false)}},[]);
  const loadTasks=useCallback(async()=>{try{const r=await fetch("/api/tasks",{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error);setTasks(j.tasks);setDoneWeek(typeof j.doneWeek==="number"?j.doneWeek:null);setTaskErr("");}catch(e){setTaskErr(e instanceof Error&&e.message?e.message:"Tasks unavailable");}},[]);
+ useEffect(()=>{try{const v=localStorage.getItem("os-view");if(v==="list"||v==="grid")setCardView(v);}catch{}},[]);
  useEffect(()=>{setClock(new Date());const t=window.setInterval(()=>setClock(new Date()),30000);return()=>window.clearInterval(t)},[]);
  useEffect(()=>{refresh();const t=window.setInterval(refresh,300000);return()=>window.clearInterval(t)},[refresh]);
  useEffect(()=>{loadTasks();
@@ -94,7 +97,26 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  /* Ecosystem health 0-100: builds 40%, activity 20%, tasks on time 20%, no urgent alerts 20%. */
  const pBuild=projects.length?Math.round(ready/projects.length*100):null,pTasks=tasks?Math.round(100-Math.min(100,overdue/Math.max(1,open.length)*100)):null,pAlerts=data?Math.max(0,100-redCount*25):null;
  const health=pBuild===null?null:Math.round(pBuild*.4+(exec??0)*.2+(pTasks??100)*.2+(pAlerts??100)*.2);
+ /* Trend: today's score vs the last saved day on this device (kept 14 days). */
+ useEffect(()=>{if(health===null)return;try{const k=today(),h=JSON.parse(localStorage.getItem("os-health")??"{}") as Record<string,number>;const prev=Object.keys(h).filter(d=>d<k).sort().pop();setTrend(prev?health-h[prev]:null);h[k]=health;localStorage.setItem("os-health",JSON.stringify(Object.fromEntries(Object.entries(h).sort().slice(-14))));}catch{}},[health]);
  const healthParts:[string,number|null][]=[["Builds",pBuild],["Activity 7d",exec],["Tasks on time",pTasks],["Alerts clear",pAlerts],["Data verified",projects.length?Math.round(verified/projects.length*100):null]];
+ /* Attention: only genuine exceptions from live data (failed builds, open issues, overdue tasks, big gold moves). */
+ type Attn={id:string;sev:"critical"|"watch"|"info";title:string;app:string;when:string;advice:string;action:string;href:string};
+ const attention:Attn[]=[
+  ...projects.filter(p=>p.deployment?.state==="ERROR").map(p=>({id:"d"+p.id,sev:"critical" as const,title:`${clean(p.name)} production build failed`,app:p.area,when:p.deployment?.created?ago(p.deployment.created):"",advice:"Check the build log and redeploy",action:"Open build",href:p.deployment?.inspectorUrl??"/alerts"})),
+  ...open.filter(t=>t.due&&t.due<today()).map(t=>({id:"t"+t.id,sev:"watch" as const,title:`Overdue: ${t.title}`,app:t.project??"Personal priority",when:`due ${new Date(t.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}`,advice:"Complete, reschedule or delete",action:"Open queue",href:"#agenda"})),
+  ...projects.filter(p=>(p.openIssues??0)>0).map(p=>({id:"i"+p.id,sev:"watch" as const,title:`${clean(p.name)}: ${p.openIssues} open issue${p.openIssues===1?"":"s"}`,app:p.area,when:"",advice:"Triage on GitHub",action:"View issues",href:p.repo?`https://github.com/nas393/${p.repo}/issues`:"/alerts"})),
+  ...(gold&&Math.abs(gold.value.changePct)>=1.5?[{id:"gold",sev:"info" as const,title:`Gold ${gold.value.changePct>0?"up":"down"} ${Math.abs(gold.value.changePct).toFixed(1)}% today`,app:"XAU/USD Trading HQ",when:ago(gold.updatedAt),advice:"Review positions and levels",action:"View market",href:"#markets"}]:[])
+ ].slice(0,5);
+ const critical=attention.filter(a=>a.sev==="critical"),watch=attention.filter(a=>a.sev==="watch");
+ /* Q suggestions follow the current situation; the full list stays one tap away. */
+ const qSuggest:{label:string;prompt:string;ctx?:boolean}[]=[
+  ...projects.filter(p=>p.deployment?.state==="ERROR").slice(0,1).map(p=>({label:`Investigate ${clean(p.name)} availability`,prompt:`${clean(p.name)}'s latest production build failed. Using the live snapshot, list the likely causes, what to check first and the fastest safe fix.`,ctx:true})),
+  ...(overdue?[{label:"Review overdue priorities",prompt:"I have overdue tasks. Using my live task list, tell me which to do today, which to reschedule and which to drop, in that order.",ctx:true}]:[]),
+  ...(news.some(n=>(n.impact??"").toLowerCase()==="high")?[{label:"Prepare an intelligence briefing",prompt:"Prepare a short intelligence briefing from today's high-impact Global Radar headlines for Angola, Lebanon and Global: what happened, why it matters for my ventures, one action.",ctx:true}]:[]),
+  {label:"What matters most today?",prompt:"Review my live Q OS data. Identify the single most important priority today, explain why, and recommend the next action."},
+  {label:"Portfolio review",prompt:"Give me a status update on all my projects: live status, blockers and the next action for each."}
+ ].slice(0,4);
  const time=clock?clock.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"}):"";
  const date=clock?clock.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"Africa/Luanda"}):"";
 
@@ -136,7 +158,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
  return <main className="os" id="top">
   <aside className="os-side">
-   <div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={84} height={76}/><b>Q <i>OS</i></b><small>PRIVATE COMMAND CENTRE</small></div>
+   <div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={84} height={76}/><span><b>Q <i>OS</i></b><small>Command centre</small></span></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
    <div className="os-side-art" aria-hidden="true"/>
   </aside>
@@ -165,59 +187,48 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    {!online&&<p className="os-offline" role="status">Offline: showing the last saved data.</p>}
    {(error||metricsError)&&<p className="os-err">{error||metricsError}</p>}
 
-   <section className="os-bento" aria-label="Today at a glance">
-    <a className="os-health" href="/brief" aria-label={`Ecosystem health ${health??"unknown"} out of 100. Open morning brief`}>
-     <div className="os-health-h"><small>Ecosystem health</small><em>Brief →</em></div>
-     <div className="os-ring">
-      <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="osRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff4d5e"/><stop offset="1" stopColor="#8b7cff"/></linearGradient></defs>
-       <circle cx="60" cy="60" r="50" className="trk"/><circle cx="60" cy="60" r="50" className="val" strokeDasharray={`${(health??0)/100*314.2} 314.2`}/></svg>
-      <div><b>{health??"—"}</b><small>{health===null?"loading":health>=85?"Excellent":health>=65?"Good":"Needs attention"}</small></div>
-     </div>
-     <ul>{healthParts.map(([l,v])=><li key={l}><span>{l}</span><i><b style={{width:`${v??0}%`}}/></i><em>{v===null?"—":v}</em></li>)}</ul>
+   <section className="os-summary" aria-label="Executive summary">
+    <a className="os-score" href="/brief" aria-label={`Ecosystem health ${health??"unknown"} out of 100. Open morning brief`}>
+     <span className="os-ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" className="trk"/><circle cx="32" cy="32" r="27" className={`val ${health===null?"":health>=85?"ok":health>=65?"warn":"bad"}`} strokeDasharray={`${(health??0)/100*169.6} 169.6`}/></svg></span>
+     <span className="os-score-t"><small>Ecosystem health</small><b>{health??"—"}<span>/100</span></b>
+      <em>{health===null?"Loading live data":`${health>=85?"Healthy":health>=65?"Stable":"Needs attention"}${trend===null?" · first reading today":trend===0?" · no change since yesterday":` · ${trend>0?"▲ +":"▼ "}${trend} since yesterday`}`}</em></span>
+     <ul className="os-score-parts" aria-label="Health breakdown">{healthParts.filter(([l])=>l!=="Data verified").map(([l,v])=><li key={l}><span>{l}</span><b>{v===null?"—":v}</b></li>)}</ul>
     </a>
-    <a className="os-tile os-tile-hero" href="#ecosystem">
-     <small>Apps live</small><b>{data?ready:"—"}<span>/{data?projects.length:"—"}</span></b>
-     <p className="os-dots" aria-hidden="true">{projects.map(p=><i key={p.id} className={p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":""} title={clean(p.name)}/>)}</p>
-     <em>{failed?`${failed} failing · fix first`:"All production builds healthy"}</em>
-    </a>
-    <a className="os-tile" href="#agenda"><small>Open tasks</small><b>{tasks?open.length:"—"}</b><em className={overdue?"bad":""}>{tasks?(overdue?`${overdue} overdue · ${dueNow} today`:`${dueNow} due today`):"…"}</em></a>
-    <a className="os-tile" href="/alerts"><small>Urgent alerts</small><b className={redCount?"bad":""}>{data?redCount:"—"}</b><em>{alerts.length?`${alerts.length} signal${alerts.length===1?"":"s"} in total`:"All quiet"}</em></a>
-    <a className="os-tile" href="#markets"><small>Gold · XAU/USD</small><b>{gold?gold.value.price.toFixed(0):"—"}</b>
-     {gold&&<svg className="os-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><polyline points={spark(gold.value.series,100,24)} className={gold.value.changePct>=0?"ok":"bad"}/></svg>}
-     <em className={gold?(gold.value.changePct>=0?"ok":"bad"):""}>{gold?`${gold.value.changePct>=0?"▲ +":"▼ "}${gold.value.changePct.toFixed(2)}% today`:"No feed"}</em></a>
+    <a className="os-kpi" href="#ecosystem"><small>Apps live</small><b>{data?ready:"—"}<span>/{data?projects.length:"—"}</span></b><em className={failed?"bad":"ok"}>{data?(failed?`${failed} need${failed===1?"s":""} attention`:"All operational"):"Checking…"}</em></a>
+    <a className="os-kpi" href="#attention"><small>Critical issues</small><b className={critical.length?"bad":""}>{data?critical.length:"—"}</b><em>{critical.length?"Act first":"None open"}</em></a>
+    <a className="os-kpi" href="#attention"><small>Watch</small><b className={watch.length?"warn":""}>{data?watch.length:"—"}</b><em>{watch.length?"Monitor today":"Nothing to monitor"}</em></a>
+    <a className="os-kpi" href="/brief"><small>Data verified</small><b>{projects.length?Math.round(verified/projects.length*100):"—"}<span>%</span></b><em>{verified}/{projects.length||"—"} live sources</em></a>
    </section>
 
-   <section className="os-attention" aria-labelledby="os-attention-title">
-    <div className="os-attention-head">
-     <div><p className="os-section-eyebrow">EXECUTION SIGNALS</p><h2 id="os-attention-title">Attention required</h2></div>
-     <a href="/alerts">All alerts <span aria-hidden="true">→</span></a>
-    </div>
-    {!data&&!tasks?<p className="os-attention-empty">Checking live systems and priorities…</p>:
-     alerts.length>0?<ul>{alerts.slice(0,3).map(a=>{const project=projects.find(p=>a.title.startsWith(clean(p.name)));return <li key={a.title} className={a.level==="red"?"critical":"watch"}><span className="os-attention-severity">{a.level==="red"?"Critical":"Watch"}</span><div><b>{a.title}</b><small>{project?.area??"Portfolio telemetry"}{project?.deployment?.created?" · "+ago(project.deployment.created):""}</small></div><a href={project?"#ecosystem":"/alerts"} aria-label={"Review "+a.title}>Review</a></li>;})}</ul>:
-     focusTasks.length>0?<ul>{focusTasks.slice(0,2).map(task=><li key={task.id} className={task.due&&task.due<today()?"critical":"watch"}><span className="os-attention-severity">{task.due&&task.due<today()?"Overdue":task.priority==="high"?"High priority":"Next"}</span><div><b>{task.title}</b><small>{task.project??"Personal priority"}{task.due?" · Due "+new Date(task.due+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""}</small></div><a href="#agenda">Open queue</a></li>)}</ul>:
-     <p className="os-attention-empty">{data?"No current exceptions in connected project telemetry.":"Live telemetry is not available yet."}</p>}
+   <section className="os-attention" id="attention" aria-labelledby="os-attention-title">
+    <div className="os-sec-h"><h2 id="os-attention-title">Attention required</h2><a href="/alerts">All alerts <span aria-hidden="true">→</span></a></div>
+    {!data&&!tasks?<p className="os-muted">Checking live systems and priorities…</p>:attention.length?<ul>{attention.map(a=><li key={a.id} className={a.sev}>
+      <span className="os-sev"><i aria-hidden="true"/>{a.sev==="critical"?"Critical":a.sev==="watch"?"Watch":"Info"}</span>
+      <div><b>{a.title}</b><small>{a.app}{a.when?` · ${a.when}`:""} · {a.advice}</small></div>
+      <a href={a.href} {...(a.href.startsWith("http")?{target:"_blank",rel:"noreferrer"}:{})}>{a.action}</a></li>)}</ul>
+     :<p className="os-ok-msg"><i aria-hidden="true"/>No exceptions. All connected systems and priorities are on track.</p>}
    </section>
 
    <section className="os-eco" id="ecosystem">
-    <div className="os-eco-h"><h2>Portfolio</h2><button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New Venture</button></div>
-    <div className="os-grid">
+    <div className="os-sec-h"><h2>Applications <span>{data?`${ready} of ${projects.length} operational`:""}</span></h2>
+     <div className="os-sec-tools"><div className="os-seg" role="group" aria-label="View"><button type="button" aria-pressed={cardView==="grid"} onClick={()=>{setCardView("grid");try{localStorage.setItem("os-view","grid")}catch{}}}>Grid</button><button type="button" aria-pressed={cardView==="list"} onClick={()=>{setCardView("list");try{localStorage.setItem("os-view","list")}catch{}}}>List</button></div>
+     <button className="os-newbtn" onClick={()=>{askQ("Help me plan a new venture: ask me 3 sharp questions first, then outline Plan, Build, Launch.");document.getElementById("q")?.scrollIntoView({behavior:"smooth"})}}>+ New venture</button></div></div>
+    <div className={`os-grid ${cardView}`}>
      {(filtered.length||!data?filtered:[]).map(p=>{const st=p.deployment?.state==="READY"?"ok":p.deployment?.state==="ERROR"?"bad":"idle";
       const href=p.url??apps?.find(a=>a.id===p.vercel)?.url??(p.repo?`https://github.com/nas393/${p.repo}`:undefined);
       const pages=apps?.find(a=>a.id===p.vercel)?.pages??[];
-      return <div key={p.id} className="os-card">
+      const stLabel=p.deployment?.state==="READY"?"Operational":p.deployment?.state==="ERROR"?"Needs attention":p.deployment?.state==="BUILDING"||p.deployment?.state==="QUEUED"?"Deploying":"Unverified";
+      return <article key={p.id} className="os-card">
        <a href={href} target="_blank" rel="noreferrer" className="os-card-a" aria-label={`Open ${clean(p.name)}`}/>
-       <div className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt={clean(p.name)} loading="lazy" decoding="async" width={170} height={60}/>:<span className="os-word">{clean(p.name)}</span>}</div>
-       {LOGOS[p.name]&&p.name==="NASSIM AI HQ / Q"&&<strong>NASSIM AI HQ</strong>}
-       <small>{p.area}</small>
-       {p.lastCommit&&<small className="os-card-activity">Updated {ago(p.lastCommit.date)}</small>}
-       {pages.length>0&&<p className="os-card-pg">{pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>}
-       <em className={st}><i/>{st==="ok"?"Active":st==="bad"?"Failed":"Unverified"}</em>
-      </div>;})}
-     {data&&!search&&(apps??[]).filter(a=>a.url&&!projects.some(p=>p.vercel===a.id||p.url===a.url)).map(a=><div key={a.id} className="os-card">
+       <div className="os-card-top"><span className="os-logo">{LOGOS[p.name]?<img src={LOGOS[p.name]} alt="" loading="lazy" decoding="async" width={120} height={40}/>:<span className="os-word">{initials(clean(p.name))}</span>}</span><em className={st}><i aria-hidden="true"/>{stLabel}</em></div>
+       <div className="os-card-body"><b>{p.name==="NASSIM AI HQ / Q"?"NASSIM AI HQ":clean(p.name)}</b><small>{p.area}{p.lastCommit?` · updated ${ago(p.lastCommit.date)}`:""}</small></div>
+       {pages.length>0&&<p className="os-card-pg">{pages.slice(0,3).map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}{pages.length>3&&<span>+{pages.length-3}</span>}</p>}
+      </article>;})}
+     {data&&!search&&(apps??[]).filter(a=>a.url&&!projects.some(p=>p.vercel===a.id||p.url===a.url)).map(a=><article key={a.id} className="os-card">
        <a href={a.url!} target="_blank" rel="noreferrer" className="os-card-a" aria-label={`Open ${a.name}`}/>
-       <div className="os-logo"><span className="os-word">{a.name.replace(/-/g," ").toUpperCase()}</span></div><small>{a.url!.replace("https://","")}</small>
-       {a.pages?.length?<p className="os-card-pg">{a.pages.map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>:null}
-       <em className="ok"><i/>Live</em></div>)}
+       <div className="os-card-top"><span className="os-logo"><span className="os-word">{initials(a.name.replace(/-/g," "))}</span></span><em className="ok"><i aria-hidden="true"/>Operational</em></div>
+       <div className="os-card-body"><b>{a.name.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</b><small>{a.url!.replace("https://","")}</small></div>
+       {a.pages?.length?<p className="os-card-pg">{a.pages.slice(0,3).map(pg=><a key={pg.url} href={pg.url} target="_blank" rel="noreferrer">{pg.label}</a>)}</p>:null}</article>)}
      {!data&&loading&&Array.from({length:7},(_,i)=><div key={i} className="os-card ghost"/>)}
      {data&&!filtered.length&&<p className="os-muted">No project matches “{search}”.</p>}
     </div>
@@ -268,7 +279,9 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=>{const acts=m.role==="q"&&!(qBusy&&i===qMsgs.length-1)?parseActions(m.text):[];return <div key={i} className={`os-msg ${m.role}`}>{m.text?(m.role==="q"?<QMd text={stripActions(m.text)}/>:m.text):(qBusy&&i===qMsgs.length-1?"Thinking…":"")}
      {acts.length>0&&<div className="os-acts">{acts.map((a,k)=>{const key=`${i}-${k}`,st=doneActs[key];return <button key={key} disabled={!!st&&st!=="Failed"} onClick={()=>runAction(a,key)}>{st&&st!=="…"?st:a.kind==="task"?`＋ Task: ${a.arg}${a.due?` (${a.due})`:""}`:a.kind==="checks"?"Run checks":a.kind==="open"?`Open ${a.arg}`:"Summarise AngolaIQ"}</button>;})}</div>}</div>;})}</div>}
     <form className="os-ask" onSubmit={e=>{e.preventDefault();askQ(qInput)}}><input value={qInput} onChange={e=>setQInput(e.target.value)} placeholder="How can I help you today?" maxLength={2000} aria-label="Ask Q"/><button type="submit" disabled={qBusy||!qInput.trim()} aria-label="Send"><Ico d="M5 12h14M13 6l6 6-6 6"/></button></form>
-    <div className="os-quick">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={16}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><button onClick={()=>commandActions.find(x=>x.label.startsWith("What matters"))?.run()} disabled={qBusy}><Ico d="M4 5h16v14H4zM8 9h8M8 13h8" s={16}/>What matters in today’s news?</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>More Tools</Link></div>
+    <div className="os-quick" aria-label="Suggested for now">{qSuggest.map(x=><button key={x.label} onClick={()=>askQ(x.prompt)} disabled={qBusy} className={x.ctx?"ctx":""}><Ico d={x.ctx?"M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z":"M5 12h14M13 6l6 6-6 6"} s={14}/>{x.label}</button>)}
+     <button className="os-more" onClick={()=>setShowAllQ(v=>!v)} aria-expanded={showAllQ}>{showAllQ?"Fewer":"More tools"}</button></div>
+    {showAllQ&&<div className="os-quick os-quick-all">{QUICK.map(([l,ic,prompt])=><button key={l} onClick={()=>askQ(prompt)} disabled={qBusy}><Ico d={ic} s={14}/>{l}</button>)}<button onClick={()=>runAction({kind:"iq",arg:""},"quick-iq")} disabled={qBusy}><Ico d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18" s={16}/>AngolaIQ Summary</button><button onClick={()=>commandActions.find(x=>x.label.startsWith("What matters"))?.run()} disabled={qBusy}><Ico d="M4 5h16v14H4zM8 9h8M8 13h8" s={16}/>What matters in today’s news?</button><Link href="/chat"><Ico d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" s={16}/>Open Q chat</Link></div>}
    </section>
    <section className="os-panel os-agenda" id="agenda">
     <h3><Ico d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>Today</h3>
