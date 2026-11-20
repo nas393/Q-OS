@@ -1,19 +1,41 @@
-/* Shared look for NASSIM OS sub-pages (brief, alerts). Same palette as the Command Center. */
-.op{--panel:#0f0f11;--line:#26262b;--txt:#F2F2F3;--sub:#A9A9B0;--muted:#8E8E98;--red:#E5132B;--ok:#3ecf8e;--amber:#f5a524;min-height:100vh;background:#070708;color:var(--txt);font:15px/1.5 Montserrat,system-ui,sans-serif;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
-.op-w{max-width:760px;margin:0 auto}
-.op-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.op-top a{color:var(--sub);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
-.op h1{font-size:26px;margin:0}.op h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:0 0 10px}
-.op-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.op-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.op-row:first-of-type{border-top:0}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+/* Q OS sub-pages (Morning Brief, Alerts) in the Q Live system: Obsidian surfaces, Halo accent, red only for urgent. */
+.op{--bg:#090A0E;--panel:#12141B;--panel2:#191C25;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--txt:#F3F4F6;--sub:#A1A1AA;--muted:#8B90A0;
+  --halo:#EADFCB;--red:#F12D43;--red-ink:#FF6275;--ok:#22C58B;--ok-ink:#3DD69C;--amber:#E9A23B;--amber-ink:#F0B65E;--info-ink:#86B4F2;
+  min-height:100vh;background:radial-gradient(ellipse 60% 30% at 50% -5%,rgba(168,85,247,.10),transparent 70%),var(--bg);color:var(--txt);
+  font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
+.op-w{max-width:780px;margin:0 auto}
+.op-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.op-top a{color:var(--sub);text-decoration:none;min-height:44px;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500}
+.op-top a:hover{color:var(--txt)}
+.op h1{font:400 40px/1.08 "Instrument Serif",Georgia,serif;letter-spacing:-.01em;margin:0}
+.op h2{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.op-card{background:rgba(18,20,27,.78);border:1px solid var(--line2);border-radius:20px;padding:20px;margin-bottom:14px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 24px 60px -28px rgba(0,0,0,.7)}
+.op-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.op-row:first-of-type{border-top:0}
 .op-row small,.op-muted{color:var(--muted)}
-.op-pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;border:1px solid var(--line)}
-.op-pill.red{color:#ff6b7a;border-color:#5a1820}.op-pill.amber{color:var(--amber);border-color:#5a4210}.op-pill.info,.op-pill.ok{color:var(--ok);border-color:#1d4a37}
-.op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.op-stat b{display:block;font-size:24px}.op-stat small{color:var(--muted)}
-.op-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.op-filters a,.op-btn{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#141417;color:var(--txt);text-decoration:none;font:inherit;font-size:13px;cursor:pointer}
-.op-filters a[aria-current=page]{border-color:var(--red)}
-.op input[type=search]{flex:1;min-width:160px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:#0b0b0d;color:var(--txt);padding:0 12px;font:inherit}
-.op a{color:var(--txt)}.op :focus-visible{outline:2px solid var(--red);outline-offset:2px}
-.op-ack{opacity:.55}
+.op-muted{margin:6px 0 18px}
+.op-pill{display:inline-flex;align-items:center;gap:6px;height:22px;border-radius:7px;padding:0 8px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:1px}
+.op-pill::before{content:"";width:7px;height:7px;flex:none}
+.op-pill.red{color:var(--red-ink);background:rgba(241,45,67,.14)}.op-pill.red::before{background:var(--red);transform:rotate(45deg);border-radius:1px}
+.op-pill.amber{color:var(--amber-ink);background:rgba(233,162,59,.14)}.op-pill.amber::before{background:var(--amber);border-radius:50%}
+.op-pill.info{color:var(--info-ink);background:rgba(87,151,232,.14)}.op-pill.info::before{background:#5797E8;border-radius:1px}
+.op-pill.ok{color:var(--ok-ink);background:rgba(34,197,139,.14)}.op-pill.ok::before{background:var(--ok);border-radius:50%}
+.op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.op-card.op-grid{padding:14px}
+.op-stat{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.op-stat b{display:block;font-size:28px;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.op-stat small{color:var(--muted);font-size:12.5px}
+.op-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.op-filters a,.op-btn{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--txt);text-decoration:none;font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:border-color .2s,background .2s}
+.op-filters a:hover,.op-btn:hover{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.06)}
+.op-filters a[aria-current=page]{border-color:rgba(234,223,203,.7);background:rgba(234,223,203,.10)}
+.op-btn{background:var(--halo);color:#17140F;border-color:transparent;font-weight:600}
+.op-btn:hover{background:#F3EADA}
+.op input[type=search]{flex:1;min-width:180px;min-height:40px;border-radius:11px;border:1px solid var(--line2);background:var(--bg);color:var(--txt);padding:0 12px;font:inherit;font-size:14px}
+.op input[type=search]:focus{outline:none;border-color:rgba(234,223,203,.7)}
+.op a{color:var(--txt)}
+.op :focus-visible{outline:2px solid var(--halo);outline-offset:2px;border-radius:8px}
+.op-ack{opacity:.5}
+@media(max-width:560px){.op h1{font-size:32px}.op-card{padding:16px;border-radius:18px}}
+@media(prefers-reduced-motion:reduce){.op *{transition:none!important}}

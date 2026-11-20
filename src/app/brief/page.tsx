@@ -25,8 +25,8 @@ export default async function BriefPage(){
  const last24=alerts.filter(a=>Date.now()-Date.parse(a.createdAt)<864e5),urgent=last24.filter(a=>a.level==="red"&&!a.ack);
  const gold=metrics.metrics.xauusd;
  return <main className="op"><div className="op-w">
-  <div className="op-top"><Link href="/dashboard">← Command Center</Link><Link href="/alerts">All alerts →</Link></div>
-  <h1>☀️ Morning brief</h1><p className="op-muted">{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:"Africa/Luanda"})}</p>
+  <div className="op-top"><Link href="/dashboard">← Q OS</Link><Link href="/alerts">All alerts →</Link></div>
+  <h1>Morning brief</h1><p className="op-muted">{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:"Africa/Luanda"})}</p>
 
   <section className="op-card op-grid" aria-label="Today at a glance">
    <div className="op-stat"><b>{down===null?"—":down}</b><small>{down?"site(s) down":"sites down"}</small></div>
@@ -38,7 +38,7 @@ export default async function BriefPage(){
 
   <section className="op-card"><h2>Do first</h2>
    {[...overdue,...dueToday,...high].slice(0,8).map(t=><div className="op-row" key={t.id}><span>{t.priority==="high"&&<span className="op-pill red">High</span>} {t.title}{t.recur&&<small> · repeats {t.recur}</small>}</span><small>{t.due?(t.due<today?"Overdue":t.due===today?(t.dueTime??"Today"):t.due):""}</small></div>)}
-   {!overdue.length&&!dueToday.length&&!high.length&&<p className="op-muted">Nothing due. Add priorities on the Command Center.</p>}
+   {!overdue.length&&!dueToday.length&&!high.length&&<p className="op-muted">Nothing due. Add priorities from Q OS.</p>}
   </section>
 
   <section className="op-card"><h2>Alerts in the last 24 hours</h2>
