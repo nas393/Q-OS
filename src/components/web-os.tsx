@@ -51,6 +51,10 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const dueRef=useRef<HTMLInputElement>(null);
  const [heroAsk,setHeroAsk]=useState("");
+ /* Layout style chosen by the owner: calm (default), terminal (dense) or copilot (Q always open). Saved per device; ?style= overrides. */
+ const [variant,setVariant]=useState<"calm"|"terminal"|"copilot">("calm");
+ useEffect(()=>{try{const q=new URLSearchParams(location.search).get("style"),v=q??localStorage.getItem("os-style");if(v==="calm"||v==="terminal"||v==="copilot")setVariant(v);}catch{}},[]);
+ const pickVariant=(v:"calm"|"terminal"|"copilot")=>{setVariant(v);try{localStorage.setItem("os-style",v)}catch{}};
  const [cardView,setCardView]=useState<"grid"|"list">("list"),[showAllQ,setShowAllQ]=useState(false),[trend,setTrend]=useState<number|null>(null);
  const [sheet,setSheet]=useState(false),[online,setOnline]=useState(true),[doneActs,setDoneActs]=useState<Record<string,string>>({});
  const [commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState("");
@@ -159,7 +163,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  ];
  const navLink=(n:typeof NAV[number],cls:string)=>n.href?<a key={n.label} href={n.href} title={n.label} className={`${cls}${n.label==="Command Center"?" on":""}`} onClick={()=>setDrawer(false)}><Ico d={n.icon}/><span>{n.label}</span></a>:<span key={n.label} className={`${cls} soon`} aria-disabled="true"><Ico d={n.icon}/><span>{n.label}</span><em>Soon</em></span>;
 
- return <main className="os" id="top">
+ return <main className={`os v-${variant}`} id="top">
   <aside className="os-side">
    <div className="os-brand"><img src="/os/q-emblem.webp" alt="" width={84} height={76}/><span><b>Q <i>OS</i></b><small>Command centre</small></span></div>
    <nav>{NAV.map(n=>navLink(n,"os-nav"))}</nav>
@@ -170,6 +174,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <header className="os-top">
     <div className="os-mbrand"><img src="/os/q-emblem.webp" alt="" width={34} height={31}/><b>Q <i>OS</i></b></div>
     {search!==null&&<input className="os-search" autoFocus placeholder="Search projects" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setSearch(null)}}/>}
+    <div className="os-style" role="group" aria-label="Dashboard style">{([["calm","Calm"],["terminal","Terminal"],["copilot","Co-pilot"]] as const).map(([k,l])=><button key={k} type="button" aria-pressed={variant===k} onClick={()=>pickVariant(k)}>{l}</button>)}</div>
     <div className="os-tools">
      <button aria-label="Open command palette" title="Command palette · Ctrl K" onClick={()=>{setCommandOpen(true);setCommandQuery("");}}><Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></button>
      <a aria-label="Alerts" href="#alerts" className="os-bell"><Ico d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>{alerts.length>0&&<i>{alerts.length}</i>}</a>
@@ -294,7 +299,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   </div>
 
   {qDrawer&&<div className="os-q-backdrop" onClick={()=>setQDrawer(false)} aria-hidden="true"/>}
-   <section className={`os-q${qDrawer?" open":""}`} role="dialog" aria-modal={qDrawer} id="q" aria-label="Q Strategic Assistant">
+   <section className={`os-q${qDrawer?" open":""}`} role={variant==="copilot"?"complementary":"dialog"} aria-modal={variant!=="copilot"&&qDrawer} id="q" aria-label="Q Strategic Assistant">
     <div className="os-qhead"><img src="/os/q-emblem.webp" alt="" width={88} height={88} decoding="async"/><div><b>Q</b><span>Your Strategic Assistant</span><em className={qState}><i/>{qState==="online"?"Online":qState==="offline"?"Offline":"Checking"}</em></div><button className="os-q-close" type="button" onClick={()=>setQDrawer(false)} aria-label="Close Q assistant">×</button></div>
     {qMsgs.length>0&&<div className="os-thread" ref={qRef}>{qMsgs.map((m,i)=>{const acts=m.role==="q"&&!(qBusy&&i===qMsgs.length-1)?parseActions(m.text):[];return <div key={i} className={`os-msg ${m.role}`}>{m.text?(m.role==="q"?<QMd text={stripActions(m.text)}/>:m.text):(qBusy&&i===qMsgs.length-1?"Thinking…":"")}
      {acts.length>0&&<div className="os-acts">{acts.map((a,k)=>{const key=`${i}-${k}`,st=doneActs[key];return <button key={key} disabled={!!st&&st!=="Failed"} onClick={()=>runAction(a,key)}>{st&&st!=="…"?st:a.kind==="task"?`＋ Task: ${a.arg}${a.due?` (${a.due})`:""}`:a.kind==="checks"?"Run checks":a.kind==="open"?`Open ${a.arg}`:"Summarise AngolaIQ"}</button>;})}</div>}</div>;})}</div>}
