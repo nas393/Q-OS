@@ -50,9 +50,29 @@
 - Do not modify authentication, database schema, secrets, environment variables, external API contracts, or project identities.
 - If a change requires altering the plan or cannot be safely undone, stop and ask.
 
-### Current status
+### Current status — refreshed 2026-11-20
+
 - Gate 1: completed.
 - Gate 2: approved.
-- Gate 3: active on dedicated branch.
-- Accessibility target-size slice: committed; verification pending.
-- Global Radar / tasks / Q Assistant: not yet implemented.
+- Gate 3: active on dedicated branch; draft PR #23 remains open.
+- Accessibility target-size updates: implemented and included in the validated branch build.
+- Global Radar: implemented — filtered stream deduplication, two-line headline clamp, clickable article detail panel, available source metadata and optional impact signal. Original-source link retained; no article text invented.
+- Task queue: implemented — overdue-first ordering, then priority and due date; open and overdue counts shown. Existing task persistence/API flows retained.
+- Q Assistant: implemented — mobile full-height sheet, desktop focused panel behavior, close control and Escape-key dismissal. Existing chat streaming/history request path retained.
+- GitHub Actions run 44626191194 for commit `fe1b18754ab6ad8b6b34bfe0402399d23d3133a0`: **SUCCESS**. npm install, typecheck, tests, lint and build all completed successfully.
+- Vercel preview deployment `dpl_AwMkgHvYELYiyGuv6EPHakVuEqhS` for commit `fe1b18754ab6ad8b6b34bfe0402399d23d3133a0`: **READY**. Preview alias: https://q-os-git-q-os-ux-refactor-gate3-2026-11-19-nas393s-projects.vercel.app
+- Browser-level visual/interaction QA at 375, 768, 1280 and 1920 widths has **not yet been completed**. CI success is not a substitute for this.
+- Alerts/apps review and final responsive QA remain outstanding.
+- No merge; no production deployment; production untouched.
+
+### Next steps
+1. Inspect preview manually at 375, 768, 1280 and 1920 widths; test Radar tabs, dedupe/detail panel, task controls and Q Assistant sheet/streaming.
+2. Review alerts/apps layout and controls; make only scoped presentation/accessibility fixes.
+3. Re-run CI and preview build after any changes.
+4. Update this log with QA evidence and any remaining defects.
+5. Keep PR #23 draft until QA is complete and the user separately approves merge/deployment.
+
+### Safety boundaries
+- Never merge or deploy to production without separate explicit approval.
+- Do not modify authentication, database schema, secrets, environment variables, external API contracts, or project identities.
+- If a change requires altering the plan or cannot be safely undone, stop and ask.
