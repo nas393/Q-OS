@@ -1,0 +1,61 @@
+/* AngolaIQ inside Q OS: layout only. Colours, type, buttons, cards, chips, forms, tables and states come from
+   src/styles/tokens.css + ui.css (iq-* class names are kept as hooks for the 12 pages). */
+.os .iq-grid{display:grid;gap:var(--gap);min-width:0}
+.os .iq-g2{grid-template-columns:1fr}
+.os .iq-kpis{display:grid;gap:var(--s-3);grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:720px){.os .iq-g2{grid-template-columns:1fr 1fr}.os .iq-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.os .iq-card{min-width:0;padding:var(--pad)}
+.os .iq-card h3{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2);margin:0 0 var(--s-3);font-size:var(--fs-xs);line-height:var(--lh-xs);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.os .iq-card h3 a,.os .iq-card h3 .iq-muted{font-size:var(--fs-xs);letter-spacing:0;text-transform:none;font-weight:500;color:var(--accent-ink)}
+.os .iq-kpi{display:block;min-width:0;padding:var(--s-4);border:1px solid var(--card-line);border-radius:var(--r-md);background:var(--card-bg);transition:border-color var(--dur-2)}
+.os a.iq-kpi:hover{border-color:var(--line-3)}
+.os .iq-kpi small{display:block;font-size:var(--fs-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.os .iq-kpi b{display:block;margin:6px 0 2px;font-size:var(--fs-xl);line-height:var(--lh-xl);font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.os .iq-kpi span{font-size:var(--fs-xs);color:var(--text-2)}
+.os .iq-kpi .up,.os .iq-kpi em.up{color:var(--ok-ink);font-style:normal}.os .iq-kpi .down,.os .iq-kpi em.down{color:var(--crit-ink);font-style:normal}
+.os .iq-list{display:grid}
+.os .iq-list>li{padding:var(--s-3) 0;border-top:1px solid var(--line)}
+.os .iq-list>li:first-child{border-top:0;padding-top:0}
+.os .iq-row{display:flex;align-items:flex-start;gap:var(--s-3)}
+.os .iq-row>div{flex:1;min-width:0}
+.os .iq-row a.t{font-weight:600;color:var(--text)}
+.os .iq-row a.t:hover{color:var(--accent-ink)}
+.os .iq-sub{font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-2);overflow-wrap:anywhere}
+.os .iq-muted{color:var(--muted)}
+.os .iq-tags{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.os .iq-card h3 .iq-tags{margin-top:0}
+.os .iq-filters{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-bottom:var(--s-4)}
+.os .iq-filters select,.os .iq-filters input{flex:0 0 auto}
+.os .iq-filters input{min-width:200px}
+.os .iq-form{display:grid;gap:var(--s-3)}
+@media (min-width:720px){.os .iq-form.two{grid-template-columns:1fr 1fr}.os .iq-form .full{grid-column:1/-1}}
+.os .iq-chips{margin-bottom:var(--s-3)}
+/* AI analysis: verdict first, sections, then the trust block (facts vs assumptions vs inferences) */
+.os .iq-analysis{display:grid;gap:var(--s-4);font-size:var(--fs-md);line-height:var(--lh-md)}
+.os .iq-an-top{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center}
+.os .iq-verdict{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:700;letter-spacing:.02em;background:var(--hover);color:var(--text)}
+.os .v-reject{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit-ink)}
+.os .v-reconsider,.os .v-postpone{background:color-mix(in srgb,var(--watch) 16%,transparent);color:var(--watch-ink)}
+.os .v-validate{background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info-ink)}
+.os .v-proceed,.os .v-approve{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok-ink)}
+.os .iq-score,.os .iq-conf{font-size:var(--fs-xs);color:var(--text-2);height:28px;display:inline-flex;align-items:center;padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.os .iq-an-h{font-size:var(--fs-lg);line-height:var(--lh-lg);font-weight:600}
+.os .iq-analysis section h4{margin:0 0 6px;font-size:var(--fs-xs);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.os .iq-analysis ul{padding-left:18px;list-style:disc}.os .iq-analysis li{margin:4px 0}
+.os .iq-analysis dl{display:grid;gap:8px}.os .iq-analysis dt{font-weight:600;font-size:var(--fs-sm);color:var(--text-2)}
+.os .iq-kv{display:inline}
+.os .iq-trust{display:grid;gap:var(--s-3);padding:var(--s-4);border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--surface-2)}
+@media (min-width:720px){.os .iq-trust{grid-template-columns:1fr 1fr}}
+.os .iq-meta{font-size:var(--fs-xs);line-height:1.6;color:var(--muted)}
+.os .iq-meta a{color:var(--accent-ink)}
+.os .iq-bar{height:6px;border-radius:3px;background:var(--hover);overflow:hidden}
+.os .iq-bar i{display:block;height:100%;background:var(--info)}
+.os .iq-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none;margin-top:7px}
+.os .iq-dot.operational{background:var(--ok)}.os .iq-dot.degraded{background:var(--crit)}.os .iq-dot.not_configured,.os .iq-dot.rate_limited{background:var(--watch)}
+.os .iq-map{height:min(62vh,560px);border-radius:var(--r-lg);border:1px solid var(--line-2);overflow:hidden;background:var(--surface)}
+.os .iq-map img,.os .iq-map .leaflet-tile{max-width:none!important;max-height:none!important;border:0!important;margin:0!important}
+.os .iq-map .leaflet-tile{outline:1px solid transparent}
+.os .iq-disclaimer{padding:10px 14px;border-left:3px solid var(--watch);background:color-mix(in srgb,var(--watch) 8%,transparent);border-radius:var(--r-xs);font-size:var(--fs-sm);color:var(--text-2)}
+.os .iq-spark{display:block;width:100%;height:36px}
+.os .iq-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--r-xs);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--text-2);background:var(--hover);white-space:nowrap}
+.os .iq-table.num-cols :is(th,td):not(:first-child){text-align:right}
