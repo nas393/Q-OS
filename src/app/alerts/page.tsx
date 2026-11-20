@@ -14,7 +14,7 @@ export default async function AlertsPage({searchParams}:{searchParams:Promise<{l
  const rows=await alertHistory({level,q,limit:200}).catch(()=>null);
  const unacked=rows?.filter(a=>!a.ack).length??0;
  return <main className="op"><div className="op-w">
-  <div className="op-top"><Link href="/dashboard">← Command Center</Link><Link href="/brief">Morning brief →</Link></div>
+  <div className="op-top"><Link href="/dashboard">← Q OS</Link><Link href="/brief">Morning brief →</Link></div>
   <h1>Alerts</h1><p className="op-muted">Every alert Q has sent or logged: builds, uptime, gold and checks.</p>
   <form className="op-filters" role="search">
    {LEVELS.map(([v,l])=><Link key={l} href={{pathname:"/alerts",query:{...(v?{level:v}:{}),...(q?{q}:{})}}} aria-current={(level??"")===v?"page":undefined}>{l}</Link>)}

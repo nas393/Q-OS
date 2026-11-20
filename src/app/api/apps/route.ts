@@ -3,6 +3,7 @@ import {readSession} from "@/lib/session";
 import {appPages} from "@/lib/app-pages";
 import {externalApps} from "@/lib/external-apps";
 import {TEAM_ID,pickProductionUrl,type VercelProject} from "@/lib/vercel";
+import {discoverIcon} from "@/lib/app-icons";
 
 export const dynamic="force-dynamic";
 /* Owner-only launcher: every project in the Vercel team with its live production address. Read-only. */
@@ -19,7 +20,9 @@ export async function GET(){
     const apps=(body.projects??[]).map(p=>{const url=pickProductionUrl(p);return {id:p.id,name:p.name,url,pages:url?(appPages[p.name]??[]).map(x=>({label:x.label,url:url+x.path})):[],state:p.targets?.production?.readyState??null,updatedAt:p.updatedAt??null};})
       .sort((a,b)=>(b.url?1:0)-(a.url?1:0)||(b.updatedAt??0)-(a.updatedAt??0));
     apps.push(...externalApps.map(x=>({id:x.id,name:x.name,url:x.url,pages:[],state:"EXTERNAL",updatedAt:null})));
-    return NextResponse.json({updatedAt:new Date().toISOString(),apps},{headers:{"Cache-Control":"no-store"}});
+    /* Each app's real icon, read from its own homepage (cached a day); a slow or failing site never blocks the list. */
+    const icons=await Promise.all(apps.map(a=>a.url?discoverIcon(a.url):Promise.resolve(null)));
+    return NextResponse.json({updatedAt:new Date().toISOString(),apps:apps.map((a,i)=>({...a,icon:icons[i]}))},{headers:{"Cache-Control":"no-store"}});
   }catch(e){
     return NextResponse.json({error:e instanceof Error?e.message:"Vercel request failed",apps:[]},{status:502,headers:{"Cache-Control":"no-store"}});
   }

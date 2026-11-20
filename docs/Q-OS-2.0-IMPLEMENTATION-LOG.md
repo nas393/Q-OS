@@ -89,3 +89,24 @@ Owner feedback: phases 1–2 looked too similar to the previous version. Layout 
 - **Q as a slide-over panel** (opens from the Ask bar, the floating "Ask Q" button or the mobile Q tab; Escape closes) instead of a permanent right column. Chat input sits at the bottom.
 - **Board grid** (12 columns): Attention | Priorities, Applications status board (list by default, grid toggle), Radar | Market, Activity | Today + Monitoring (alerts panel, push, gold levels).
 - Tested: typecheck, lint (0 errors), tests 31/31, build; rendered with sample data at 1440px and 390px, Q panel open on both.
+
+## Q Live (owner's chosen concept V2) — Claude, 2026-11-20
+Owner chose V2 "Q Live" from the 4 concepts + 2 finals and approved going live.
+
+### Done
+- **Desktop orbit:** Q is the core (health ring + breathing glow coloured by state). Apps orbit on an ellipse sized to the free space; failing apps are pulled in toward Signals on a red tether, with a ghost slot. Placement is collision-aware (`src/components/qlive/layout.ts`). Signal particles run along the spokes; clicking a node zooms in and opens a detail card (status, last deploy, issues, pages, build log, Ask Q).
+- **Q briefing** written from live data (critical/watch counts, failing app, next action), **Today** (complete with Undo, snooze, add with due date and priority), **Gold** (spark, open/low, price alerts).
+- **Signals:** one stream for Attention (pinned), Global Radar (Angola/Lebanon/Global), Markets and System activity. Region and type filters, loading skeletons, error + Retry, empty states, news detail dialog with Ask Q.
+- **Ask Q:** a dock with contextual suggestions that expands into a conversation sheet (streaming, action tags, new conversation, link to /chat). Ctrl/⌘K command palette: commands, apps, or Ask Q.
+- **Phone:** a Smart Stack of moments (Needs you / All clear, Q briefing, Today, Ecosystem mini-orbit, Markets, World radar), pager, status pills, Signals feed, and a 5-tab bar with an Ask Q orb. Drawers become bottom sheets.
+- **Studio:** themes Obsidian/Aurora/Graphite/Light Executive; accents Halo (new default; red now only means critical), Q red, Purple, Blue, Emerald, Amber, Rose; card style; motion Full/Calm/Off (honours reduced motion); density; Smart Stack order/visibility; Signals types. Saved per device, Reset with Undo, URL overrides for previews.
+- **App icons now come from the web apps themselves:** `/api/apps` reads each app's homepage and returns its icon (apple-touch-icon > SVG > largest PNG > favicon), cached for a day. Initials are the fallback.
+- **/brief and /alerts** restyled in the Q Live system (Obsidian, Instrument Serif headings, severity pills with shape + colour).
+- **Global CSS collisions removed:** `.panel`, `.topbar`, `.eyebrow`, `.avatar` and `.warn` from globals.css no longer reach the dashboard (renamed inside `.ql`).
+
+### Tested
+- typecheck; lint (0 errors); 45/45 tests, including new tests/app-icons.test.mjs and tests/qlive-layout.test.mjs (no node overlaps at 1920/1440/1366/1280/1024, nodes clear of the side panels, failing app pulled inside the ring); production build.
+- Rendered with sample data at 1440×900, 1280×800 and 390×844 (dark, light/blue, Aurora + Studio, Q sheet, app focus, phone stack card 4, phone Studio, full phone page). No console errors, no horizontal overflow.
+
+### Not tested
+- Real owner session in production (checked after deploy); live third-party icons (sandbox cannot reach the apps).
