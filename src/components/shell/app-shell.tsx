@@ -26,6 +26,11 @@ type ShellCtx={
   weather:{t:number;code:number}|null;apps:ShellApp[];liveApps:LiveApp[]|null;
 };
 const Ctx=createContext<ShellCtx|null>(null);
+/* In-app confirmation (replaces window.confirm): themed, keyboard-first, Cancel focused by default. */
+export type Ask={title:string;body?:string;action?:string;danger?:boolean};
+let openConfirm:((a:Ask)=>Promise<boolean>)|null=null;
+/** Ask the owner to confirm an action. Resolves true on confirm, false on cancel or Esc. */
+export function askConfirm(a:Ask):Promise<boolean>{return openConfirm?openConfirm(a):Promise.resolve(typeof window!=="undefined"&&window.confirm(a.title));}
 /** Shell services for a section: Studio, panels, toasts, palette commands. */
 export function useShell(){const c=useContext(Ctx);if(!c)throw new Error("useShell must be used inside <AppShell>");return c;}
 
@@ -47,6 +52,9 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
   const [clock,setClock]=useState<Date|null>(null);
   const [toasts,setToasts]=useState<Toast[]>([]);
   const [pageCmds,setPageCmds]=useState<Command[]>([]);
+  const [ask,setAsk]=useState<{a:Ask;done:(v:boolean)=>void}|null>(null);
+  useEffect(()=>{openConfirm=a=>new Promise<boolean>(res=>setAsk({a,done:res}));return()=>{openConfirm=null;};},[]);
+  const answer=(v:boolean)=>{ask?.done(v);setAsk(null);};
   const askRef=useRef<((q:string)=>void)|null>(null);
   const lastFocus=useRef<HTMLElement|null>(null);
 
@@ -190,6 +198,12 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
 
       {palette&&<Palette commands={commands} apps={appRows} onClose={closePalette} openApp={openApp}
         ask={q=>{closePalette();if(askRef.current)askRef.current(q);else router.push(`/chat?q=${encodeURIComponent(q)}`);}}/>}
+
+      {ask&&<div className="cmd-back" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)answer(false);}} onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();answer(false);}}}>
+        <section className="confirm" role="alertdialog" aria-modal="true" aria-labelledby="os-confirm-t" aria-describedby={ask.a.body?"os-confirm-b":undefined}>
+          <h2 id="os-confirm-t">{ask.a.title}</h2>{ask.a.body&&<p id="os-confirm-b">{ask.a.body}</p>}
+          <div className="confirm-acts"><button className="btn" autoFocus onClick={()=>answer(false)}>Cancel</button><button className={`btn ${ask.a.danger===false?"primary":"danger"}`} onClick={()=>answer(true)}>{ask.a.action??"Delete"}</button></div>
+        </section></div>}
 
       <div className="toasts" aria-live="polite">{toasts.map(t=><div key={t.id} className="toast" role="status"><I n="check"/><span>{t.msg}</span>{t.undo&&<button onClick={()=>{t.undo?.();setToasts(x=>x.filter(y=>y.id!==t.id));}}>Undo</button>}</div>)}</div>
     </div>

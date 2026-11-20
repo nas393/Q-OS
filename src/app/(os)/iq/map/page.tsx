@@ -4,6 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import type {Map as LMap,LayerGroup} from "leaflet";
 import {Badge,Empty,ErrorBox,Field,Head,Loading,Toast,api,useApi} from "../ui";
 import {PROV} from "../lists";
+import {askConfirm} from "@/components/shell/app-shell";
 
 type Loc={id:string;name:string;category:string;province:string|null;lat:number;lng:number;source:string;source_url:string|null;verified:boolean;notes:string|null};
 const OSM=[["ports","Ports"],["airports","Airports"],["industrial","Industrial areas"],["markets","Markets"],["hospitals","Hospitals"],["fuel","Fuel stations"]] as const;
@@ -57,7 +58,7 @@ export default function MapPage(){
     <button className="iq-btn sm" onClick={()=>{map.current?.setView([l.lat,l.lng],13);window.scrollTo({top:0,behavior:"smooth"});}} aria-label={`Show ${l.name} on the map`}>Show on map</button>
     <button className="iq-btn sm" onClick={async()=>{await api("/api/iq/locations","PATCH",{id:l.id,verified:!l.verified});reload();}}>{l.verified?"Unverify":"✓ Verify"}</button>
     <button className="iq-btn sm" onClick={()=>api("/api/iq/saved","POST",{kind:"location",refId:l.id,title:l.name,url:l.source_url??undefined}).then(()=>setToast("Saved"))}>☆</button>
-    <button className="iq-btn sm danger" aria-label="Delete" onClick={async()=>{if(confirm(`Delete ${l.name}?`)){await api(`/api/iq/locations?id=${l.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
+    <button className="iq-btn sm danger" aria-label="Delete" onClick={async()=>{if(await askConfirm({title:`Delete ${l.name}?`,body:"The place is removed from the map."})){await api(`/api/iq/locations?id=${l.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
   </section>
   <Toast msg={toast} onDone={()=>setToast("")}/>
  </>;

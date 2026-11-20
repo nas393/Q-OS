@@ -162,7 +162,8 @@
 .ql .fc-acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .ql .fc-x{position:absolute;top:12px;right:12px}
 /* Ask Q dock + sheet */
-.ql .qdock{position:absolute;left:50%;bottom:24px;width:680px;margin-left:-340px;z-index:20;display:flex;flex-direction:column;gap:10px}
+/* The dock fills the space between the side panels (24px edge + panel + 16px air on each side), 420-680px wide. */
+.ql .qdock{--dock:clamp(420px,calc(100% - 760px),680px);position:absolute;left:50%;bottom:24px;width:var(--dock);margin-left:calc(var(--dock) / -2);z-index:20;display:flex;flex-direction:column;gap:10px}
 .ql .qsugs{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;overflow:hidden}
 .ql .qsug{height:34px;padding:0 12px;white-space:nowrap;border-radius:17px;font-size:12.5px;color:var(--text-2);display:inline-flex;align-items:center;gap:7px;background:var(--card-bg);border:1px solid var(--card-line);backdrop-filter:var(--card-blur);-webkit-backdrop-filter:var(--card-blur)}
 .ql .qsug svg{color:var(--q-ink);width:14px;height:14px}
@@ -276,7 +277,7 @@
 /* Mid-size desktops */
 /* Stage 1320px or narrower (same rule as orbitLayout's panelW): set by the component as data-narrow. */
 .ql[data-narrow] .qpanel{width:300px}
-.ql[data-narrow] .qdock{width:560px;margin-left:-280px}
+.ql[data-narrow] .qdock{--dock:clamp(400px,calc(100% - 680px),560px)}
 .ql[data-narrow] .qsugs .qsug:nth-child(n+3){display:none}
 @media (max-height:860px) and (min-width:1181px){
   .ql .mkt{display:none}
