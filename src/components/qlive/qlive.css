@@ -375,7 +375,7 @@
   .ql .news>button{display:block;width:100%;text-align:left;padding:12px 0;border-top:1px solid var(--line)}
   .ql .news>button:first-child{border-top:0}
   .ql .news .mt{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;text-transform:capitalize}
-  .ql .news h5{font-size:15px;font-weight:500;line-height:1.35;margin-top:3px}
+  .ql .news h3.nt{font-size:15px;font-weight:500;line-height:1.35;margin-top:3px}
   .ql .pager{display:flex;align-items:center;justify-content:space-between;padding:0 18px 0 14px;height:44px}
   .ql .dots{display:flex}
   .ql .dots button{width:24px;height:44px;display:grid;place-items:center}

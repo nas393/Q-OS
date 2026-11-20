@@ -145,6 +145,7 @@ a.kpi:hover{border-color:var(--line-3)}
   min-height:var(--h-md);padding:0 12px;border:1px solid var(--control-line);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:var(--fs-md);font-weight:400;outline:none;transition:border-color var(--dur-2),box-shadow var(--dur-2)}
 .os .field textarea,.os .iq-field textarea,.os textarea.input{min-height:104px;padding:10px 12px;resize:vertical;line-height:var(--lh-md)}
 .os .input:focus,.os .field :where(input,select,textarea):focus,.os .iq-field :where(input,select,textarea):focus,.os .iq-filters :where(input,select):focus{border-color:var(--accent-ink);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
+.os .input.sm{min-height:var(--h-sm);padding:0 10px;font-size:var(--fs-sm)}
 .os .input::placeholder,.os .field ::placeholder,.os .iq-field ::placeholder,.os .iq-filters ::placeholder{color:var(--muted)}
 .os .help{font-size:var(--fs-xs);color:var(--muted);font-weight:400}
 .os .field-err{font-size:var(--fs-xs);color:var(--crit-ink);font-weight:500}
@@ -221,6 +222,7 @@ a.kpi:hover{border-color:var(--line-3)}
   .os .seg button{min-height:40px}
   .os .chip,.os .iq-chip{height:36px}
   .os .input,.os .field :where(input,select),.os .iq-field :where(input,select),.os .iq-filters :where(input,select){min-height:44px;font-size:16px}
+  .os .input.sm{min-height:40px}
   .os .page{padding-top:var(--s-5)}
   .os .ph h1{font-size:var(--fs-xl);line-height:var(--lh-xl)}
   .os .drawer{top:auto;left:0;right:0;bottom:0;width:auto;max-height:92dvh;border-radius:var(--r-xl) var(--r-xl) 0 0;transform:translateY(105%);padding-bottom:env(safe-area-inset-bottom)}

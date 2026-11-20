@@ -18,6 +18,8 @@
 .os .iq-list>li:first-child{border-top:0;padding-top:0}
 .os .iq-row{display:flex;align-items:flex-start;gap:var(--s-3)}
 .os .iq-row>div{flex:1;min-width:0}
+/* Phones: a list row puts its text on top and its controls on the next line instead of running off-screen. */
+@media (max-width:600px){.os .iq-list>li.iq-row{flex-wrap:wrap}.os .iq-list>li.iq-row>div:first-child{flex:1 1 100%}}
 .os .iq-row a.t{font-weight:600;color:var(--text)}
 .os .iq-row a.t:hover{color:var(--accent-ink)}
 .os .iq-sub{font-size:var(--fs-xs);line-height:var(--lh-xs);color:var(--text-2);overflow-wrap:anywhere}
