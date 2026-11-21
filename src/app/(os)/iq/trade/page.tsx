@@ -22,7 +22,7 @@ export default function Trade(){
  const retrieved=cur.length?new Date(cur.reduce((m,r)=>r.retrieved_at>m?r.retrieved_at:m,cur[0].retrieved_at)):null;
  const switchFlow=(f:"imports"|"exports")=>{setFlow(f);setC(f==="imports"?IMP[0]:EXP[0]);setRows(null);setAn(null);};
  return <>
-  <Head title="Trade analytics" desc="Angola's imports and exports by commodity, from UN Comtrade mirror data: what partner countries report trading with Angola. Annual data, usually 1–2 years behind. Every table shows its period, source query and retrieval date."/>
+  <Head title="Trade analytics" desc="Angola's imports and exports, from UN Comtrade. Data runs 1–2 years behind."/>
   <div className="iq-chips" style={{marginBottom:10}}><button className={`iq-chip${imp?" on":""}`} onClick={()=>switchFlow("imports")}>Imports into Angola</button><button className={`iq-chip${!imp?" on":""}`} onClick={()=>switchFlow("exports")}>Exports from Angola</button></div>
   <div className="iq-filters">
    <select value={c} onChange={e=>{setC(e.target.value);setRows(null);setAn(null);}} aria-label="Commodity">{(imp?IMP:EXP).map(x=><option key={x}>{x}</option>)}</select>

@@ -11,7 +11,7 @@ export default function Sources(){
  const [busy,setBusy]=useState(""),[toast,setToast]=useState("");
  const run=async(job?:string)=>{setBusy(job??"all");try{const r=await api<{result:Record<string,string>}>("/api/iq/refresh","POST",job?{job}:{});setToast(Object.entries(r.result).map(([k,v])=>`${k}: ${v}`).join(" · "));reload();}catch(e){setToast(e instanceof Error?e.message:"Failed");}finally{setBusy("");}};
  return <>
-  <Head title="Data sources" desc="Every provider, its trust level and real status. Jobs run with the NASSIM OS 15-minute check. A failed run never deletes stored data.">
+  <Head title="Data sources" desc="Each data source and its status. Jobs run every 15 min.">
    <button className="iq-btn pri" disabled={!!busy} onClick={()=>run()}>{busy==="all"?"Running…":"Run all jobs now"}</button>
   </Head>
   {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:data&&<div className="iq-grid iq-g2">
@@ -25,7 +25,7 @@ export default function Sources(){
     {j.history.length>0&&<details><summary className="iq-sub">History</summary><ul className="iq-sub">{j.history.map((h,i)=><li key={i}>{h.ok?"✓":"Delete"} {new Date(h.at).toLocaleString()} — {h.msg}</li>)}</ul></details>}</div>
     <button className="iq-btn sm" disabled={!!busy} onClick={()=>run(j.name)}>{busy===j.name?"…":"Run"}</button></div></li>)}
     {!data.jobs.length&&<li className="iq-sub">No job has run yet. Tap “Run all jobs now”.</li>}</ul>
-    <p className="iq-meta">Not available on a free budget: port vessel arrivals, licensed news feeds and email digests. Trade data (UN Comtrade) and the map (OpenStreetMap) load on demand from their pages.</p></section>
+    <p className="iq-meta">Not on the free plan: live port data, licensed news, email digests.</p></section>
   </div>}
   <Toast msg={toast} onDone={()=>setToast("")}/>
  </>;

@@ -15,7 +15,7 @@ export default function Saved(){
  const view=async(s:S)=>{if(open?.id===s.id)return setOpen(null);const r=await fetch(`/api/iq/analyses?id=${s.ref_id}`).then(r=>r.json()).catch(()=>({analyses:[]}));setOpen({id:s.id,rows:r.analyses??[]});};
  const exportAll=()=>{const csv=[["kind","title","url","notes","tags","saved_at"],...list.map(s=>[s.kind,s.title,s.url??"",s.notes??"",s.tags.join(" "),s.created_at])].map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="angolaiq-library.csv";a.click();};
  return <>
-  <Head title="Saved" desc="Your knowledge library. Everything you saved keeps its source link and timestamp.">
+  <Head title="Saved" desc="Everything you saved, with its source.">
    <button className="iq-btn" onClick={()=>setArch(a=>!a)}>{arch?"← Library":"Archive"}</button><button className="iq-btn" onClick={exportAll} disabled={!list.length}>Export CSV</button>
   </Head>
   <div className="iq-filters"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search title, notes or tag" aria-label="Search library"/>

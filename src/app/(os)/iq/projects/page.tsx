@@ -16,7 +16,7 @@ export default function Projects(){
  const save=async(p:Record<string,unknown>,msg="Saved")=>{try{await api("/api/iq/projects","POST",p);setToast(msg);reload();}catch(e){setToast(e instanceof Error?e.message:"Failed");}};
  const list=(data?.projects??[]).filter(p=>(!st||p.status===st)&&(!q||(p.name+(p.description??"")).toLowerCase().includes(q.toLowerCase()))).sort((a,b)=>sort==="name"?a.name.localeCompare(b.name):sort==="target"?(a.target_date??"9").localeCompare(b.target_date??"9"):b.updated_at.localeCompare(a.updated_at));
  return <>
-  <Head title="Projects" desc="Turn intelligence into execution. Projects link back to the AI Suggestion or Devil's Advocate analysis they came from.">
+  <Head title="Projects" desc="Ideas you are acting on, linked to their analysis.">
    <button className="iq-btn" onClick={()=>setArch(a=>!a)}>{arch?"← Active":"Archived"}</button>
    <button className="iq-btn pri" onClick={()=>setEdit({...blank})}>+ New project</button>
   </Head>
@@ -36,7 +36,7 @@ export default function Projects(){
   <div className="iq-filters"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search projects" aria-label="Search projects"/>
    <select value={st} onChange={e=>setSt(e.target.value)} aria-label="Status"><option value="">All statuses</option>{ST.map(s=><option key={s}>{s}</option>)}</select>
    <select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort"><option value="updated">Recently updated</option><option value="name">Name</option><option value="target">Target date</option></select></div>
-  {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:!list.length?<Empty>{arch?"No archived projects.":"No projects yet. Create one, or use “Make project” on an AI Suggestion."}</Empty>:
+  {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:!list.length?<Empty>{arch?"No archived projects.":"No projects yet. Tap “New project”."}</Empty>:
   <div className="iq-grid">{list.map(p=>{const done=p.milestones.filter(m=>m.done).length,pct=p.milestones.length?Math.round(done/p.milestones.length*100):0;
    return <section key={p.id} className="iq-card"><div className="iq-row"><div><b style={{fontSize:16}}>{p.name}</b><div className="iq-sub">{p.status} · {p.sector??"no sector"} · {p.geography??"Angola"}{p.target_date?` · target ${p.target_date.slice(0,10)}`:""}{p.investment?` · ${p.investment}`:""} · updated {ago(p.updated_at)}</div></div>
     <button className="iq-btn sm" onClick={()=>setOpen(open===p.id?null:p.id)}>{open===p.id?"Close":"Open"}</button></div>

@@ -20,5 +20,5 @@ export default async function DashboardPage() {
   ]);
   const dbDown = conversations === null && activity === null;
   return <WebOS conversationCount={conversations ?? 0} activityCount={activity ?? 0} metrics={metrics.metrics}
-    metricsError={dbDown ? "Database unavailable: showing live project data only. Saved tasks and alerts will return when it recovers." : metrics.error} />;
+    metricsError={dbDown ? "Database offline: showing live project data only." : metrics.error} />;
 }

@@ -18,7 +18,7 @@ export default function Dashboard(){
  const stale=(data?.sources??[]).filter(s=>s.status==="degraded"||s.status==="not_configured");
  const b=data?.briefing;
  return <>
-  <Head title="Overview" desc="Angola's commercial environment today — every number links to its source.">
+  <Head title="Overview" desc="Angola's business climate today, with sources.">
    <button className="iq-btn" onClick={()=>act("refresh")} disabled={!!busy}>{busy==="refresh"?"Refreshing…":"Refresh data"}</button>
    <button className="iq-btn pri" onClick={()=>act("briefing")} disabled={!!busy}>{busy==="briefing"?"Writing…":"New briefing"}</button>
   </Head>
@@ -48,7 +48,7 @@ export default function Dashboard(){
      </section>
      <section className="iq-card"><h3>Intelligence quality <Link href="/iq/sources" className="iq-muted">Sources →</Link></h3>
       <ul className="iq-list">{data.jobs.map(j=><li key={j.name} className="iq-row"><span className={`iq-dot ${j.last_error?"degraded":j.last_ok?"operational":""}`}/><div><b>{j.name}</b> <span className="iq-sub">last success {ago(j.last_ok)} · every {j.every_minutes>=60?j.every_minutes/60+"h":j.every_minutes+"m"}</span>{j.last_error&&<div className="iq-sub">{j.last_error}</div>}</div></li>)}
-       {!data.jobs.length&&<li className="iq-sub">Jobs have not run yet. They run with NASSIM OS checks every 15 min, or tap Refresh.</li>}</ul>
+       {!data.jobs.length&&<li className="iq-sub">No data yet. Tap Refresh.</li>}</ul>
       {stale.length>0&&<p className="iq-sub">Needs attention: {stale.map(s=>s.name+(s.config_needed?` (add ${s.config_needed})`:"")).join(" · ")}</p>}
      </section>
     </div>

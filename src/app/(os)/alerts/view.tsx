@@ -12,14 +12,14 @@ export type AlertItem={id:number;level:"red"|"amber"|"info";title:string;body:st
 export function AlertsView({rows,level,q}:{rows:AlertItem[]|null;level?:string;q?:string}){
  const unacked=rows?.filter(a=>!a.ack).length??0;
  return <div className="page">
-  <PageHeader title="Alerts" desc="Every alert Q has sent or logged: builds, uptime, gold and checks."
+  <PageHeader title="Alerts" desc="Builds, uptime, gold and checks."
    meta={rows?<><span className="num">{rows.length} shown</span><span className="num">{unacked} unseen</span></>:null}
    actions={<>{unacked>0&&<AckButton id="all" label={`Mark all ${unacked} as seen`} primary/>}<Link className="btn sm" href="/brief">Morning brief</Link></>}/>
   <form className="al-filters" role="search" aria-label="Filter alerts">
    <div className="chips" role="group" aria-label="Level">{LEVELS.map(([v,l])=><Link key={l} className="chip" href={{pathname:"/alerts",query:{...(v?{level:v}:{}),...(q?{q}:{})}}} aria-current={(level??"")===v?"page":undefined}>{l}</Link>)}</div>
    <input className="input" type="search" name="q" defaultValue={q} placeholder="Search alerts" aria-label="Search alerts"/>{level&&<input type="hidden" name="level" value={level}/>}
   </form>
-  {rows===null?<State kind="error" title="Alerts are unavailable right now">The database did not respond. Alerts are still sent by push; this list returns when it recovers.</State>
+  {rows===null?<State kind="error" title="Alerts are unavailable right now">Database offline. Push alerts still work.</State>
   :rows.length===0?<State title={q||level?"No alerts match":"No alerts yet"}>{q||level?<Link className="link" href="/alerts">Clear filters</Link>:"Q logs every build, uptime, gold and check alert here."}</State>
   :<section className="card al-list" aria-label="Alert history">{rows.map(a=><article key={a.id} className={`al-row${a.ack?" seen":""}`}>
     <span className={`tag ${TONE[a.level]}`}>{LABEL[a.level]}</span>

@@ -39,7 +39,7 @@ export function BriefView({today,open,dueToday,overdue,high,last24,urgent,digest
 
    <section className="card cpad" aria-labelledby="br-pv"><div className="card-h"><h2 id="br-pv">Preview builds failing</h2><span className="meta num">{digest.length}</span></div>
     {digest.length?<div className="rows">{digest.map(d=><div key={d.id}><span>{d.line}</span>{d.url&&<a className="link" href={d.url} target="_blank" rel="noreferrer">Open</a>}</div>)}</div>
-    :<State title="All preview builds pass">The latest preview build of every app is fine.</State>}
+    :<State title="All preview builds pass">All preview builds are fine.</State>}
    </section>
 
    <section className="card cpad" aria-labelledby="br-hl"><div className="card-h"><h2 id="br-hl">System health · 24 h</h2></div>

@@ -177,7 +177,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
       {/* ---------- Panels ---------- */}
       <div className={`scrim${panel?" on":""}`} onClick={closePanel} aria-hidden="true"/>
       <ShellDrawer open={!!panel} onClose={closePanel} title={panel==="studio"?"Studio":panel==="alerts"?"Alerts":panel==="apps"?"Applications":"More"}
-        sub={panel==="studio"?"Your look for every Q OS section. Saved on this device.":panel==="alerts"?"Push, gold levels and unseen alerts":panel==="apps"?`${appRows.length} apps · logos from each app`:"Everything else in Q OS"}
+        sub={panel==="studio"?"Your look, saved on this device.":panel==="alerts"?"Push, gold levels and unseen alerts":panel==="apps"?`${appRows.length} apps · logos from each app`:"Everything else in Q OS"}
         foot={panel==="studio"?<><button className="btn ghost" onClick={()=>{const prev=studio;setStudio({...DEFAULT_STUDIO});toast("Studio reset to defaults",()=>setStudio(prev));}}><I n="reset"/>Reset</button><button className="btn primary" onClick={closePanel}>Done</button></>:panel==="alerts"?<Link className="btn" style={{width:"100%"}} href="/alerts" onClick={closePanel}>Full alert history<I n="arrow"/></Link>:null}>
         {panel==="studio"&&<StudioPanel studio={studio} set={setStudio}/>}
         {panel==="alerts"&&<AlertsPanel/>}
@@ -230,7 +230,7 @@ function StudioPanel({studio,set}:{studio:Studio;set:(p:Partial<Studio>)=>void})
       <span className="pv" style={{background:t.sw[0]}}><i style={{left:8,top:8,width:"42%",height:14,background:t.sw[1]}}/><i style={{left:8,top:28,width:"62%",height:14,background:t.sw[1]}}/><i style={{right:8,top:8,width:20,height:20,borderRadius:"50%",background:t.sw[2]}}/></span>
       <b>{t.name}<I n="check"/></b><small>{t.note}</small></button>)}</div></div>
     <div className="st-sec"><h4>Accent<span className="st-val">{ACCENTS.find(a=>a.id===studio.accent)?.name}</span></h4><div className="swatches">{ACCENTS.map(a=><button key={a.id} className="sw" aria-pressed={studio.accent===a.id} aria-label={`Accent ${a.name}`} onClick={()=>set({accent:a.id})}><i style={{background:a.hex,color:["halo","amber","emerald"].includes(a.id)?"#111":"#fff"}}><I n="check"/></i>{a.name}</button>)}</div>
-      <p className="help" style={{marginTop:10}}>The accent marks primary buttons and where you are. Red, amber and green always mean status.</p></div>
+      <p className="help" style={{marginTop:10}}>Accent = main buttons. Red, amber, green = status.</p></div>
     <div className="st-sec"><h4>Cards</h4>{seg("cards",[["solid","Solid"],["glass","Glass"],["outline","Outline"]],"Card style")}</div>
     <div className="st-sec"><h4>Motion</h4>{seg("motion",[["calm","Calm"],["full","Full"],["off","Off"]],"Motion")}</div>
     <div className="st-sec"><h4>Density</h4>{seg("density",[["comfortable","Comfortable"],["compact","Compact"]],"Density")}</div>
