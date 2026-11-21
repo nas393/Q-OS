@@ -25,7 +25,7 @@ for the run (no real credentials used or shown). Same code as the preview; only 
 | # | Criterion | Evidence | Status |
 |---|---|---|---|
 | 9 | Authenticated protected API | Logged out: `/api/tasks`, `/api/projects`, `/api/alerts`, `/api/chat` all 401 `{"error":"Unauthorized"}`. Logged in: all 200 | PASS |
-| 10 | Persistent read/write through the app | Task created via `POST /api/tasks`, returned by a fresh `GET /api/tasks`, row present in `q_tasks`. Chat needs an AI key (local run: 503 "AI provider is not configured"), so conversation persistence stays with the owner on the preview | PASS (tasks) · chat: OWNER CHECK |
+| 10 | Persistent read/write through the app | Task created via `POST /api/tasks`, returned by a fresh `GET /api/tasks`, row in `q_tasks`. Conversation: real `/api/chat` route with the Groq call answered by a local stand-in (no key): reply streamed, then after a full server restart `GET /api/chat` lists the conversation and `GET /api/chat/{id}` returns the user and assistant messages (rows in `messages`). Same through the Ask Q screen: reply shown, still listed after reload | PASS |
 | 11 | Invalid credentials fail safely | Wrong passkey: 401 `{"error":"Invalid passkey"}`; no configuration detail | PASS |
 | 12 | Database-backed throttling | Same client: tries 1-6 → 401, 7+ → 429 "Too many attempts. Try again in 15 minutes."; correct passkey also 429 while locked; another client unaffected (401); after the 15-min window (row aged in DB) → 200 | PASS |
 | 13 | No secret exposure | Built with known test secret values: 0 of 4 values and 0 secret variable names in `.next/static`. `git grep` (source + history) for API keys, private keys, Postgres URLs with passwords, Neon/Resend/GitHub/Slack tokens, JWTs: none (only the `.env.example` placeholder). 18 log calls, none print env, passkey, token or cookie; local server log contains no secret. Production runtime logs: none in Hobby's 1-hour window | PASS |
@@ -34,9 +34,19 @@ for the run (no real credentials used or shown). Same code as the preview; only 
 | 16 | Degraded health handling | Database stopped: `/api/health` 503 `{"status":"degraded","checks":{"application":"ok","database":"error"}}`; login 503 "Authentication service temporarily unavailable"; logs show error names only; recovers to 200 when the DB returns | PASS |
 | 17 | Reproducible deployment | Fresh clone of `main`, README steps: `npm install` 28 s, `npm run build` 29 s, `npm test` 58/58 | PASS (finding F2) |
 
-Owner check still open on the preview: ask Q one question, reload, the conversation is still there (completes #10).
 
-## Findings
+## Findings (status 2026-11-21)
+
+| # | Finding | Status |
+|---|---|---|
+| F1 | Sign-out did not revoke a copied session | Fixed in PR #39 (server-side "sessions valid after"; sign-out ends every session) |
+| F2 | No package-lock.json | Fixed in PR #38 |
+| F3 | Scheduled check never reached Q OS (Vercel login) | Fixed in PR #37 and #41; owner added the bypass secret; run 17 returned HTTP 200 |
+| F4 | AUTH_SECRET shared by Production and Preview | Fixed: production value is Production-only; Preview/Development have their own |
+| F5 | Fixed build alerts stayed open | Fixed in PR #36 |
+| F6 | Most preview branches use the production DATABASE_URL | Open: needs the isolated Neon preview connection string from the owner (only branch-scoped previews are isolated today) |
+
+Details:
 
 - **F1. Sign-out does not revoke a copied session.** The JWT stays valid until it expires (8 h): a cookie copied
   before sign-out still returned 200. Fix: a server-side "sessions valid after" timestamp checked in `readSession`
@@ -75,4 +85,4 @@ Owner check still open on the preview: ask Q one question, reload, the conversat
 5. Re-test Global Radar, tasks, Q Assistant, alerts and project telemetry end to end.
 6. Reconcile this checklist with actual evidence. Only then calculate a weighted completion percentage.
 
-Status 2026-11-21: 16/17 verified; #10 needs the owner's chat-persistence check on the preview. Findings F1-F4 open.
+Status 2026-11-21: 17/17 verified. Findings F1-F5 fixed; F6 open (owner input).
