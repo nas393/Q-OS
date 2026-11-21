@@ -14,7 +14,13 @@ jobs:
         env:
           Q_URL: ${{ secrets.Q_URL }}
           TOKEN: ${{ secrets.Q_CHECK_TOKEN }}
+          # Vercel Deployment Protection covers q-jarvis.vercel.app, so without this the call lands on the Vercel
+          # login redirect ("Redirecting...") and every run fails. Value: Vercel -> q-os -> Settings ->
+          # Deployment Protection -> Protection Bypass for Automation. Stored as an Actions secret, never in code.
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           if [ -z "$Q_URL" ] || [ -z "$TOKEN" ]; then echo "Secrets not set; skipping."; exit 0; fi
-          code=$(curl -sS -o out.json -w "%{http_code}" -X POST "$Q_URL/api/cron/check" -H "Authorization: Bearer $TOKEN" --max-time 90)
-          cat out.json; [ "$code" = "200" ] || exit 1
+          if [ -z "$BYPASS" ]; then echo "::warning::VERCEL_AUTOMATION_BYPASS_SECRET is not set; Vercel login will block this call."; fi
+          code=$(curl -sS -o out.json -w "%{http_code}" -X POST "$Q_URL/api/cron/check" \
+            -H "Authorization: Bearer $TOKEN" ${BYPASS:+-H "x-vercel-protection-bypass: $BYPASS"} --max-time 90)
+          head -c 400 out.json; echo; echo "HTTP $code"; [ "$code" = "200" ] || exit 1
