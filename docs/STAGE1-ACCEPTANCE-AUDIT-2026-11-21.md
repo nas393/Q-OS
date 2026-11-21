@@ -50,16 +50,19 @@ Details:
 
 - **F1. Sign-out does not revoke a copied session.** The JWT stays valid until it expires (8 h): a cookie copied
   before sign-out still returned 200. Fix: a server-side "sessions valid after" timestamp checked in `readSession`
-  and set on sign-out. Changes authentication, so it needs owner approval.
+  and set on sign-out. Owner approved; done in PR #39.
 - **F2. No `package-lock.json` in the repo.** Every install resolves `^` ranges afresh, so two deployments of the
-  same commit can get different dependency versions. Fix: commit the lock file (separate PR).
+  same commit can get different dependency versions. Done in PR #38.
 - **F3. The 15-minute scheduled check never reached Q OS.** All 15 GitHub runs failed with "Redirecting..." because
-  Vercel Authentication covers `q-jarvis.vercel.app`; only the daily Vercel Cron ran. Fixed in PR #37 (bypass header);
-  needs the owner to add the `VERCEL_AUTOMATION_BYPASS_SECRET` Actions secret.
+  Vercel Authentication covers `q-jarvis.vercel.app`. (Checks still ran via the counter-trader gold push and the
+  daily Vercel Cron.) Fixed in PR #37 + #41 with the owner's `VERCEL_AUTOMATION_BYPASS_SECRET`; run 17: HTTP 200.
 - **F4. Shared AUTH_SECRET across Production and Preview** (from the ChatGPT handover). Preview code can mint
-  sessions that production accepts. Recommend a separate Preview value; needs owner approval.
+  sessions that production accepts. Owner approved; Preview/Development now have their own value.
 - **F5. Stale build alerts** (16 Nov q-jarvis lint failure, fixed a minute later) stayed open and were ranked top
   priority. Fixed in PR #36 (merged).
+- **F6. Previews share the production database.** The unscoped Preview `DATABASE_URL` is the production one, so
+  preview builds of new code read and write live data. Fix: point Preview at the isolated Neon branch
+  (`q-os-preview-auth`); needs its connection string from the owner (sensitive values cannot be read back).
 
 ## Historical runtime signals
 
@@ -74,7 +77,7 @@ Details:
 - DATABASE_URL was added only to the Stage 1 Preview branch scope. Production environment variables and production deployment were not changed.
 - The isolated Neon branch is a snapshot derived from Neon main; subsequent writes through this preview role remain on that separate branch.
 - Shared AUTH_SECRET and other shared provider keys targeting multiple environments remain a separate environment-separation review item. Do not rotate or change them as part of this audit without explicit approval.
-- Do not merge this branch or promote a production deployment without separate approval.
+- Merged after the owner asked to complete all pending Stage 1 points (docs and CI trigger only; no runtime change).
 
 ## Next execution order
 
