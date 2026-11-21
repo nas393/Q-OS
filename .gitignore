@@ -13,4 +13,3 @@ coverage
 # local build artifacts
 next-env.d.ts
 tsconfig.tsbuildinfo
-package-lock.json

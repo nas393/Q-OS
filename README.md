@@ -28,7 +28,7 @@ No multi-model AI, autonomous agents, advanced memory or knowledge graph, voice,
 1. Install Node.js 20 or later.
 2. Copy `.env.example` to `.env.local`.
 3. Set the required environment variables. Never commit real credentials or production data.
-4. Install dependencies with `npm install`.
+4. Install dependencies with `npm ci` (exact versions from `package-lock.json`; use `npm install <pkg>` only to add or upgrade a package, and commit the updated lock file).
 5. Apply the SQL migration in `database/migrations` to the configured Neon database.
 6. Start the development server with `npm run dev`.
 
