@@ -11,6 +11,7 @@ import type { MetricsMap } from "@/lib/metrics";
 import { statLine, type AppStat } from "@/lib/app-stats-parse";
 import { buildQContext } from "@/lib/q-context";
 import QMd from "@/components/q-md";
+import {QMark} from "@/components/shell/q-mark";
 
 type Project={id:string;name:string;url?:string;repo:string|null;vercel:string|null;priority:string;next:string;area:string;openIssues:number|null;lastCommit:{message:string;date:string;url:string}|null;deployment:{state:string;url:string|null;created:number|null;target:string|null;inspectorUrl:string|null;sourceMatches?:boolean|null}|null;deploymentDataStatus?:string;githubDataStatus?:string};
 type Telemetry={updatedAt:string;projects:Project[]};
@@ -319,7 +320,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
     <div className="m-acts"><button className="btn primary press" onClick={()=>openQ(qSuggest[0]?.prompt)}><I n="spark"/>{qSuggest[0]?.label??"Ask Q"}</button></div>
    </article>;
   if(k==="brief")return <article key={k} className="moment m-brief" aria-label="Q briefing">
-    <div className="mh"><span className="ey"><img src="/os/q-emblem.webp" alt="" width={20} height={20}/>Q briefing · {time}</span><span className={`live${online?"":" off"}`}><i/>{online?"Live":"Offline"}</span></div>
+    <div className="mh"><span className="ey"><QMark size={20}/>Q briefing · {time}</span><span className={`live${online?"":" off"}`}><i/>{online?"Live":"Offline"}</span></div>
     <h2>{headline}</h2>
     <div className="radar-mini">{attention.filter(a=>a.sev!=="critical").slice(0,2).map(a=><div key={a.id}><I n={a.sev==="watch"?"clock":"chart"}/><span><b>{a.title}</b>{a.when?` · ${a.when}`:""}</span></div>)}</div>
     <div className="grow"/>
@@ -403,7 +404,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <div className="core" role="button" tabIndex={0} style={{["--state-glow" as string]:glow} as React.CSSProperties} aria-label={`Q. Ecosystem health ${health??"unknown"} of 100, ${critical.length} critical. Open Q.`} onClick={()=>openQ()} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openQ();}}}>
       <div className="breath"/><div className="disc"/>
       <svg className="hr" viewBox="0 0 184 184" aria-hidden="true"><circle className="track" cx="92" cy="92" r="78"/><circle className="arc" cx="92" cy="92" r="78" strokeDasharray={C} strokeDashoffset={arcOn&&health!==null?C*(1-health/100):C}/></svg>
-      <img src="/os/q-emblem.webp" alt="" width={86} height={86}/></div>
+      <QMark size={86}/></div>
      <div className="health" style={{top:104}} title={healthParts.map(([l,v])=>`${l}: ${v??"—"}`).join(" · ")}><div className="big num">{health===null?"—":hm}<small>/100</small></div><div className="lbl">Ecosystem health{trend!==null&&trend!==0&&<> · <b className={trend>0?"up":"down"}>{trend>0?"▲ +":"▼ "}{Math.abs(trend)}</b></>}</div></div>
      {placed.map(p=><button key={p.n.id} className={`node press${p.n.state==="crit"?" crit":""}${focus?.id===p.n.id?" focus":""}`} style={{transform:`translate(${p.x}px,${p.y}px) translate(-50%,-50%)`}} aria-label={`${p.n.name}: ${statusText(p.n)}`} onClick={()=>setFocusId(p.n.id)}>
       {p.n.state==="crit"?<I n="alert" c="qwarn"/>:<span className={`sdot${p.n.state==="idle"?" idle":p.n.state==="dep"?" dep":""}`} aria-hidden="true"/>}
@@ -431,7 +432,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    <aside className="qpanel left" aria-label="Briefing and today">
     {(!online||error||metricsError)&&<p className={`banner ${!online?"wn":"err"}`}>{!online?"Offline: showing the last saved data.":error||metricsError}</p>}
     <section className="card cpad brief">
-     <div className="chead"><span className="ey"><img src="/os/q-emblem.webp" alt="" width={22} height={22}/>Q briefing · {time}</span><span className={`live${online?"":" off"}`}><i/>{online?"Live":"Offline"}</span></div>
+     <div className="chead"><span className="ey"><QMark size={22}/>Q briefing · {time}</span><span className={`live${online?"":" off"}`}><i/>{online?"Live":"Offline"}</span></div>
      <h1>{headline}</h1>
      <dl className="rows">
       <div className="r"><dt>Ecosystem</dt><dd><b className="num">{health??"—"}</b>/100 {trendEl} <span className="sub">· {data?`${liveCount} of ${nodes.length} live`:"checking"}</span></dd></div>
@@ -498,22 +499,22 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
   {/* ======================= Q (dock on desktop, full sheet on phone) ======================= */}
   <div className={`qdock${qOpen?" open":""}`}>
    <section className="qsheet card" aria-label="Q conversation">
-    <div className="qs-h"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><div><b>Q</b> <span>· {qState==="offline"?"offline":`sees ${nodes.length||"all"} systems`}</span></div><span className="sp"/>
+    <div className="qs-h"><QMark size={28}/><div><b>Q</b> <span>· {qState==="offline"?"offline":`sees ${nodes.length||"all"} systems`}</span></div><span className="sp"/>
      <button className="icon-btn press" aria-label="New conversation" title="New conversation" onClick={()=>{setQMsgs([]);setQConv(undefined);}}><I n="plus"/></button>
      <Link className="icon-btn press" href="/chat" aria-label="Open full Q workspace" title="Q workspace"><I n="ext"/></Link>
      <button className="icon-btn press" aria-label="Close Q" onClick={()=>setQOpen(false)}><I n="x"/></button></div>
     <div className="qlog" ref={qRef} aria-live="polite">
-     {!qMsgs.length&&<div className="msg q"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><div className="body"><p className="qempty">{critical.length?`I’m watching all ${nodes.length} systems. ${critical[0].title} — that’s the one thing that needs you.`:`I’m watching all ${nodes.length||"your"} systems. Nothing critical right now.`} Ask me anything, or pick a suggestion.</p>
+     {!qMsgs.length&&<div className="msg q"><QMark size={28}/><div className="body"><p className="qempty">{critical.length?`I’m watching all ${nodes.length} systems. ${critical[0].title} — that’s the one thing that needs you.`:`I’m watching all ${nodes.length||"your"} systems. Nothing critical right now.`} Ask me anything, or pick a suggestion.</p>
       <div className="qacts">{QUICK.map(([l,,p])=><button key={l} className="btn sm press" onClick={()=>askQ(p)} disabled={qBusy}>{l}</button>)}<button className="btn sm press" onClick={()=>runAction({kind:"iq",arg:""},"q-iq")} disabled={qBusy}>AngolaIQ summary</button></div></div></div>}
      {qMsgs.map((m,i)=>{const last=i===qMsgs.length-1,acts=m.role==="q"&&!(qBusy&&last)?parseActions(m.text):[];
       return m.role==="user"?<div key={i} className="msg me">{m.text}</div>
-       :<div key={i} className="msg q"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><div className="body">{m.text?<QMd text={stripActions(m.text)}/>:<span className="thinking"><i/><i/><i/> Q is reading your live data</span>}
+       :<div key={i} className="msg q"><QMark size={28}/><div className="body">{m.text?<QMd text={stripActions(m.text)}/>:<span className="thinking"><i/><i/><i/> Q is reading your live data</span>}
         {acts.length>0&&<div className="qacts">{acts.map((a,k)=>{const key=`${i}-${k}`,st=doneActs[key];return <button key={key} className="btn sm press" disabled={!!st&&st!=="Failed"} onClick={()=>runAction(a,key)}>{st&&st!=="…"?st:a.kind==="task"?`＋ Task: ${a.arg}${a.due?` (${a.due})`:""}`:a.kind==="checks"?"Run checks":a.kind==="open"?`Open ${a.arg}`:"Summarise AngolaIQ"}</button>;})}</div>}</div></div>;})}
     </div>
    </section>
    <div className="qsugs">{qSuggest.slice(0,3).map(s=><button key={s.label} className={`qsug press${s.ctx?" ctx":""}`} onClick={()=>openQ(s.prompt)} disabled={qBusy}><I n="spark"/>{s.label}</button>)}</div>
    <form className="qbar" onSubmit={e=>{e.preventDefault();if(!qInput.trim())return;setQOpen(true);askQ(qInput);}}>
-    <img src="/os/q-emblem.webp" alt="" width={38} height={38}/>
+    <QMark size={38}/>
     <label className="sr" htmlFor="ql-q">Ask Q</label>
     <input id="ql-q" ref={qInputRef} value={qInput} onChange={e=>setQInput(e.target.value)} onFocus={()=>{if(window.innerWidth>1180&&qMsgs.length)setQOpen(true);}} placeholder="Ask Q anything about your ecosystem…" autoComplete="off" enterKeyHint="send" maxLength={2000}/>
     <kbd className="kbd">⌘K</kbd>

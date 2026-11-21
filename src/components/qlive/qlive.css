@@ -37,7 +37,9 @@
 .ql .core svg.hr circle{fill:none;stroke-width:3;stroke-linecap:round}
 .ql .core .track{stroke:var(--line-2)}
 .ql .core .arc{stroke:url(#ql-hgrad);transition:stroke-dashoffset 1.6s var(--ease)}
-.ql .core img{position:relative;width:86px;height:86px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35))}
+.ql .core .qmark{position:relative;width:86px;height:86px;filter:drop-shadow(0 0 .16em var(--qm-glow)) drop-shadow(0 6px 16px rgba(0,0,0,.35))}
+.os[data-theme="light"] .ql .core .disc{background:radial-gradient(circle at 50% 35%,#FFFFFF,#EEF0F4 70%);box-shadow:inset 0 0 0 1px rgba(20,22,30,.08),0 20px 50px -12px rgba(40,34,20,.22)}
+.os[data-theme="light"] .ql .core .qmark{filter:drop-shadow(0 4px 10px rgba(40,34,20,.18))}
 .ql .core:hover .disc{box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.5),0 20px 50px -12px rgba(0,0,0,.6)}
 .ql .health{position:absolute;width:280px;margin-left:-140px;text-align:center;pointer-events:none}
 .ql .health .big{font-size:46px;font-weight:300;letter-spacing:-.03em;line-height:1}
@@ -67,7 +69,7 @@
 .ql .qpanel.left{left:24px}
 .ql .qpanel.right{right:24px}
 .ql .brief .ey{display:flex;align-items:center;gap:8px}
-.ql .brief .ey img{width:22px;height:22px}
+.ql .brief .ey :is(img,.qmark){width:22px;height:22px}
 .ql .brief h1{font-family:var(--serif);font-weight:400;font-size:27px;line-height:1.1;margin:12px 0 2px;letter-spacing:-.01em}
 .ql .brief h1 em,.ql .moment h2 em{color:var(--accent-ink);font-style:italic}
 .ql .rows{margin-top:10px}
@@ -177,7 +179,7 @@
 .ql .qbar{display:flex;align-items:center;gap:12px;height:60px;padding:0 8px 0 10px;border-radius:20px;background:var(--card-bg);border:1px solid color-mix(in srgb,var(--q) 40%,var(--card-line));backdrop-filter:var(--card-blur);-webkit-backdrop-filter:var(--card-blur);
   box-shadow:var(--shadow);transition:box-shadow .3s,border-color .3s}
 .ql .qbar:focus-within{border-color:var(--accent-ink);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18),var(--shadow)}
-.ql .qbar img{width:38px;height:38px}
+.ql .qbar :is(img,.qmark){width:38px;height:38px}
 .ql .qbar input{flex:1;font-size:15.5px;height:100%}
 .ql .qbar input:focus-visible{outline:none}
 .ql .qbar input::placeholder{color:var(--muted)}
@@ -188,14 +190,14 @@
 .ql .qdock.open .qsheet{display:flex;animation:ql-up .55s var(--spring)}
 @keyframes ql-up{from{opacity:0;transform:translateY(20px) scale(.97)}}
 .ql .qs-h{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 18px;border-bottom:1px solid var(--line)}
-.ql .qs-h img{width:28px;height:28px}
+.ql .qs-h :is(img,.qmark){width:28px;height:28px}
 .ql .qs-h b{font-size:14px}
 .ql .qs-h span{font-size:12.5px;color:var(--muted)}
 .ql .qs-h .sp{flex:1}
 .ql .qlog{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin}
 .ql .msg.me{align-self:flex-end;max-width:80%;padding:10px 14px;border-radius:16px 16px 4px 16px;background:var(--elevated);font-size:14px;border:1px solid var(--line);white-space:pre-wrap}
 .ql .msg.q{display:grid;grid-template-columns:28px 1fr;gap:12px;font-size:14px;line-height:1.55}
-.ql .msg.q>img{width:28px;height:28px}
+.ql .msg.q>:is(img,.qmark){width:28px;height:28px}
 .ql .msg.q .body{min-width:0;overflow-wrap:anywhere}
 .ql .qmd-h{display:block;margin:8px 0 2px;font-size:13px;font-weight:700}
 .ql .qmd-p{display:block}
@@ -298,7 +300,7 @@
   .os[data-theme="aurora"] .ql .m-bg{background:radial-gradient(ellipse 80% 40% at 10% 0%,rgba(80,110,255,.22),transparent 70%),radial-gradient(ellipse 70% 40% at 100% 60%,rgba(170,90,255,.14),transparent 70%),var(--bg)}
   .ql .m-app>*{position:relative;z-index:1}
   .ql .m-head{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
-  .ql .m-head img{width:36px;height:36px}
+  .ql .m-head :is(img,.qmark){width:36px;height:36px}
   .ql .m-head .tx{flex:1;min-width:0}
   .ql .m-head b{display:block;font-size:16px;font-weight:600;letter-spacing:-.01em}
   .ql .m-head span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -317,7 +319,7 @@
   .os[data-cards="glass"] .ql .moment{background:color-mix(in srgb,var(--surface) 82%,transparent)}
   .ql .moment .mh{display:flex;align-items:center;gap:8px;justify-content:space-between}
   .ql .moment .mh .ey{display:flex;align-items:center;gap:8px}
-  .ql .moment .mh .ey img{width:20px;height:20px}
+  .ql .moment .mh .ey :is(img,.qmark){width:20px;height:20px}
   .ql .moment h2{font-family:var(--serif);font-weight:400;font-size:29px;line-height:1.08;letter-spacing:-.01em;margin-top:14px}
   .ql .moment .grow{flex:1;min-height:8px}
   .ql .m-crit{background:linear-gradient(170deg,color-mix(in srgb,var(--crit) 22%,var(--surface)) 0%,var(--surface) 62%)!important;border-color:color-mix(in srgb,var(--crit) 45%,transparent)!important}

@@ -4,6 +4,7 @@ import QMd from "@/components/q-md";
 import { buildQContext } from "@/lib/q-context";
 import {I} from "@/components/shell/icons";
 import "./chat.css";
+import {QMark} from "@/components/shell/q-mark";
 
 type Conv={id:string;title:string;updated_at?:string};
 type Msg={role:"user"|"assistant";content:string};
@@ -68,14 +69,14 @@ export default function ChatWorkspace({gold}:{gold:Gold}){
    </header>
    <div className="qa-thread" aria-live="polite">
     {!msgs.length&&<div className="qa-hello">
-     <img src="/os/q-emblem.webp" alt="" width={56} height={56}/>
+     <QMark size={56}/>
      <h2>What do you need, Nassim?</h2>
      <p>Answers from your live data. Says when it can’t verify.</p>
      <div className="qa-quick">{QUICK.map(([l,p])=><button key={l} className="chip" onClick={()=>send(p)} disabled={busy||status==="offline"}>{l}</button>)}</div>
     </div>}
     {msgs.map((m,i)=>m.role==="user"
      ?<div key={i} className="qa-msg me">{m.content}</div>
-     :<div key={i} className="qa-msg q"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/><div className="qa-body">{m.content?<QMd text={m.content}/>:<span className="qa-typing" aria-label="Q is writing"><i/><i/><i/></span>}</div></div>)}
+     :<div key={i} className="qa-msg q"><QMark size={28}/><div className="qa-body">{m.content?<QMd text={m.content}/>:<span className="qa-typing" aria-label="Q is writing"><i/><i/><i/></span>}</div></div>)}
     {err&&<p className="banner err" role="alert">{err}</p>}
     <div ref={end}/>
    </div>

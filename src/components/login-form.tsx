@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import "./lock.css";
+import {QMark} from "@/components/shell/q-mark";
 
 /* Q OS sign-in: the Command centre's orbit around the Q core. Sign-in logic is unchanged (POST /api/auth/login). */
 const greetFor = (h: number) => (h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
@@ -48,7 +49,7 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
             <circle cx="60" cy="60" r="56" className="trk"/>
             <circle cx="60" cy="60" r="56" className="arc"/>
           </svg>
-          <img src="/os/q-emblem.webp" alt="" width={84} height={84}/>
+          <QMark size={84}/>
         </div>
         <h1><span suppressHydrationWarning>{greet}</span>, <em>Nassim.</em></h1>
         <form className="lk-form" method="post" action="/api/auth/login" onSubmit={submit}>
