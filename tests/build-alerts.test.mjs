@@ -68,3 +68,41 @@ test("alert body carries branch, short SHA, first line of commit and the log lin
   assert.match(body,/stage1\/implementation @ a086488 · Add trade page/);
   assert.match(body,/page\.tsx:48:42 react\/no-unescaped-entities/);
 });
+
+/* ---- Old alerts are closed once a newer build on the branch is READY ---- */
+import {deploymentIdFromInspector,isSuperseded} from "../src/lib/build-alerts.ts";
+
+test("inspector URL → deployment id; anything else → null",()=>{
+  assert.equal(deploymentIdFromInspector("https://vercel.com/nas393s-projects/q-jarvis/5MqeQ6Eg57HBMHAoXjRSkz4v77Wb"),"dpl_5MqeQ6Eg57HBMHAoXjRSkz4v77Wb");
+  assert.equal(deploymentIdFromInspector("https://vercel.com/nas393s-projects/q-jarvis/5MqeQ6Eg57HBMHAoXjRSkz4v77Wb/"),"dpl_5MqeQ6Eg57HBMHAoXjRSkz4v77Wb");
+  assert.equal(deploymentIdFromInspector("/dashboard"),null);
+  assert.equal(deploymentIdFromInspector("https://example.com/a/b/5MqeQ6Eg57HBMHAoXjRSkz4v77Wb"),null);
+});
+
+test("the 16 Nov q-jarvis alert is superseded by the READY build a minute later",()=>{
+  const failed={...dep("dpl_5MqeQ6Eg57HBMHAoXjRSkz4v77Wb","ERROR",1794830221661),readyState:"ERROR",state:undefined};
+  assert.equal(isSuperseded(failed,[dep("dpl_34h7MMF8fE9pyUB8c4fXa2Mcijbd","READY",1794830256329)]),true);
+});
+
+test("not superseded by a newer failure, an older READY, or another branch",()=>{
+  const failed=dep("dpl_A","ERROR",2000);
+  assert.equal(isSuperseded(failed,[dep("dpl_B","ERROR",3000)]),false);
+  assert.equal(isSuperseded(failed,[dep("dpl_C","READY",1000)]),false);
+  assert.equal(isSuperseded(failed,[dep("dpl_D","READY",3000,{ref:"main"})]),false);
+  assert.equal(isSuperseded(failed,[dep("dpl_E","BUILDING",3000)]),false);
+});
+
+test("a production failure is closed only by a newer READY production build",()=>{
+  const failed=dep("dpl_P","ERROR",2000,{target:"production",ref:"main"});
+  assert.equal(isSuperseded(failed,[dep("dpl_Q","READY",3000,{ref:"main"})]),false);
+  assert.equal(isSuperseded(failed,[dep("dpl_R","READY",3000,{target:"production",ref:"main"})]),true);
+});
+
+test("matches across the q-jarvis → q-os rename and when list items omit projectId",()=>{
+  const failed=dep("dpl_A","ERROR",2000,{project:"q-jarvis"});
+  const renamed={...dep("dpl_B","READY",3000,{project:"q-os"}),projectId:"prj_q-jarvis"};
+  const noId={...dep("dpl_C","READY",3000,{project:"q-os"}),projectId:undefined};
+  assert.equal(isSuperseded(failed,[renamed]),true);
+  assert.equal(isSuperseded(failed,[noId]),true);
+  assert.equal(isSuperseded(failed,[{...dep("dpl_D","READY",3000),projectId:"prj_other"}]),false);
+});
