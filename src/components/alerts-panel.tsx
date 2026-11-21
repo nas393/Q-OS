@@ -59,7 +59,7 @@ export function AlertsPanel({goldPrice}:{goldPrice?:number}){
     {err&&<p className="os-al-err">{err}</p>}
     {/* Unseen only, newest first; repeats of the same alert (e.g. each morning brief) collapse into the latest one. */}
     <ul className="os-al-list">{feed.slice(0,5).map(a=><li key={a.id}><i className={a.level}/><span><b>{a.title}</b>{a.body&&<small>{a.body}</small>}</span><time>{ago(Date.parse(a.createdAt))}</time></li>)}</ul>
-    {d&&!feed.length&&<p className="os-muted">All clear. Q checks sites, builds and gold every 15 min.</p>}
+    {d&&!feed.length&&<p className="os-muted">All clear. Checked every 15 min.</p>}
     <div className="os-al-foot"><a href="/alerts">All alerts →</a>{feed.length>0&&<button onClick={()=>run("ack",()=>post({action:"ack",id:"all"}))} disabled={!!busy}>{busy==="ack"?"…":"Mark all seen"}</button>}</div>
     <button className="os-al-check" onClick={()=>run("check",()=>post({action:"check"}))} disabled={!!busy}>{busy==="check"?"Checking…":"Check now"}</button>
   </section>;

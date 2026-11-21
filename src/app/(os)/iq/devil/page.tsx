@@ -21,7 +21,7 @@ export default function Devil(){
  useEffect(()=>{try{const s=sessionStorage.getItem("iq-devil");if(s){setV(JSON.parse(s));sessionStorage.removeItem("iq-devil");}}catch{}},[]);
  const set=(k:string)=>(e:{target:{value:string}})=>setV(x=>({...x,[k]:e.target.value}));
  return <>
-  <Head title="Devil's Advocate" desc="Stress-test a decision before you commit money. It challenges assumptions, runs scenarios and gives a verdict. AI output — use it to find weak spots, not as proof."/>
+  <Head title="Devil's Advocate" desc="Stress-test a decision before you spend. AI finds weak spots, not proof."/>
   <Workspace kind="devil" actions={["save","project","export"]} extra={r=><Review r={r}/>} form={(run,busy)=><form className="iq-form two" onSubmit={e=>{e.preventDefault();const {fromId,...input}=v;run({input:Object.fromEntries(Object.entries(input).filter(([,x])=>x)),...(fromId?{fromId}:{})});}}>
    <Field full label="Business idea or decision *"><textarea required minLength={10} maxLength={3000} value={v.idea} onChange={set("idea")} placeholder="e.g. Launch a 1 kg branded rice pack in Huambo and Benguela through modern trade at AOA x"/></Field>
    <Field label="Sector"><select value={v.sector} onChange={set("sector")}><option value="">—</option>{SECT.map(s=><option key={s}>{s}</option>)}</select></Field>

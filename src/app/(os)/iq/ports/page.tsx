@@ -29,13 +29,13 @@ export default function Ports(){
   try{const r=await api<{vessels:V[]}>("/api/iq/vessels","POST",rows);setCsv(null);setToast(`${r.vessels.length} vessels imported`);reload();}catch(e){setToast(e instanceof Error?e.message:"Import failed");}};
  const quick=async(v:V,status:string)=>{await api("/api/iq/vessels","POST",{id:v.id,vessel:v.vessel,port:v.port,status,...(status==="berthed"&&!v.ata?{ata:new Date().toISOString()}:{}),...(status==="departed"&&!v.atd?{atd:new Date().toISOString()}:{})});reload();};
  return <>
-  <Head title="Port arrivals" desc="Vessel arrivals by port and date. No free live feed exists for Angolan ports: the Port of Luanda website's ship lists are broken and its counters are static, and Lobito publishes none. So this is your register. Add vessels yourself or paste a CSV from your shipping agent. Every row keeps its source.">
+  <Head title="Port arrivals" desc="Vessel arrivals by port. No live feed exists: add them or paste a CSV.">
    <button className="iq-btn" onClick={()=>setCsv(csv===null?"vessel,port,eta,status,commodity,tonnage,origin,consignee\n":null)}>⤒ Paste CSV</button>
    <button className="iq-btn pri" onClick={()=>setForm({...blank})}>+ Add vessel</button>
   </Head>
   <div className="iq-chips" style={{marginBottom:10}}>{W.map(([n])=>{const c=inWin(n).length;return <button key={n} className={`iq-chip${win===n?" on":""}`} onClick={()=>setWin(n)}>{n}{c?` · ${c}`:""}</button>;})}</div>
   <div className="iq-filters"><select value={port} onChange={e=>setPort(e.target.value)} aria-label="Port"><option value="">All ports</option>{PORTS.map(p=><option key={p}>{p}</option>)}</select></div>
-  {csv!==null&&<section className="iq-card" style={{marginBottom:12}}><h3>Paste CSV</h3><p className="iq-sub">Columns: vessel, port, eta (YYYY-MM-DD or YYYY-MM-DD HH:MM, Luanda time), status, commodity, tonnage, origin, consignee. Optional: ata, cargo, terminal, notes. Comma, semicolon or tab.</p>
+  {csv!==null&&<section className="iq-card" style={{marginBottom:12}}><h3>Paste CSV</h3><p className="iq-sub">Columns: vessel, port, eta (YYYY-MM-DD [HH:MM]), status, commodity, tonnage, origin, consignee. Optional: ata, cargo, terminal, notes.</p>
    <textarea value={csv} onChange={e=>setCsv(e.target.value)} rows={7} className="input" style={{width:"100%",font:"13px/1.5 ui-monospace,monospace"}} aria-label="CSV"/>
    <div className="iq-tags" style={{marginTop:8}}><button className="iq-btn pri" onClick={importCsv}>Import</button><button className="iq-btn" onClick={()=>setCsv(null)}>Cancel</button></div></section>}
   {form&&<section className="iq-card" style={{marginBottom:12}}><h3>{form.id?"Edit vessel":"Add vessel"}</h3>

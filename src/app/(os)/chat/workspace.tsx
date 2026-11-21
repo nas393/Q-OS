@@ -56,7 +56,7 @@ export default function ChatWorkspace({gold}:{gold:Gold}){
    <div className="qa-convs">
     {convs.length?convs.map(c=><button key={c.id} className="qa-conv" aria-current={c.id===convId?"true":undefined} onClick={()=>openConv(c.id)}>
      <span>{c.title}</span>{c.updated_at&&<time>{new Date(c.updated_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</time>}</button>)
-    :<p className="qa-none">{status==="offline"?"Conversations are unavailable right now.":"No conversations yet. Ask Q anything to start one."}</p>}
+    :<p className="qa-none">{status==="offline"?"Conversations are unavailable right now.":"No chats yet. Ask Q anything."}</p>}
    </div>
   </aside>
   {hist&&<div className="qa-scrim" onClick={()=>setHist(false)} aria-hidden="true"/>}
@@ -70,7 +70,7 @@ export default function ChatWorkspace({gold}:{gold:Gold}){
     {!msgs.length&&<div className="qa-hello">
      <img src="/os/q-emblem.webp" alt="" width={56} height={56}/>
      <h2>What do you need, Nassim?</h2>
-     <p>Q answers from your live data: ventures, priorities, alerts and gold. It says when something can’t be verified.</p>
+     <p>Answers from your live data. Says when it can’t verify.</p>
      <div className="qa-quick">{QUICK.map(([l,p])=><button key={l} className="chip" onClick={()=>send(p)} disabled={busy||status==="offline"}>{l}</button>)}</div>
     </div>}
     {msgs.map((m,i)=>m.role==="user"
@@ -83,7 +83,7 @@ export default function ChatWorkspace({gold}:{gold:Gold}){
     <label className="sr" htmlFor="qa-input">Message Q</label>
     <textarea id="qa-input" ref={box} rows={1} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(input);}}} placeholder="Ask Q about your ventures, priorities or markets…" maxLength={6000} enterKeyHint="send"/>
     <button type="submit" className="btn primary qa-send" disabled={busy||!input.trim()} aria-label="Send"><I n="send"/></button>
-    <small className="qa-note">Enter to send · Shift+Enter for a new line · Q can be wrong; check important facts.</small>
+    <small className="qa-note">Enter to send · Shift+Enter new line · Check key facts.</small>
    </form>
   </section>
  </div>;

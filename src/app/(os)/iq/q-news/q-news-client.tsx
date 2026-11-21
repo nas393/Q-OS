@@ -94,14 +94,14 @@ export default function QNewsClient() {
 
   return (
     <>
-      <Head title="Global Radar" desc="Global intelligence across Angola, Lebanon and the world. Headlines link to their publishers; GDELT is an index, not a verification service.">
+      <Head title="Global Radar" desc="Headlines from Angola, Lebanon and the world.">
         <button className="iq-btn pri" onClick={refresh} disabled={busy || loading}>
           {busy ? "Refreshing…" : `Refresh ${stream === "All" ? "all streams" : stream}`}
         </button>
       </Head>
 
       <div className="iq-disclaimer" style={{ marginBottom: 14 }}>
-        Headlines are collected from GDELT-indexed publishers. Source reliability is unverified until independently reviewed. Publication dates and index retrieval times are shown separately.
+        From GDELT-indexed publishers. Not verified.
       </div>
 
       <div className="iq-chips" role="tablist" aria-label="News stream" style={{ marginBottom: 12 }}>
@@ -130,7 +130,7 @@ export default function QNewsClient() {
 
       {loading && !data ? <Loading label="Loading intelligence…" /> :
         error ? <ErrorBox msg={error} retry={load} /> :
-        articles.length === 0 ? <Empty>No headlines in this stream yet. Refresh to pull the latest indexed coverage.</Empty> :
+        articles.length === 0 ? <Empty>No headlines yet. Tap Refresh.</Empty> :
         <ul className="iq-list iq-card">
           {articles.map(item => (
             <li key={item.id}>

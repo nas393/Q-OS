@@ -32,7 +32,7 @@ export default function MapPage(){
  const exportCsv=()=>{const rows=[["name","category","province","lat","lng","source","source_url","verified"],...shown.map(l=>[l.name,l.category,l.province??"",l.lat,l.lng,l.source,l.source_url??"",l.verified])];
   const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="angolaiq-locations.csv";a.click();};
  return <>
-  <Head title="Business map" desc="Geographic intelligence. Real places only: imported from OpenStreetMap with source links, or added by you. Nothing is invented. Mark a place verified once you have confirmed it.">
+  <Head title="Business map" desc="Real places from OpenStreetMap or added by you.">
    <button className="iq-btn" onClick={exportCsv} disabled={!shown.length}>Export CSV</button>
    <button className="iq-btn pri" onClick={()=>setForm({name:"",category:"Business location",province:"",lat:"",lng:"",source_url:"",notes:""})}>+ Add location</button>
   </Head>
@@ -53,7 +53,7 @@ export default function MapPage(){
    <div className="full iq-tags"><button className="iq-btn pri">Save</button><button type="button" className="iq-btn" onClick={()=>setForm(null)}>Cancel</button></div></form></section>}
   <section className="iq-card" style={{marginTop:12}}><h3>Import from OpenStreetMap</h3><div className="iq-chips">{OSM.map(([k,l])=><button key={k} className="iq-chip" disabled={!!busy} onClick={()=>doImport(k)}>{busy===k?"Importing…":l}</button>)}</div><p className="iq-meta">Community data, stored as <Badge kind="unverified"/> with a link to the OSM record.</p></section>
   <section className="iq-card" style={{marginTop:12}}><h3>Places ({shown.length})</h3>
-   {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:!shown.length?<Empty>No places yet. Import from OpenStreetMap or add your own.</Empty>:
+   {loading&&!data?<Loading/>:error?<ErrorBox msg={error} retry={reload}/>:!shown.length?<Empty>No places yet. Import or add one.</Empty>:
    <ul className="iq-list">{shown.slice(0,60).map(l=><li key={l.id} className="iq-row"><div><b>{l.name}</b><div className="iq-tags"><Badge kind={l.verified?"verified":"unverified"}/><span className="iq-sub">{l.category}{l.province?` · ${l.province}`:""} · {l.source}</span></div></div>
     <button className="iq-btn sm" onClick={()=>{map.current?.setView([l.lat,l.lng],13);window.scrollTo({top:0,behavior:"smooth"});}} aria-label={`Show ${l.name} on the map`}>Show on map</button>
     <button className="iq-btn sm" onClick={async()=>{await api("/api/iq/locations","PATCH",{id:l.id,verified:!l.verified});reload();}}>{l.verified?"Unverify":"✓ Verify"}</button>

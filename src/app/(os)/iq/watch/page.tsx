@@ -14,8 +14,8 @@ export default function Watch(){
   try{await api("/api/iq/watch","POST",{keyword:k.trim(),category:cat,frequency:freq,priority:pri});setKw("");setToast("Added");reload();}catch(e){setToast(e instanceof Error?e.message:"Failed");}};
  const patch=async(id:string,p:Record<string,unknown>)=>{await api("/api/iq/watch","PATCH",{id,...p});reload();};
  return <>
-  <Head title="Watchlist" desc="Keywords matched against every news item AngolaIQ stores, checked about every 15 minutes."/>
-  <p className="iq-disclaimer" style={{marginBottom:12}}><b>Instant</b> = a push alert to your phone through NASSIM OS (once you turn alerts on). <b>Daily/Weekly</b> = matches collected here. <b>Email digest: not configured</b> (no email provider is connected).</p>
+  <Head title="Watchlist" desc="Keywords tracked in the news, every 15 min."/>
+  <p className="iq-disclaimer" style={{marginBottom:12}}><b>Instant</b> = push to your phone. <b>Daily/Weekly</b> = collected here. Email: not set up.</p>
   <section className="iq-card"><h3>Add keyword</h3>
    <form className="iq-form two" onSubmit={e=>{e.preventDefault();add(kw);}}>
     <Field label="Keyword *"><input value={kw} onChange={e=>setKw(e.target.value)} maxLength={60} placeholder="e.g. wheat flour"/></Field>
@@ -35,7 +35,7 @@ export default function Watch(){
      <button className="iq-btn sm danger" aria-label="Remove" onClick={async()=>{if(await askConfirm({title:`Remove “${w.keyword}” from the watchlist?`,action:"Remove"})){await api(`/api/iq/watch?id=${w.id}`,"DELETE");reload();}}}>Delete</button></li>)}</ul>}
    </section>
    <section className="iq-card"><h3>Alert history</h3>
-    {!data?.hits.length?<Empty>No matches yet. They appear after the next news refresh.</Empty>:
+    {!data?.hits.length?<Empty>No matches yet.</Empty>:
     <ul className="iq-list">{data.hits.map((h,i)=><li key={i}><a className="t" href={h.url} target="_blank" rel="noreferrer">{h.title}</a><div className="iq-sub">“{h.keyword}” · {ago(h.created_at)}</div></li>)}</ul>}
    </section>
   </div>

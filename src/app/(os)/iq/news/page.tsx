@@ -16,7 +16,7 @@ function News(){
  const run=async(id:string,label:string,fn:()=>Promise<unknown>,msg:string)=>{setBusy(id+label);try{await fn();setToast(msg);}catch(e){setToast(e instanceof Error?e.message:"Failed");}finally{setBusy("");}};
  const share=(i:Item)=>{const t=`${i.title} — ${i.publisher}\n${i.url}`;if(navigator.share)navigator.share({title:i.title,url:i.url}).catch(()=>{});else navigator.clipboard.writeText(t).then(()=>setToast("Link copied"));};
  return <>
-  <Head title="News" desc="Angola business and economic news from the GDELT index, with duplicate detection and source reliability. Headlines are real; summaries are AI and marked as such.">
+  <Head title="News" desc="Angola business news. Real headlines; AI summaries are marked.">
    <button className="iq-btn" disabled={!!busy} onClick={()=>run("","refresh",async()=>{const r=await api<{result:Record<string,string>}>("/api/iq/refresh","POST",{job:"news"});await reload();setToast(`News: ${r.result.news}`);},"")}>{busy==="refresh"?"Refreshing…":"Refresh"}</button>
   </Head>
   <div className="iq-filters">

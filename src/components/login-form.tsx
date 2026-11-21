@@ -1,12 +1,17 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import "./lock.css";
+
+/* Q OS sign-in: the Command centre's orbit around the Q core. Sign-in logic is unchanged (POST /api/auth/login). */
+const greetFor = (h: number) => (h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
 
 export default function LoginForm({ initialError = "" }: { initialError?: string }) {
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState(initialError);
   const [busy, setBusy] = useState(false);
+  const [greet, setGreet] = useState("Welcome back");
+  useEffect(() => setGreet(greetFor(new Date().getHours())), []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,12 +27,12 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(typeof payload.error === "string" ? payload.error : "Access denied. Check your passkey and try again.");
+        setError(typeof payload.error === "string" ? payload.error : "Wrong passkey.");
         return;
       }
       window.location.assign("/dashboard");
     } catch {
-      setError("The authentication service is unavailable. Please try again.");
+      setError("Can't reach Q. Try again.");
     } finally {
       setBusy(false);
     }
@@ -35,23 +40,26 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
 
   return (
     <main className="lk">
-      <div className="lk-glow" aria-hidden="true"/>
-      <section className="lk-card">
-        <div className="lk-orb"><img src="/os/q-emblem.webp" alt="" width={88} height={88}/></div>
-        <p className="lk-kicker"><i/>Q OS · Private command centre</p>
-        <h1>Welcome back, Nassim.</h1>
-        <p className="lk-sub">Enter your passkey to open the command centre.</p>
+      <section className="lk-core">
+        <div className="lk-emblem" aria-hidden="true">
+          <div className="lk-sky"><i className="lk-orbit o1"><b/></i><i className="lk-orbit o2"><b/></i><i className="lk-orbit o3"><b/></i></div>
+          <svg viewBox="0 0 120 120" className="lk-ring">
+            <defs><linearGradient id="lk-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F12D43"/><stop offset="1" stopColor="#EADFCB"/></linearGradient></defs>
+            <circle cx="60" cy="60" r="56" className="trk"/>
+            <circle cx="60" cy="60" r="56" className="arc"/>
+          </svg>
+          <img src="/os/q-emblem.webp" alt="" width={84} height={84}/>
+        </div>
+        <h1><span suppressHydrationWarning>{greet}</span>, <em>Nassim.</em></h1>
         <form className="lk-form" method="post" action="/api/auth/login" onSubmit={submit}>
           <label className="lk-field"><span className="sr">Passkey</span>
-            <svg className="lk-lock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
             <input type="password" name="passkey" autoComplete="current-password" required maxLength={256} autoFocus placeholder="Passkey" value={passkey} onChange={event => setPasskey(event.target.value)} />
-            <button type="submit" disabled={busy || !passkey} aria-label="Enter">{busy ? <i className="lk-spin"/> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}</button>
+            <button type="submit" disabled={busy || !passkey} aria-label="Enter Q OS">{busy ? <i className="lk-spin"/> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}</button>
           </label>
           {error && <p className="lk-error" role="alert" aria-live="polite">{error}</p>}
         </form>
-        <ul className="lk-stats" aria-hidden="true"><li><b>Portfolio</b><span>Live status</span></li><li><b>Q</b><span>Strategic AI</span></li><li><b>Alerts</b><span>Builds · gold · uptime</span></li></ul>
       </section>
-      <footer className="lk-foot">The Restless Architect · Think beyond · Build with purpose</footer>
+      <footer className="lk-foot">Q OS</footer>
     </main>
   );
 }
