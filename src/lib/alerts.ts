@@ -2,6 +2,7 @@ import webpush from "web-push";
 import {getDb} from "@/lib/db";
 import {ensureSchema} from "@/lib/schema";
 import {listProjects,pickProductionUrl,vercelGet} from "@/lib/vercel";
+import {collectAppStats} from "@/lib/app-stats";
 import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
 import {externalApps} from "@/lib/external-apps";
@@ -203,7 +204,7 @@ export async function runChecks(force=false){
   if(!force&&Date.now()-last<10*60_000)return {skipped:true,events:[] as string[]};
   await kvSet("last_check",Date.now());
   const started=Date.now(),out:string[]=[],errors:string[]=[];
-  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["build-resolve",()=>resolveBuildAlerts(out)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
+  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["build-resolve",()=>resolveBuildAlerts(out)],["app-stats",()=>collectAppStats(out).then(()=>undefined)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
     try{await fn();}catch(e){
       const msg=e instanceof Error?e.message:"failed";
       errors.push(`${name}: ${msg}`);

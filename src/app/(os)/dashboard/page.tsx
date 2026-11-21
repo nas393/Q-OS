@@ -1,6 +1,8 @@
 import { getDb } from "@/lib/db";
 import { requireOwner } from "@/lib/auth";
 import { loadMetrics } from "@/lib/metrics";
+import { collectAppStats, loadAppStats } from "@/lib/app-stats";
+import { after } from "next/server";
 import WebOS from "@/components/web-os";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +15,15 @@ export default async function DashboardPage() {
   await requireOwner();
   let db: ReturnType<typeof getDb> | null = null;
   try { db = getDb(); } catch { db = null; }
-  const [conversations, activity, metrics] = await Promise.all([
+  const [conversations, activity, metrics, appStats] = await Promise.all([
     db ? count(db.query("SELECT count(*)::int AS count FROM conversations WHERE user_id=$1", ["owner"])) : Promise.resolve(null),
     db ? count(db.query("SELECT count(*)::int AS count FROM activity_logs WHERE created_at>now()-interval '24 hours'")) : Promise.resolve(null),
-    loadMetrics().catch(() => ({ metrics: {}, error: "Market data unavailable" }))
+    loadMetrics().catch(() => ({ metrics: {}, error: "Market data unavailable" })),
+    loadAppStats().catch(() => null)
   ]);
+  // Numbers older than an hour are refreshed after the page is sent (never delays it).
+  if (!appStats || appStats.stale) after(() => collectAppStats().catch(() => undefined));
   const dbDown = conversations === null && activity === null;
-  return <WebOS conversationCount={conversations ?? 0} activityCount={activity ?? 0} metrics={metrics.metrics}
+  return <WebOS conversationCount={conversations ?? 0} activityCount={activity ?? 0} metrics={metrics.metrics} appStats={appStats?.stats ?? {}}
     metricsError={dbDown ? "Database offline: showing live project data only." : metrics.error} />;
 }

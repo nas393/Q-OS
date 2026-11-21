@@ -2,6 +2,8 @@ import { listTasks } from "@/lib/tasks";
 import { recentAlerts } from "@/lib/alerts";
 import { loadMetrics } from "@/lib/metrics";
 import { PORTFOLIO_PROJECTS } from "@/lib/portfolio/registry";
+import { loadAppStats } from "@/lib/app-stats";
+import { statLine } from "@/lib/app-stats-parse";
 import { listIntegrationHealth } from "@/lib/integrations/registry";
 import type { QContextMetric, QServerContext } from "@/lib/core/contracts";
 
@@ -34,11 +36,15 @@ function metricRecords(input: Record<string, unknown>): QContextMetric[] {
 
 /* Server-recorded context. Each subsystem fails independently so chat remains available during partial outages. */
 export async function loadServerContext(ownerId = "owner"): Promise<QServerContext> {
-  const [taskResult, alertResult, metricResult] = await Promise.allSettled([
+  const [taskResult, alertResult, metricResult, statsResult] = await Promise.allSettled([
     listTasks(),
     recentAlerts(10),
-    loadMetrics()
+    loadMetrics(),
+    loadAppStats()
   ]);
+  const appNumbers = statsResult.status === "fulfilled"
+    ? Object.fromEntries(Object.entries(statsResult.value.stats).map(([id, v]) => [id, { line: statLine(v.stats), updatedAt: v.updatedAt }]))
+    : undefined;
 
   const tasksAvailable = taskResult.status === "fulfilled";
   const alertsAvailable = alertResult.status === "fulfilled";
@@ -74,6 +80,7 @@ export async function loadServerContext(ownerId = "owner"): Promise<QServerConte
     tasks,
     alerts,
     metrics,
+    appNumbers,
     integrations: listIntegrationHealth().map(integration => ({
       id: integration.id, provider: integration.provider, purpose: integration.purpose,
       capabilities: integration.capabilities, status: integration.status
@@ -96,6 +103,7 @@ export function formatServerContext(context: QServerContext): string {
     `Open tasks: ${JSON.stringify(context.tasks)}`,
     `Unacknowledged alerts: ${JSON.stringify(context.alerts)}`,
     `Stored metrics: ${JSON.stringify(context.metrics)}`,
+    `App numbers (read from each app's own data or Vercel Analytics; collection time included): ${JSON.stringify(context.appNumbers ?? {})}`,
     `Integration configuration (configured does not mean connectivity verified): ${JSON.stringify(context.integrations)}`
   ].join("\n").slice(0, 7600);
 }

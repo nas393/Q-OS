@@ -8,6 +8,7 @@ import {I} from "./shell/icons";
 import {AppMark} from "./shell/app-mark";
 import {askConfirm,usePageCommands,useShell} from "./shell/app-shell";
 import type { MetricsMap } from "@/lib/metrics";
+import { statLine, type AppStat } from "@/lib/app-stats-parse";
 import { buildQContext } from "@/lib/q-context";
 import QMd from "@/components/q-md";
 
@@ -39,7 +40,7 @@ const clean=(n:string)=>n.replace(" / Q","");
 const spark=(s:number[],w:number,h:number)=>{const lo=Math.min(...s),hi=Math.max(...s),r=hi-lo||1;return s.map((v,i)=>`${(i/Math.max(1,s.length-1)*w).toFixed(1)},${(h-2-(v-lo)/r*(h-4)).toFixed(1)}`).join(" ");};
 const today=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Luanda"});
 
-export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null}){
+export default function WebOS({conversationCount=0,activityCount=0,metrics={},metricsError=null,appStats={}}:{conversationCount?:number;activityCount?:number;metrics?:MetricsMap;metricsError?:string|null;appStats?:Record<string,{stats:AppStat[];updatedAt:string}>}){
  const [clock,setClock]=useState<Date|null>(null),[data,setData]=useState<Telemetry|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const [apps,setApps]=useState<AppLink[]|null>(null),[tasks,setTasks]=useState<Task[]|null>(null),[taskErr,setTaskErr]=useState(""),[newTask,setNewTask]=useState(""),[newDue,setNewDue]=useState(""),[newPri,setNewPri]=useState<"high"|"normal"|"low">("normal"),[newRecur,setNewRecur]=useState(""),[doneWeek,setDoneWeek]=useState<number|null>(null),[editing,setEditing]=useState<{id:string;title:string;due:string}|null>(null);
  const [trend,setTrend]=useState<number|null>(null);
@@ -172,13 +173,14 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
    const state:ONode["state"]=st==="READY"?"ok":st==="ERROR"?"crit":st==="BUILDING"||st==="QUEUED"||st==="INITIALIZING"?"dep":"idle";
    const name=p.name==="NASSIM AI HQ / Q"?"NASSIM AI HQ":clean(p.name);
    return {id:p.id,name,area:p.area,state,url:p.url??app?.url??null,icon:app?.icon??null,keys:[p.id,p.vercel,app?.name],pages:app?.pages??[],
-    updated:p.lastCommit?.date??null,deployAt:p.deployment?.created??null,inspector:p.deployment?.inspectorUrl??null,issues:p.openIssues,commit:p.lastCommit?.message??null,commitUrl:p.lastCommit?.url??null,repo:p.repo};
+    updated:p.lastCommit?.date??null,deployAt:p.deployment?.created??null,inspector:p.deployment?.inspectorUrl??null,issues:p.openIssues,commit:p.lastCommit?.message??null,commitUrl:p.lastCommit?.url??null,repo:p.repo,
+    stats:(appStats[p.id]??(p.vercel?appStats[p.vercel]:undefined))?.stats??[]};
   });
   const extra=(apps??[]).filter(a=>a.url&&!projects.some(p=>p.vercel===a.id||(!!p.url&&p.url===a.url))).map(a=>({id:a.id,
    name:a.name.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase()),area:"App",state:(a.state==="ERROR"?"crit":a.state==="READY"||a.state==="EXTERNAL"?"ok":"idle") as ONode["state"],
-   url:a.url,icon:a.icon??null,keys:[a.id,a.name],pages:a.pages??[],updated:null,deployAt:null,inspector:null,issues:null,commit:null,commitUrl:null,repo:null}));
+   url:a.url,icon:a.icon??null,keys:[a.id,a.name],pages:a.pages??[],updated:null,deployAt:null,inspector:null,issues:null,commit:null,commitUrl:null,repo:null,stats:appStats[a.id]?.stats??[]}));
   return [...fromRegistry,...extra];
- },[projects,apps]);
+ },[projects,apps,appStats]);
  const liveCount=nodes.filter(n=>n.state==="ok").length;
  const focus=focusId?nodes.find(n=>n.id===focusId)??null:null;
 
@@ -360,7 +362,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
  const drawerTitle:Record<Panel,[string,string]>={apps:["Application status",`${liveCount} of ${nodes.length} operational`],priorities:["Priorities",`${open.length} open${overdue?` · ${overdue} overdue`:""}${doneWeek!==null?` · ${doneWeek} done this week`:""}`]};
  const drawerBody=(p:Panel)=>{
   if(p==="apps")return <div className="applist">{nodes.map(n=><div key={n.id} className={`ap${flashId==="app-"+n.id?" flash":""}`}>
-    <div className="ap-h"><Mark n={n} size={40}/><div className="tx"><b>{n.name}</b><small>{n.area} · {statusText(n)}{n.updated?` · ${ago(n.updated)}`:""}</small></div>
+    <div className="ap-h"><Mark n={n} size={40}/><div className="tx"><b>{n.name}</b><small>{n.area} · {statusText(n)}{n.updated?` · ${ago(n.updated)}`:""}</small>{n.stats.length>0&&<small className="ap-stats num">{statLine(n.stats)}</small>}</div>
      {n.url&&<a className="btn sm press" href={n.url} target="_blank" rel="noreferrer">Open<I n="ext"/></a>}</div>
     {(n.pages.length>0||(n.state==="crit"&&n.inspector))&&<div className="pages">{n.state==="crit"&&n.inspector&&<a className="page press" style={{color:"var(--crit-ink)"}} href={n.inspector.startsWith("http")?n.inspector:`https://${n.inspector}`} target="_blank" rel="noreferrer">Build log<I n="ext"/></a>}{n.pages.map(pg=><a key={pg.url} className="page press" href={pg.url} target="_blank" rel="noreferrer">{pg.label}<I n="ext"/></a>)}</div>}
    </div>)}{!nodes.length&&<p className="feed-empty">{loading?"Loading applications…":error||"No applications found."}</p>}</div>;
@@ -416,6 +418,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
      <dl className="fc-grid"><div><dt>Status</dt><dd>{focus.state==="crit"?sevTag("crit","Failed"):focus.state==="ok"?sevTag("ok","Live"):sevTag("watch",statusText(focus))}</dd></div>
       <div><dt>{focus.state==="crit"?"Failed":"Last deploy"}</dt><dd className="num">{focus.deployAt?ago(focus.deployAt):focus.updated?ago(focus.updated):"—"}</dd></div>
       <div><dt>Open issues</dt><dd className="num">{focus.issues??"—"}</dd></div><div><dt>Pages</dt><dd className="num">{focus.pages.length}</dd></div></dl>
+     {focus.stats.length>0&&<div className="fc-stats" aria-label={`${focus.name} numbers`}>{focus.stats.map(st=><div key={st.label}><b className="num">{st.value}</b><span>{st.label}</span></div>)}</div>}
      {focus.commit&&<p className="fc-msg">Latest: {focus.commitUrl?<a href={focus.commitUrl} target="_blank" rel="noreferrer" style={{textDecoration:"underline"}}>{focus.commit}</a>:focus.commit}</p>}
      {focus.pages.length>0&&<div className="pages">{focus.pages.map(pg=><a key={pg.url} className="page press" href={pg.url} target="_blank" rel="noreferrer">{pg.label}<I n="ext"/></a>)}</div>}
      <div className="fc-acts">{focus.state==="crit"&&focus.inspector?<a className="btn danger press" href={focus.inspector.startsWith("http")?focus.inspector:`https://${focus.inspector}`} target="_blank" rel="noreferrer">Open build log<I n="arrow"/></a>
@@ -543,7 +546,7 @@ export default function WebOS({conversationCount=0,activityCount=0,metrics={},me
 
 /* ===================== Q Live helpers ===================== */
 type Panel="apps"|"priorities";
-type ONode={id:string;name:string;area:string;state:"ok"|"crit"|"dep"|"idle";url:string|null;icon:string|null;keys:(string|null|undefined)[];pages:{label:string;url:string}[];updated:string|null;deployAt:number|null;inspector:string|null;issues:number|null;commit:string|null;commitUrl:string|null;repo:string|null};
+type ONode={id:string;name:string;area:string;state:"ok"|"crit"|"dep"|"idle";url:string|null;icon:string|null;keys:(string|null|undefined)[];pages:{label:string;url:string}[];updated:string|null;deployAt:number|null;inspector:string|null;issues:number|null;commit:string|null;commitUrl:string|null;repo:string|null;stats:AppStat[]};
 type Sig={id:string;type:SigType;sev:"crit"|"watch"|"info"|"ok";region?:NewsStream;src:string;title:string;sub?:string;t:number|null;href?:string;action?:string;when?:string;news?:NewsItem;impact?:string|null;cat?:string;gold?:boolean};
 
 

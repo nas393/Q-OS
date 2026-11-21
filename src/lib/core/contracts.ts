@@ -20,6 +20,8 @@ export type QContextMetric = {
 export type QServerContext = {
   ownerId: string;
   generatedAt: string;
+  /** Numbers collected from each app (app id → "63 courses · 4 certificates", with collection time). */
+  appNumbers?: Record<string, { line: string; updatedAt: string }>;
   portfolio: Array<{
     id: string;
     name: string;
