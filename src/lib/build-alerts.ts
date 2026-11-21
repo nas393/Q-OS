@@ -16,6 +16,7 @@ export type Deployment={
   name:string;
   projectId?:string;
   state?:string;
+  readyState?:string;  // single-deployment endpoint (/v13) reports the state here
   target?:string|null;
   createdAt?:number;
   created?:number;
@@ -117,4 +118,22 @@ export function alertBody(a:BuildAlert,logLine:string|null){
 }
 export function digestLine(a:BuildAlert,logLine:string|null){
   return `❌ ${a.project}@${a.branch}${a.sha?` (${a.sha})`:""}${logLine?` · ${logLine}`:""}`;
+}
+
+/* ---- Resolving old alerts: a logged build failure is closed once a newer build on the same branch is READY. ---- */
+
+/* Inspector URL (https://vercel.com/<team>/<project>/<id>) -> deployment id "dpl_<id>", or null. */
+export function deploymentIdFromInspector(url:string):string|null{
+  const m=/^https:\/\/vercel\.com\/[\w.-]+\/[\w.-]+\/([A-Za-z0-9]{16,40})\/?$/.exec(url.trim());
+  return m?`dpl_${m[1]}`:null;
+}
+
+/* True when a READY deployment newer than the failed one exists on the same project + branch
+   (for a production failure: a newer READY production deployment). */
+export function isSuperseded(failed:Deployment,candidates:Deployment[]):boolean{
+  // The caller scopes the query by project; ids are compared only when both are present (list items can omit
+  // projectId, and the project name changed when q-jarvis became q-os).
+  const prod=failed.target==="production",at=ts(failed);
+  const sameProject=(d:Deployment)=>!d.projectId||!failed.projectId||d.projectId===failed.projectId;
+  return candidates.some(d=>(d.state??d.readyState)==="READY"&&ts(d)>at&&sameProject(d)&&(prod?d.target==="production":branchOf(d)===branchOf(failed)));
 }

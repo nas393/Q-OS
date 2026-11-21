@@ -6,7 +6,7 @@ import {loadMetrics} from "@/lib/metrics";
 import {listTasks} from "@/lib/tasks";
 import {externalApps} from "@/lib/external-apps";
 import {runIqJobs} from "@/lib/iq/engine";
-import {alertBody,alertTitle,digestLine,evaluateBuilds,firstBuildError,type BuildEvent,type Deployment} from "@/lib/build-alerts";
+import {alertBody,alertTitle,branchKey,deploymentIdFromInspector,digestLine,evaluateBuilds,firstBuildError,isSuperseded,type BuildEvent,type Deployment} from "@/lib/build-alerts";
 
 /*
  * NASSIM OS alerts. Checks run at most every 10 minutes: GitHub Actions every 15 min + Vercel Cron 07:00 UTC (/api/cron/check),
@@ -134,6 +134,28 @@ async function checkBuilds(out:string[]){
   await kvSet(DIGEST_KEY,digest);
 }
 
+/* Close build-failure alerts that a later build fixed. Alerts are kept as history but acknowledged, so the
+   Command centre, the brief and Q stop treating them as open (e.g. the 16 Nov q-jarvis lint failure, fixed
+   a minute later but still unacknowledged). At most 25 open alerts per run, two Vercel reads each. */
+async function resolveBuildAlerts(out:string[]){
+  const {rows}=await db().query("SELECT id,url FROM q_alerts WHERE acknowledged_at IS NULL AND url LIKE 'https://vercel.com/%' ORDER BY id DESC LIMIT 25");
+  for(const r of rows){
+    const id=deploymentIdFromInspector(String(r.url));if(!id)continue;
+    let failed:Deployment;
+    try{failed=await vercelGet<Deployment>(`/v13/deployments/${encodeURIComponent(id)}`);}catch{continue;} // deleted or not ours
+    if((failed.state??failed.readyState)!=="ERROR")continue; // only build failures
+    const at=failed.createdAt??failed.created??0;
+    const params:Record<string,string>={limit:"10",since:String(at+1)};
+    if(failed.projectId)params.projectId=failed.projectId;
+    if(failed.target==="production")params.target="production";
+    else if(failed.meta?.githubCommitRef)params.branch=failed.meta.githubCommitRef;
+    const {deployments=[]}=await vercelGet<{deployments?:Deployment[]}>("/v6/deployments",params);
+    if(!isSuperseded(failed,deployments))continue;
+    await db().query("UPDATE q_alerts SET acknowledged_at=now() WHERE id=$1 AND acknowledged_at IS NULL",[r.id]);
+    out.push(`build-resolved:${branchKey(failed)}`);
+  }
+}
+
 async function checkGold(out:string[]){
   const gold=(await loadMetrics()).metrics.xauusd;
   if(!gold||Date.now()-Date.parse(gold.updatedAt)>3*3600_000)return; // stale price: never alert on old data
@@ -181,7 +203,7 @@ export async function runChecks(force=false){
   if(!force&&Date.now()-last<10*60_000)return {skipped:true,events:[] as string[]};
   await kvSet("last_check",Date.now());
   const started=Date.now(),out:string[]=[],errors:string[]=[];
-  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
+  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["build-resolve",()=>resolveBuildAlerts(out)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
     try{await fn();}catch(e){
       const msg=e instanceof Error?e.message:"failed";
       errors.push(`${name}: ${msg}`);
