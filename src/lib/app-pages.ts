@@ -9,6 +9,6 @@ export const appPages:Record<string,Array<{label:string;path:string}>>={
   "ala-hawa":[{label:"TV Remote",path:"/remote.html"},{label:"Classic",path:"/classic/index.html"},{label:"Phone",path:"/classic/phone.html"}],
   "lumeris":[{label:"Guide",path:"/guide/"},{label:"Welcome",path:"/welcome/"},{label:"Posts",path:"/posts/"},{label:"Studio",path:"/studio"}],
   "radio-cedars":[{label:"Admin",path:"/admin.html"}],
-  "novae":[{label:"Book a call",path:"/book.html"}],
+  "novae":[{label:"Book a call",path:"/book"},{label:"Studio",path:"/studio"}],
   "counter-trader":[{label:"Overview",path:"/#overview"},{label:"Track record",path:"/#record"},{label:"News",path:"/#news"},{label:"Settings",path:"/#settings"}]
 };
