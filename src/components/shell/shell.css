@@ -13,7 +13,7 @@
 .os .rail{position:fixed;top:0;left:0;bottom:0;z-index:50;width:var(--rail-w);display:flex;flex-direction:column;gap:2px;padding:10px 10px 12px;
   background:var(--surface);border-right:1px solid var(--line-2);transition:width var(--dur-3) var(--ease);overflow:hidden}
 .os .rail-brand{display:flex;align-items:center;gap:12px;height:36px;margin:0 0 14px;padding:0 3px;font-weight:700;font-size:var(--fs-md);letter-spacing:.02em;white-space:nowrap}
-.os .rail-brand img{width:30px;height:30px;flex:none}
+.os .rail-brand :is(img,.qmark){width:30px;height:30px;flex:none}
 .os .rail-list{display:grid;gap:2px}
 .os .rail-i{position:relative;display:flex;align-items:center;gap:12px;width:100%;height:42px;padding:0 12px;border-radius:10px;color:var(--text-2);font-size:var(--fs-sm);font-weight:500;white-space:nowrap;text-align:left}
 .os .rail-i svg.i{width:19px;height:19px}
@@ -112,7 +112,7 @@
   .os .topbar{left:0;gap:var(--s-2);padding:env(safe-area-inset-top) 8px 0 12px;height:calc(var(--topbar) + env(safe-area-inset-top))}
   .os .main{padding-top:calc(var(--topbar) + env(safe-area-inset-top))}
   .os .tb-brand{display:block;flex:none}
-  .os .tb-brand img{display:block;width:30px;height:30px}
+  .os .tb-brand :is(img,.qmark){display:block;width:30px;height:30px}
   .os .crumbs .cr-root,.os .crumbs li:not(:last-child){display:none}
   .os .crumbs li+li::before{display:none}
   .os .crumbs [aria-current="page"]{font-size:var(--fs-lg);padding:0 2px}

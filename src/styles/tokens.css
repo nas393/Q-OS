@@ -69,3 +69,9 @@
 .os[data-cards="glass"]{--card-bg:var(--glass);--card-line:var(--line-2);--card-blur:blur(20px) saturate(140%)}
 .os[data-cards="outline"]{--card-bg:transparent;--card-line:var(--line-3);--card-blur:none}
 .os[data-density="compact"]{--pad:14px;--gap:10px;--row:40px}
+
+/* Q mark (src/components/shell/q-mark.tsx): red ring and tail always; the Q is silver with a soft red glow on the
+   dark themes and graphite without glow on Light Executive, so it stays crisp on light surfaces. */
+.os{--qm-ring-a:#FF4D5E;--qm-ring-b:#C8102E;--qm-glyph-a:#FFFFFF;--qm-glyph-b:#AEB3BF;--qm-glow:rgba(241,45,67,.42)}
+.os[data-theme="light"]{--qm-ring-a:#E8283F;--qm-ring-b:#A50E24;--qm-glyph-a:#3A3F4C;--qm-glyph-b:#12141B;--qm-glow:transparent}
+.qmark{display:block;flex:none;overflow:visible;filter:drop-shadow(0 0 .16em var(--qm-glow,rgba(241,45,67,.42)))}

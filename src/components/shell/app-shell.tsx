@@ -14,6 +14,7 @@ import {AppMark} from "./app-mark";
 import {I} from "./icons";
 import {IQ_PAGES,SECTIONS,crumbsFor,sectionFor} from "./nav";
 import "./shell.css";
+import {QMark} from "./q-mark";
 
 export type ShellApp={id:string;name:string;area:string;vercel:string|null;url:string|null};
 type LiveApp={id:string;name:string;url:string|null;state:string|null;icon?:string|null};
@@ -124,7 +125,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
 
       {/* ---------- Rail (desktop) ---------- */}
       <nav className="rail" aria-label="Q OS sections">
-        <Link href="/dashboard" className="rail-brand" aria-label="Q OS, Command centre"><img src="/os/q-emblem.webp" alt="" width={30} height={30}/><span className="lbl">Q OS</span></Link>
+        <Link href="/dashboard" className="rail-brand" aria-label="Q OS, Command centre"><QMark size={30}/><span className="lbl">Q OS</span></Link>
         <ul className="rail-list">{SECTIONS.map(s=>{const on=s.id===section.id;return <li key={s.id}>
           <Link href={s.href} className="rail-i" aria-current={on?"page":undefined} data-tip={s.label}>
             <I n={s.icon}/><span className="lbl">{s.label}</span>
@@ -140,7 +141,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
 
       {/* ---------- Top bar ---------- */}
       <header className="topbar">
-        <Link href="/dashboard" className="tb-brand" aria-label="Q OS, Command centre"><img src="/os/q-emblem.webp" alt="" width={28} height={28}/></Link>
+        <Link href="/dashboard" className="tb-brand" aria-label="Q OS, Command centre"><QMark size={28}/></Link>
         <nav className="crumbs" aria-label="Breadcrumb"><ol>
           <li className="cr-root"><Link href="/dashboard">Q OS</Link></li>
           {crumbs.map((c,i)=><li key={c.href}>{i===crumbs.length-1?<span aria-current="page"><I n={i===0?section.icon:"chev"} c={i===0?"cr-ic":"cr-sep"}/>{c.label}</span>:<Link href={c.href}><I n={section.icon} c="cr-ic"/>{c.label}</Link>}</li>)}
@@ -169,7 +170,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
       <nav className="tabbar" aria-label="Q OS sections">
         <Link href="/dashboard" aria-current={section.id==="dashboard"?"page":undefined}><I n="orbit"/>Today</Link>
         <Link href="/iq" aria-current={section.id==="iq"?"page":undefined}><I n="compass"/>AngolaIQ</Link>
-        <Link href="/chat" className="orb" aria-current={section.id==="chat"?"page":undefined} aria-label="Ask Q"><span className="ob"><img src="/os/q-emblem.webp" alt="" width={34} height={34}/></span><span>Ask Q</span></Link>
+        <Link href="/chat" className="orb" aria-current={section.id==="chat"?"page":undefined} aria-label="Ask Q"><span className="ob"><QMark size={34}/></span><span>Ask Q</span></Link>
         <Link href="/alerts" aria-current={section.id==="alerts"?"page":undefined}><I n="bell"/>Alerts{alerts.n>0&&<b className={`badge${alerts.red?"":" watch"}`}>{alerts.n}</b>}</Link>
         <button onClick={()=>openPanel("more")} aria-current={panel==="more"||section.id==="brief"?"page":undefined} aria-haspopup="dialog"><I n="more"/>More</button>
       </nav>
