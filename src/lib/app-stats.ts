@@ -38,7 +38,7 @@ async function dalil():Promise<AppStat[]>{
 
 async function visits():Promise<Record<string,AppStat>>{
   const byVercel=new Map<string,string>(PORTFOLIO_PROJECTS.filter(p=>p.vercel).map(p=>[p.vercel as string,p.id]));
-  const since=new Date(Date.now()-7*864e5).toISOString(),until=new Date().toISOString();
+  const since=new Date(Date.now()-7*864e5).toISOString(),until=new Date(Date.now()+864e5).toISOString();
   const out:Record<string,AppStat>={};
   const projects=await listProjects().catch(()=>[]);
   await Promise.all(projects.map(async pr=>{
