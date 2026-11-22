@@ -96,3 +96,27 @@
   .of-standup{grid-template-columns:1fr}.of-st-q{display:none}
 }
 @media (prefers-reduced-motion:reduce){.of-desk,.of-desk:hover{transition:none;transform:none}.of-desk[data-light=down] .of-screen{animation:none}}
+
+/* ---------- inbox (phase 2) ---------- */
+.of-inbox{margin:0 0 var(--s-6);padding:var(--s-5);border:1px solid var(--card-line);border-radius:var(--r-lg);background:var(--card-bg)}
+.of-inbox h2{margin:0 0 var(--s-3);font:600 var(--fs-lg)/var(--lh-lg) var(--sans);display:flex;align-items:center;gap:8px}
+.of-count{min-width:26px;height:26px;padding:0 8px;border-radius:999px;display:inline-grid;place-items:center;background:var(--surface-2);font:600 var(--fs-sm)/1 var(--sans)}
+.of-inbox ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.of-inbox li,.of-needs li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:var(--r-md);background:var(--surface-2);border-inline-start:3px solid var(--l-watch)}
+.of-inbox li[data-light=down],.of-needs li[data-light=down]{border-inline-start-color:var(--l-down)}
+.of-needs li[data-light=ok]{border-inline-start-color:var(--line-3)}
+.of-kind{font:600 var(--fs-xs)/1.2 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);white-space:nowrap}
+.of-what{min-width:0;overflow-wrap:anywhere}
+.of-needs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.of-needs li{grid-template-columns:1fr auto}
+.of-msg{margin:var(--s-2) 0;color:var(--ok-ink);font-size:var(--fs-sm)}
+.of-empty,.of-note{margin:0;color:var(--text-2);font-size:var(--fs-sm)}
+.of-note{margin-top:var(--s-3)}
+.of-tray{position:absolute;bottom:-8px;inset-inline-start:-8px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;
+  background:var(--accent-solid);color:var(--on-accent);font:700 12px/1 var(--sans);font-style:normal;box-shadow:0 0 0 2px var(--surface)}
+.of-give{display:grid;gap:8px;padding:var(--s-3);border-radius:var(--r-md);background:var(--surface-2)}
+.of-give label{font-weight:600;font-size:var(--fs-sm)}
+.of-give input{min-height:44px;padding:0 12px;border-radius:var(--r-sm);border:1px solid var(--control-line);background:var(--surface);color:var(--text);font:inherit}
+.of-give input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.of-give div{display:flex;gap:8px;flex-wrap:wrap}.of-give div input{flex:1;min-width:140px}
+@media (max-width:820px){.of-inbox li{grid-template-columns:1fr auto}.of-kind{grid-column:1/-1}}
