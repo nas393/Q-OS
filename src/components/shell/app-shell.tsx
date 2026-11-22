@@ -172,7 +172,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
         <Link href="/iq" aria-current={section.id==="iq"?"page":undefined}><I n="compass"/>AngolaIQ</Link>
         <Link href="/chat" className="orb" aria-current={section.id==="chat"?"page":undefined} aria-label="Ask Q"><span className="ob"><QMark size={34}/></span><span>Ask Q</span></Link>
         <Link href="/alerts" aria-current={section.id==="alerts"?"page":undefined}><I n="bell"/>Alerts{alerts.n>0&&<b className={`badge${alerts.red?"":" watch"}`}>{alerts.n}</b>}</Link>
-        <button onClick={()=>openPanel("more")} aria-current={panel==="more"||section.id==="brief"?"page":undefined} aria-haspopup="dialog"><I n="more"/>More</button>
+        <button onClick={()=>openPanel("more")} aria-current={panel==="more"||section.id==="brief"||section.id==="office"?"page":undefined} aria-haspopup="dialog"><I n="more"/>More</button>
       </nav>
 
       {/* ---------- Panels ---------- */}
@@ -189,6 +189,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
           {a.url?<button className="btn sm" onClick={()=>openApp(a.url)} aria-label={`Open ${a.name} in a new tab`}>Open<I n="ext"/></button>:<span className="muted" style={{fontSize:12}}>{liveApps?"No address":"Loading…"}</span>}
         </li>)}</ul>}
         {panel==="more"&&<div className="navlist">
+          <Link href="/office" onClick={closePanel}><I n="home"/>Office<I n="chev" c="chev"/></Link>
           <Link href="/brief" onClick={closePanel}><I n="sunrise"/>Morning brief<I n="chev" c="chev"/></Link>
           <Link href="/iq/q-news" onClick={closePanel}><I n="globe"/>Global Radar<I n="chev" c="chev"/></Link>
           <button onClick={()=>openPanel("apps")}><I n="grid"/>Applications<I n="chev" c="chev"/></button>

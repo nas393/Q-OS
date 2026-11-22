@@ -4,6 +4,7 @@ export type Section={id:string;href:string;label:string;short:string;icon:string
 
 export const SECTIONS:Section[]=[
   {id:"dashboard",href:"/dashboard",label:"Command centre",short:"Today",icon:"orbit",desc:"Ecosystem, briefing, priorities and signals"},
+  {id:"office",href:"/office",label:"Office",short:"Office",icon:"home",desc:"Q and the team: every app at its desk"},
   {id:"chat",href:"/chat",label:"Q Assistant",short:"Q",icon:"spark",desc:"Conversations with Q on your live data"},
   {id:"iq",href:"/iq",label:"AngolaIQ",short:"AngolaIQ",icon:"compass",desc:"Angola market intelligence and tools"},
   {id:"brief",href:"/brief",label:"Morning brief",short:"Brief",icon:"sunrise",desc:"What needs you today, in one page"},
