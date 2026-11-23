@@ -121,7 +121,8 @@ export default function TwinWorkspace() {
     el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 168) + "px";
   }, [input]);
 
-  const current = convs.find(c => c.id === convId);\n  const roleLabel = ROLES.find(r => r.value === role)?.label ?? "Executive Partner";
+  const current = convs.find(c => c.id === convId);
+  const roleLabel = ROLES.find(r => r.value === role)?.label ?? "Executive Partner";
   const statusLabel = status === "online" ? "Private workspace online" : status === "offline" ? "Storage or AI unavailable" : "Connecting";
   return <div className="qa twin">
     <aside className={"qa-list" + (historyOpen ? " open" : "")} aria-label="Executive employee conversations">
