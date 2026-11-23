@@ -20,7 +20,19 @@ Every simulated event is labelled as simulated. Real Q OS tasks, deployments, ex
 - Character selection opens a live profile: role, goals, current activity, workload, energy, morale, skills, relationships, recent decisions and activity history.
 - Time controls: pause, resume, speed presets and a clear world clock. No rewind until event-sourcing and deterministic replay are proven.
 
-## Simulation domain
+## Organisation model
+
+The initial playable organisation is seeded with **6 AI leadership agents and 20 fictional workforce employees** across Finance, Commercial, Operations, Strategy and the Executive Office. Each fictional employee has a named identity, role, skills, personality profile, schedule, starting position and explicit reporting line. The workforce reports to the relevant executive seat; the CEO reports to the owner. The roster is fictional simulation data and does not represent real Q OS staff.
+
+The workforce is deliberately separate from Q OS app identities and live project owners. The initial roster is a vertical-slice cast and can expand by department after performance and simulation load are measured.
+
+### Leadership layer
+- CEO: company direction and cross-functional decisions.
+- CFO: finance, planning, controls and resource allocation.
+- Commercial Director: revenue, sales, customers and marketing.
+- COO: operations, delivery, capacity and resilience.
+- CSO: strategy, intelligence and transformation.
+- Chief of Staff: priorities, executive cadence and follow-through.
 
 ### Employee agent
 Each agent owns:
@@ -85,7 +97,7 @@ Persist last simulated timestamp, simulation speed, pause state and world versio
 
 ### Phase 1 — Playable vertical slice
 - Add production-grade 3D engine and cinematic asset pipeline.
-- Build one complete floor with 3–5 animated employees, walkable rooms, desks, meeting room and break area.
+- Build one complete floor with the seeded executive team and a representative subset of the 20-person fictional workforce; include walkable rooms, desks, meeting room and break area.
 - Add CEO/free camera switch, select/follow employee and inspect live simulated state.
 - Local deterministic simulation only; no database writes yet.
 - Acceptance: real character locomotion and animation, collisions/pathfinding, smooth 60fps target on desktop and graceful mobile fallback.
@@ -97,6 +109,7 @@ Persist last simulated timestamp, simulation speed, pause state and world versio
 - Acceptance: close browser, wait, reopen; world time and agent activity progress without duplicate or lost events.
 
 ### Phase 3 — Autonomous workforce
+- Expand the 20-person seeded cast into a configurable workforce with departmental hiring, reporting-line changes and role-based skill profiles.
 - Add bounded agent planner, role mandates, skills, schedules, memory retrieval and collaboration.
 - Introduce meeting lifecycle, delegation, task dependencies, performance and emergent events.
 - Add deterministic fallback when AI is unavailable.
