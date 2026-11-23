@@ -17,5 +17,6 @@ test("Phase 1 Executive Twin is advisory-only and role-flexible",()=>{
   assert.match(guidance,/CEO\/GM/);
   assert.match(guidance,/Devil's Advocate/);
   assert.match(guidance,/Do not execute actions/);
+  assert.match(guidance,/Do not emit Q OS action tags/);
   assert.match(guidance,/separate conversation space/);
 });
