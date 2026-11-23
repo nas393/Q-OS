@@ -69,7 +69,8 @@ export default function TwinWorkspace() {
   }
   function changeRole(nextRole: Role) {
     setRole(nextRole); setConvId(undefined); setMsgs([]); setConvs([]); setError(""); setHistoryOpen(false);
-  }\n  function newConversation() {
+  }
+  function newConversation() {
     setConvId(undefined); setMsgs([]); setError(""); setHistoryOpen(false); box.current?.focus();
   }
   async function send(text: string) {
