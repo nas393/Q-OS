@@ -140,7 +140,7 @@ export default function TwinWorkspace() {
       <header className="qa-h">
         <button className="icon-btn qa-hist-btn" onClick={() => setHistoryOpen(v => !v)} aria-label="Conversation history" aria-expanded={historyOpen}><I n="list"/></button>
         <div className="qa-t">
-          <h1>{current?.title.replace(/^Executive Twin · /, "") ?? roleLabel}</h1>
+          <h1>{current?.title.replace(/^Executive Twin · (?:partner|ceo|commercial|cfo|coo|cso|negotiator|chief_of_staff|sales_analyst|devils_advocate) · /, "").replace(/^Executive Twin · /, "") ?? roleLabel}</h1>
           <span className={"live" + (status === "online" ? "" : " off")}><i/>{statusLabel} · analysis and recommendations only</span>
         </div>
         <label className="tw-role-label" htmlFor="twin-role">Perspective</label>
@@ -152,7 +152,7 @@ export default function TwinWorkspace() {
       <div className="qa-thread" aria-live="polite">
         {!msgs.length && <div className="qa-hello">
           <QMark size={56}/><h2>Your strategic counterpart.</h2>
-          <p>Think through decisions, challenge assumptions and build execution plans. Switch perspectives without changing the owner-only workspace.</p>
+          <p>Think through decisions, challenge assumptions and build execution plans. Each executive employee has a separate private conversation history. Switch roles without mixing their work.</p>
           <div className="tw-boundary"><I n="check"/>Private to the owner. No autonomous actions, external messages, spending or access changes.</div>
           <div className="qa-quick">{QUICK.map(([label, prompt]) => <button key={label} className="chip" onClick={() => send(prompt)} disabled={busy || status === "offline"}>{label}</button>)}</div>
         </div>}
