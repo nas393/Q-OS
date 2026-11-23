@@ -1,12 +1,11 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { ContactShadows, Environment, OrbitControls, Text } from "@react-three/drei";
 import { AnimationMixer, Group, MathUtils, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
-import { useLoader } from "@react-three/fiber";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
 import { tickSimulation } from "@/lib/simulation/engine";
 import type { EmployeeAgent, SimulationState, SimTask } from "@/lib/simulation/types";
@@ -109,7 +108,7 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
     <MatBox position={[0,1.3,-13.32]} scale={[2.2,.7,.06]} color="#152d3a"/>
   </group>;
 }
-function Character({employee,index,asset,onSelect,selected}:{employee:EmployeeAgent;index:number;asset:any;onSelect:(id:string)=>void;selected:boolean}){
+function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;asset:any;onSelect:(id:string)=>void;selected:boolean}){
   const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<any>(null);
   const model=useMemo(()=>clone(asset.scene),[asset]);
   useEffect(()=>{
@@ -136,7 +135,7 @@ function Character({employee,index,asset,onSelect,selected}:{employee:EmployeeAg
 }
 function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
   const assets=useAssets();
-  return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} index={index} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
+  return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
 }
 function CameraRig({mode}:{mode:"CEO"|"FREE"}){\n  const {camera}=useThree();\n  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);\n  return null;\n}\nfunction WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"}){
   return <Canvas shadows dpr={[1,1.6]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
