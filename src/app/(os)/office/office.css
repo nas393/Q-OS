@@ -226,3 +226,26 @@
   .of-world-legend{gap:9px}
 }
 @media(prefers-reduced-motion:reduce){.of-floor,.of-room-pulse[data-state=down]{transition:none;animation:none}}
+
+
+/* ---------- Q Executive World: real-time WebGL isometric headquarters ---------- */
+.q3d-shell{position:relative;overflow:hidden;border:1px solid rgba(201,162,74,.28);border-radius:18px;background:#0b0e14;box-shadow:0 24px 55px rgba(0,0,0,.28)}
+.q3d-toolbar{position:absolute;z-index:3;inset:12px 14px auto;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#aeb2ba;font-size:10px;pointer-events:none}
+.q3d-toolbar>span,.q3d-toolbar>div{pointer-events:auto}
+.q3d-toolbar>div{display:flex;gap:6px}
+.q3d-toolbar button{min-height:32px;padding:0 10px;border:1px solid rgba(201,162,74,.34);border-radius:8px;background:rgba(12,15,21,.82);color:#eee5d4;font:600 11px var(--sans);cursor:pointer}
+.q3d-live{display:flex;align-items:center;gap:7px;color:#d7bd80;font:750 9px var(--sans);letter-spacing:.14em}
+.q3d-live i{width:7px;height:7px;border-radius:50%;background:#65c18a;box-shadow:0 0 12px #65c18a}
+.q3d-shell canvas{display:block;width:100%;height:clamp(420px,58vw,680px);touch-action:pan-y;cursor:grab}
+.q3d-shell canvas:active{cursor:grabbing}
+.q3d-room-selector{position:relative;z-index:2;padding:14px;background:linear-gradient(180deg,rgba(13,16,22,.88),#10141c);border-top:1px solid rgba(255,255,255,.08)}
+.q3d-room-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px}
+.q3d-room-tabs button{flex:none;min-height:34px;padding:0 12px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:#171c25;color:#bfc3ca;font:600 11px var(--sans);cursor:pointer}
+.q3d-room-tabs button.active{border-color:#c9a24a;background:rgba(201,162,74,.14);color:#f3dfad}
+.q3d-desks{display:flex;gap:8px;flex-wrap:wrap}
+.q3d-desks button{display:grid;grid-template-columns:8px 1fr;column-gap:8px;align-items:center;min-width:175px;padding:9px 11px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.035);color:#eee;text-align:left;cursor:pointer}
+.q3d-desks button>span{grid-row:1/3;width:7px;height:7px;border-radius:50%;background:#7a818d}
+.q3d-desks button>span[data-light=ok]{background:#65b987}.q3d-desks button>span[data-light=watch]{background:#d9a64c}.q3d-desks button>span[data-light=down]{background:#e35d66}
+.q3d-desks b{font:650 11px var(--sans)}.q3d-desks small{color:#9da3ad;font-size:9px}
+@media(max-width:650px){.q3d-toolbar{inset:10px 10px auto;align-items:flex-start;flex-wrap:wrap}.q3d-toolbar>span:nth-child(2){display:none}.q3d-shell canvas{height:390px}.q3d-desks button{flex:1;min-width:145px}}
+@media(prefers-reduced-motion:reduce){.q3d-shell *{scroll-behavior:auto}}

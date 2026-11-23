@@ -2,7 +2,7 @@
 /* The Office, drawn: Q's glass corner office and the rooms where every app works at its desk.
    Each desk shows its status light, one number, its tasks from you and what needs you; tap a desk to open it.
    The inbox lists everything waiting for you across the floor: approvals, late tasks and alerts. */
-import {useEffect,useMemo,useRef,useState,type CSSProperties,type FormEvent} from "react";
+import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
@@ -11,6 +11,7 @@ import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
 import "./office.css";
 import { ExecutiveTeam } from "./executive-team";
+import { ExecutiveWorld3D } from "./executive-world-3d";
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
 type Stats=Record<string,{stats:{label:string;value:string}[]}>;
@@ -28,7 +29,6 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   const [open,setOpen]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState("");
-  const [worldZoom,setWorldZoom]=useState(1);
   const dlg=useRef<HTMLDialogElement>(null);
 
   useEffect(()=>{
@@ -154,34 +154,13 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
       <div className="of-world-head">
         <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
           <p>A live operational model of the office. Select a desk or room to inspect its real work, tasks and decisions.</p></div>
-        <div className="of-world-controls" aria-label="World view controls">
+        <div className="of-world-controls" aria-label="World view status">
           <span className="of-world-live"><i/>LIVE DATA</span>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.max(.8,Number((z-.1).toFixed(1))))} aria-label="Zoom out">−</button>
-          <span className="of-world-zoom">{Math.round(worldZoom*100)}%</span>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.min(1.2,Number((z+.1).toFixed(1))))} aria-label="Zoom in">+</button>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(1)}>Reset</button>
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
-      <div className="of-world-viewport">
-        <div className="of-floor" role="group" aria-label="Interactive executive headquarters floor plan" style={{"--world-zoom":worldZoom} as CSSProperties}>
-          {LAYOUT.map(room=>{
-            const here=floor.filter(r=>r.staff.room===room);
-            const needs=here.reduce((n,r)=>n+r.desk.needs.length,0);
-            const openTasks=here.reduce((n,r)=>n+r.desk.open.length,0);
-            const active=here.filter(r=>r.desk.light==="ok").length;
-            const roomState=here.some(r=>r.desk.light==="down")?"down":here.some(r=>r.desk.light==="watch")?"watch":here.length&&active===here.length?"ok":"idle";
-            return <section key={room} className={`of-room of-${room}`} data-state={roomState} aria-label={ROOMS[room].label}>
-              <header className="of-sign"><div><b>{ROOMS[room].label}</b><small>{ROOMS[room].note}</small></div>
-                <span className="of-room-pulse" data-state={roomState} aria-label={LIGHT_TEXT[roomState]}/></header>
-              <div className="of-room-metrics"><span>{here.length} {here.length===1?"desk":"desks"}</span><span>{openTasks} open</span>{needs>0&&<strong>{needs} need you</strong>}</div>
-              <div className="of-desks">{here.map(r=>deskBtn(r,room==="corner"))}</div>
-              <span className="of-plant" aria-hidden="true"/>
-            </section>;
-          })}
-        </div>
-      </div>
-      <p className="of-world-foot">Status is derived from connected Q OS data. No simulated employee activity or autonomous actions are displayed.</p>
+      <ExecutiveWorld3D rooms={LAYOUT.map(room=>({id:room,label:ROOMS[room].label,note:ROOMS[room].note,desks:floor.filter(r=>r.staff.room===room).map(r=>({id:r.staff.id,name:r.staff.name,role:r.staff.role,light:r.desk.light,needs:r.desk.needs.length,open:r.desk.open.length}))}))} onSelectDesk={id=>{setMsg("");setOpen(id)}} />
+      <p className="of-world-foot">3D architecture is rendered in the browser. Desk status and work remain connected to live Q OS data.</p>
     </section>
 
     <dialog ref={dlg} className="of-sheet" onClose={()=>setOpen(null)} aria-labelledby="of-sh-t">
