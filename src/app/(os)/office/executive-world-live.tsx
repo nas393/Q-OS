@@ -31,7 +31,7 @@ function initialWorld():SimulationState{
   return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
     employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
 }
-const SIM_DEPARTMENTS=["All","Finance","Commercial","Operations","Strategy","Executive Office"] as const;
+const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office"] as const;
 function useAssets(){
   const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
   return [businessMan,businessWoman,casualMan,casualWoman];
