@@ -34,12 +34,12 @@ export function tickSimulation(state: SimulationState, elapsedMs: number): Simul
 
   for (const employee of employees) {
     if (!isOnShift(employee, hour)) {
-      employee.activity = "idle"; employee.currentTaskId = null; employee.destination = null;
+      employee.activity = "idle";
       continue;
     }
     if (employee.destination) {
       const previous = employee.position;
-      employee.position = moveToward(employee.position, employee.destination, Math.max(0.2, simulatedDelta / 1000 * 1.35));
+      employee.position = moveToward(employee.position, employee.destination, Math.max(0.05, simulatedDelta / 1000 * 0.18));
       employee.activity = "walking";
       if (distance(employee.position, employee.destination) < 0.01) {
         employee.destination = null; employee.activity = employee.currentTaskId ? "working" : "idle";
