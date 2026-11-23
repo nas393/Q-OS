@@ -17,6 +17,14 @@ const QUICK:[string,string][]=[
  ["Market intelligence","Gold (XAU/USD) read for this week: drivers, risks, what to watch. Say what you can't verify live."],
  ["Content plan","Plan this week's content for LUMERIS and NOVAÉ: one strong idea per day."],
  ["Devil's Advocate","Act as Devil's Advocate on my most important current decision: assumptions, strongest counterargument, failure scenarios, missing evidence, verdict (approve / approve with conditions / reconsider / postpone / reject)."]];
+const TWIN_QUICK:[string,string][]=[
+ ["CEO / GM lens","Act as my CEO/GM. Review the strategic situation, trade-offs, organisational implications and the single decision I should make."],
+ ["Commercial Director","Use my Commercial Director lens. Assess revenue, volume, gross margin, pricing, channel mix, customer risk and execution priorities. Flag missing data."],
+ ["CFO lens","Take the CFO perspective. Challenge the economics, cash impact, margin quality, downside exposure and return on capital. Do not invent figures."],
+ ["COO lens","Take the COO perspective. Identify operational bottlenecks, owners, dependencies, service risks and the execution sequence."],
+ ["Negotiator","Prepare me for a high-stakes negotiation: objectives, walk-away point, leverage, counterpart incentives, concessions and opening position."],
+ ["Devil's Advocate","Challenge my current decision. Give the strongest counterargument, failure scenarios, blind spots, evidence gaps and a clear verdict."]
+];
 
 export default function ChatWorkspace({gold,workspace="general"}:{gold:Gold;workspace?:Workspace}){
  const executiveTwin=workspace==="executive_twin";
@@ -75,7 +83,7 @@ export default function ChatWorkspace({gold,workspace="general"}:{gold:Gold;work
      <QMark size={56}/>
      <h2>{executiveTwin?"Your Executive Twin":"What do you need, Nassim?"}</h2>
      <p>{executiveTwin?"Your private strategic partner. Switches between executive lenses, challenges assumptions and prepares decisions. Phase 1 is advisory-only.":"Answers from your live data. Says when it can’t verify."}</p>
-     <div className="qa-quick">{QUICK.map(([l,p])=><button key={l} className="chip" onClick={()=>send(p)} disabled={busy||status==="offline"}>{l}</button>)}</div>
+     <div className="qa-quick">{(executiveTwin?TWIN_QUICK:QUICK).map(([l,p])=><button key={l} className="chip" onClick={()=>send(p)} disabled={busy||status==="offline"}>{l}</button>)}</div>
     </div>}
     {msgs.map((m,i)=>m.role==="user"
      ?<div key={i} className="qa-msg me">{m.content}</div>
