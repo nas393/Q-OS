@@ -36,8 +36,8 @@ function useAssets(){
   const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
   return [businessMan,businessWoman,casualMan,casualWoman];
 }
-function MatBox({position,scale,color,roughness=.65,metalness=0}:{position:[number,number,number];scale:[number,number,number];color:string;roughness?:number;metalness?:number}){
-  return <mesh position={position} castShadow receiveShadow><boxGeometry args={scale}/><meshStandardMaterial color={color} roughness={roughness} metalness={metalness}/></mesh>;
+function MatBox({position,scale,color,roughness=.65,metalness=0,emissive="#000000",emissiveIntensity=0}:{position:[number,number,number];scale:[number,number,number];color:string;roughness?:number;metalness?:number;emissive?:string;emissiveIntensity?:number}){
+  return <mesh position={position} castShadow receiveShadow><boxGeometry args={scale}/><meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity}/></mesh>;
 }
 function Desk({position,rotation=0,executive=false}:{position:[number,number,number];rotation?:number;executive?:boolean}){
   return <group position={position} rotation={[0,rotation,0]}>
@@ -102,7 +102,7 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
     <Sofa position={[-5,0,-10]} rotation={Math.PI/2}/><Sofa position={[-1.8,0,-10]} rotation={-Math.PI/2}/>
     <MatBox position={[-3.4,.38,-10]} scale={[1.2,.12,1.2]} color="#57483b"/>
     <Plant position={[-19,0,-11]}/><Plant position={[19,0,-11]}/><Plant position={[-19,0,11]}/><Plant position={[19,0,11]}/>
-    {[-18,-9,0,9,18].map(x=><group key={x}><MatBox position={[x,3.25,-13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/><MatBox position={[x,3.25,13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/></group>)}
+    {[-18,-9,0,9,18].map(x=><group key={x}><MatBox position={[x,3.25,-13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7" emissiveIntensity={.45}/><MatBox position={[x,3.25,13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/></group>)}
     <MatBox position={[0,.85,-13]} scale={[5,.2,.9]} color="#3a454f"/>
     <MatBox position={[0,1.3,-13.32]} scale={[2.2,.7,.06]} color="#152d3a"/>
   </group>;
