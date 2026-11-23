@@ -28,6 +28,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   const [open,setOpen]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState("");
+  const [worldZoom,setWorldZoom]=useState(1);
   const dlg=useRef<HTMLDialogElement>(null);
 
   useEffect(()=>{
@@ -149,16 +150,39 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
       {approvalsFailed.length>0&&<p className="of-note">Could not reach the review queue of: {approvalsFailed.map(id=>STAFF.find(s=>s.id===id)?.name??id).join(", ")}.</p>}
     </section>
 
-    <div className="of-floor" role="group" aria-label="Office floor plan">
-      {LAYOUT.map(room=>{
-        const here=floor.filter(r=>r.staff.room===room);
-        return <section key={room} className={`of-room of-${room}`} aria-label={ROOMS[room].label}>
-          <header className="of-sign"><b>{ROOMS[room].label}</b><small>{ROOMS[room].note}</small></header>
-          <div className="of-desks">{here.map(r=>deskBtn(r,room==="corner"))}</div>
-          <span className="of-plant" aria-hidden="true"/>
-        </section>;
-      })}
-    </div>
+    <section className="of-world" aria-labelledby="of-world-title">
+      <div className="of-world-head">
+        <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
+          <p>A live operational model of the office. Select a desk or room to inspect its real work, tasks and decisions.</p></div>
+        <div className="of-world-controls" aria-label="World view controls">
+          <span className="of-world-live"><i/>LIVE DATA</span>
+          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.max(.8,Number((z-.1).toFixed(1))))} aria-label="Zoom out">−</button>
+          <span className="of-world-zoom">{Math.round(worldZoom*100)}%</span>
+          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.min(1.2,Number((z+.1).toFixed(1))))} aria-label="Zoom in">+</button>
+          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(1)}>Reset</button>
+        </div>
+      </div>
+      <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
+      <div className="of-world-viewport">
+        <div className="of-floor" role="group" aria-label="Interactive executive headquarters floor plan" style={{"--world-zoom":worldZoom} as React.CSSProperties}>
+          {LAYOUT.map(room=>{
+            const here=floor.filter(r=>r.staff.room===room);
+            const needs=here.reduce((n,r)=>n+r.desk.needs.length,0);
+            const openTasks=here.reduce((n,r)=>n+r.desk.open.length,0);
+            const active=here.filter(r=>r.desk.light==="ok").length;
+            const roomState=here.some(r=>r.desk.light==="down")?"down":here.some(r=>r.desk.light==="watch")?"watch":here.length&&active===here.length?"ok":"idle";
+            return <section key={room} className={`of-room of-${room}`} data-state={roomState} aria-label={ROOMS[room].label}>
+              <header className="of-sign"><div><b>{ROOMS[room].label}</b><small>{ROOMS[room].note}</small></div>
+                <span className="of-room-pulse" data-state={roomState} aria-label={LIGHT_TEXT[roomState]}/></header>
+              <div className="of-room-metrics"><span>{here.length} {here.length===1?"desk":"desks"}</span><span>{openTasks} open</span>{needs>0&&<strong>{needs} need you</strong>}</div>
+              <div className="of-desks">{here.map(r=>deskBtn(r,room==="corner"))}</div>
+              <span className="of-plant" aria-hidden="true"/>
+            </section>;
+          })}
+        </div>
+      </div>
+      <p className="of-world-foot">Status is derived from connected Q OS data. No simulated employee activity or autonomous actions are displayed.</p>
+    </section>
 
     <dialog ref={dlg} className="of-sheet" onClose={()=>setOpen(null)} aria-labelledby="of-sh-t">
       {sel&&(()=>{const d=sel.staff.id==="q"?qDesk:sel.desk;const st=[sel.staff.id,...sel.staff.keys].map(k=>stats[k]?.stats).find(Boolean);return <div className="of-sh">
