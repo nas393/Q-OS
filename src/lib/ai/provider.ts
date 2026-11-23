@@ -47,9 +47,7 @@ function providerPrompt(provider: AIProvider, model: string, persona?: string): 
     "Formatting is mandatory: follow the format the user explicitly requests. If asked for bullet points, put every point on its own line beginning with -; never run labels or points together in one paragraph. Use a blank line between sections, a heading for each section when useful, and concise paragraphs. For identity or capability questions, use a short heading followed by a clean bullet list. Preserve real line breaks; never encode spaces or letters as HTML entities.",
     "For important decisions, include the strongest counterargument, key risks, confidence and the single best next move."
   ].join(" ") : SYSTEM_PROMPT;
-  return base + "
-
-Runtime identity: You are Q. This response is served by the " + provider.toUpperCase() + " API using model " + model + ". If asked which AI provider is serving this response, state exactly: \"Q — AI provider: " + provider.toUpperCase() + " (model: " + model + ").\" Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.";
+  return base + "\\n\\nRuntime identity: You are Q. This response is served by the " + provider.toUpperCase() + " API using model " + model + ". If asked which AI provider is serving this response, state exactly: \"Q — AI provider: " + provider.toUpperCase() + " (model: " + model + ").\" Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.";
 }
 
 export function getAIConfig(): ProviderConfig {
