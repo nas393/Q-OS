@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows, Environment, OrbitControls, Text, useProgress, Html } from "@react-three/drei";
-import { AnimationMixer, Color, Group, MathUtils, MeshStandardMaterial, Object3D, PlaneGeometry, RepeatWrapping, SRGBColorSpace, Vector3 } from "three";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { ContactShadows, Environment, OrbitControls, Text } from "@react-three/drei";
+import { AnimationMixer, Group, MathUtils, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import { useLoader } from "@react-three/fiber";
@@ -34,7 +34,6 @@ function initialWorld():SimulationState{
     employees:INITIAL_EMPLOYEES.map(e=>({...e,position:{...e.position},destination:null})),tasks:makeTasks(),events:[]};
 }
 type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
-type AssetSet=ReturnType<typeof useAssets>;
 function useAssets(){
   const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
   return [businessMan,businessWoman,casualMan,casualWoman];
@@ -76,16 +75,13 @@ function Sofa({position,rotation=0}:{position:[number,number,number];rotation?:n
   </group>;
 }
 function GlassWall({position,scale}:{position:[number,number,number];scale:[number,number,number]}){
-  return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness:.12 metalness:.2 transmission:.15 thickness:.12/></mesh>;
+  return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness={.12} metalness={.2} transmission={.15} thickness={.12}/></mesh>;
 }
 function RoomSign({children,position}:{children:string;position:[number,number,number]}){
   return <Text position={position} fontSize={.34} color="#d9c08b" anchorX="center" anchorY="middle" outlineWidth={.012} outlineColor="#11151b">{children}</Text>;
 }
-function Architecture(){
-  const desks=useMemo(()=>Array.from({length:20},(_,i)=>{
-    const col=i%5,row=Math.floor(i/5);
-    return {position:[-15+col*2.2,-.02,-1+row*2.25] as [number,number,number],rotation:Math.PI};
-  }),[]);
+function Architecture({employees}:{employees:EmployeeAgent[]}){
+  const desks=employees.filter(e=>e.id!=="ceo").map(e=>({id:e.id,position:[e.position.x,0,e.position.z+1.15] as [number,number,number]}));
   return <group>
     <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.16,0]} receiveShadow><planeGeometry args={[48,34]}/><meshStandardMaterial color="#222a31" roughness:.82/></mesh>
     <gridHelper args={[48,48,"#45515a","#303a43"]} position={[0,-.145,0]}/>
@@ -101,7 +97,7 @@ function Architecture(){
     <RoomSign position={[-15,2.8,12.2]}>OPERATIONS</RoomSign>
     <RoomSign position={[0,2.8,12.2]}>WAR ROOM</RoomSign>
     <RoomSign position={[15,2.8,12.2]}>STRATEGY</RoomSign>
-    {desks.map((d,i)=><Desk key={i} position={d.position} rotation={d.rotation}/>)}
+    {desks.map(d=><Desk key={d.id} position={d.position}/>)}
     {[-8,8].map(x=><group key={x}><MatBox position={[x,.8,7.5]} scale={[5,.16,2.1]} color="#493d32"/>{[-1.6,1.6].map(dx=><OfficeChair key={dx} position={[x+dx,0,9]}/>)}</group>)}
     <MatBox position={[0,.78,0]} scale={[5.4,.18,1.7]} color="#59442f" />
     {[-2,0,2].map(x=><OfficeChair key={x} position={[x,0,1.5]}/>)}
@@ -142,7 +138,7 @@ function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selecte
   const assets=useAssets();
   return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} index={index} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
 }
-function WorldScene({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
+function CameraRig({mode}:{mode:"CEO"|"FREE"}){\n  const {camera}=useThree();\n  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);\n  return null;\n}\nfunction WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"}){
   return <Canvas shadows dpr={[1,1.6]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
     <color attach="background" args={["#101820"]}/>
     <fog attach="fog" args={["#101820",42,85]}/>
@@ -150,7 +146,7 @@ function WorldScene({employees,selected,onSelect}:{employees:EmployeeAgent[];sel
     <hemisphereLight args={["#dce8f0","#4a4035",1.1]}/>
     <directionalLight position={[-15,24,10]} intensity={2.2} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
     <pointLight position={[0,7,0]} intensity={.7} color="#e8c88d"/>
-    <Architecture/>
+    <Architecture employees={employees}/>\n    <CameraRig mode={cameraMode}/>
     <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
     <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
     <Environment preset="city"/>
@@ -176,7 +172,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
     </div>
     <div className="q3d-stage">
       <Suspense fallback={<div className="q3d-loading">Loading realistic people and headquarters…</div>}>
-        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("CEO")}}/>
+        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("CEO")}} cameraMode={camera}/>
       </Suspense>
       <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>26 AGENTS · 6 DEPARTMENTS</span></div>
     </div>
