@@ -111,7 +111,7 @@ export default function TwinWorkspace() {
       setStatus("offline");
       setMsgs(current => {
         const next = [...current];
-        next[next.length - 1] = { role: "assistant", content: "Executive Twin could not answer: " + (e instanceof Error ? e.message : "Service unavailable") + "." };
+        next[next.length - 1] = { role: "assistant", content: "Executive employee could not answer: " + (e instanceof Error ? e.message : "Service unavailable") + "." };
         return next;
       });
     } finally { setBusy(false); }
@@ -121,16 +121,16 @@ export default function TwinWorkspace() {
     el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 168) + "px";
   }, [input]);
 
-  const current = convs.find(c => c.id === convId);
+  const current = convs.find(c => c.id === convId);\n  const roleLabel = ROLES.find(r => r.value === role)?.label ?? "Executive Partner";
   const statusLabel = status === "online" ? "Private workspace online" : status === "offline" ? "Storage or AI unavailable" : "Connecting";
   return <div className="qa twin">
-    <aside className={"qa-list" + (historyOpen ? " open" : "")} aria-label="Executive Twin conversations">
+    <aside className={"qa-list" + (historyOpen ? " open" : "")} aria-label="Executive employee conversations">
       <div className="qa-list-h"><h2>Private history</h2><button className="btn sm primary" onClick={newConversation}><I n="plus"/>New</button></div>
       <div className="qa-convs">
         {convs.length ? convs.map(c => <button key={c.id} className="qa-conv" aria-current={c.id === convId ? "true" : undefined} onClick={() => openConversation(c.id)}>
           <span>{c.title.replace(/^Executive Twin · /, "")}</span>
           {c.updated_at && <time>{new Date(c.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</time>}
-        </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your Executive Twin discussions will appear here."}</p>}
+        </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your private discussions with this executive employee will appear here."}</p>}
       </div>
       <div className="tw-private"><I n="user"/>Owner-only · separate from Q Assistant</div>
     </aside>
@@ -139,7 +139,7 @@ export default function TwinWorkspace() {
       <header className="qa-h">
         <button className="icon-btn qa-hist-btn" onClick={() => setHistoryOpen(v => !v)} aria-label="Conversation history" aria-expanded={historyOpen}><I n="list"/></button>
         <div className="qa-t">
-          <h1>{current?.title.replace(/^Executive Twin · /, "") ?? "Executive Twin"}</h1>
+          <h1>{current?.title.replace(/^Executive Twin · /, "") ?? roleLabel}</h1>
           <span className={"live" + (status === "online" ? "" : " off")}><i/>{statusLabel} · analysis and recommendations only</span>
         </div>
         <label className="tw-role-label" htmlFor="twin-role">Perspective</label>
