@@ -155,7 +155,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
         <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
           <p>A playable simulation of a fictional company. Explore its people, departments, meetings and simulated decisions — separate from live Q OS operations.</p></div>
         <div className="of-world-controls" aria-label="World view status">
-          <span className="of-world-live"><i/>LIVE DATA</span>
+          <span className="of-world-live"><i/>SIMULATION</span>
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
