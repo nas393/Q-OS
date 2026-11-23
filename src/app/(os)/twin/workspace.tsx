@@ -13,7 +13,8 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "partner", label: "Executive Partner" }, { value: "ceo", label: "CEO / General Manager" },
   { value: "commercial", label: "Commercial Director" }, { value: "cfo", label: "CFO lens" },
   { value: "coo", label: "COO / Operations" }, { value: "cso", label: "Chief Strategy Officer" },
-  { value: "negotiator", label: "Negotiator" }, { value: "chief_of_staff", label: "Chief of Staff" },\n  { value: "sales_analyst", label: "Sales & BI Analyst" },
+  { value: "negotiator", label: "Negotiator" }, { value: "chief_of_staff", label: "Chief of Staff" },
+  { value: "sales_analyst", label: "Sales & BI Analyst" },
   { value: "devils_advocate", label: "Devil's Advocate" }
 ];
 const QUICK: [string, string][] = [
@@ -46,7 +47,12 @@ export default function TwinWorkspace() {
       setStatus("online");
     } catch { setStatus("offline"); }
   }, []);
-  useEffect(() => {\n    const requested = new URLSearchParams(window.location.search).get("role");\n    const allowed: Role[] = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];\n    if (requested && allowed.includes(requested as Role)) setRole(requested as Role);\n  }, []);\n  useEffect(() => { void loadConvs(); }, [loadConvs]);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("role");
+    const allowed: Role[] = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];
+    if (requested && allowed.includes(requested as Role)) setRole(requested as Role);
+  }, []);
+  useEffect(() => { void loadConvs(); }, [loadConvs]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   async function openConversation(id: string) {
@@ -85,7 +91,9 @@ export default function TwinWorkspace() {
         const item = await reader.read();
         if (item.done) break;
         buffer += decoder.decode(item.value, { stream: true });
-        const parts = buffer.split("\n\n"); buffer = parts.pop() ?? "";
+        const parts = buffer.split("
+
+"); buffer = parts.pop() ?? "";
         for (const part of parts) {
           let event: { delta?: string; conversationId?: string; error?: string };
           try { event = JSON.parse(part.replace(/^data: /, "")); } catch { continue; }
