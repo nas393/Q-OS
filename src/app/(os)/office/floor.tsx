@@ -153,14 +153,14 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     <section className="of-world" aria-labelledby="of-world-title">
       <div className="of-world-head">
         <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
-          <p>A live operational model of the office. Select a desk or room to inspect its real work, tasks and decisions.</p></div>
+          <p>A playable simulation of a fictional company. Explore its people, departments, meetings and simulated decisions — separate from live Q OS operations.</p></div>
         <div className="of-world-controls" aria-label="World view status">
           <span className="of-world-live"><i/>LIVE DATA</span>
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
       <ExecutiveWorld3D rooms={LAYOUT.map(room=>({id:room,label:ROOMS[room].label,note:ROOMS[room].note,desks:floor.filter(r=>r.staff.room===room).map(r=>({id:r.staff.id,name:r.staff.name,role:r.staff.role,light:r.desk.light,needs:r.desk.needs.length,open:r.desk.open.length}))}))} onSelectDesk={id=>{setMsg("");setOpen(id)}} />
-      <p className="of-world-foot">3D architecture is rendered in the browser. Desk status and work remain connected to live Q OS data.</p>
+      <p className="of-world-foot">The Executive World is a fictional simulation. Live Q OS desks, tasks and business records remain separate and are never changed by simulated activity.</p>
     </section>
 
     <dialog ref={dlg} className="of-sheet" onClose={()=>setOpen(null)} aria-labelledby="of-sh-t">
