@@ -22,7 +22,7 @@ const SYSTEM_PROMPT = [
 ].join(" ");
 
 function providerPrompt(provider: AIProvider, model: string, workspace: ChatWorkspace = "general"): string {
-  const workspaceGuidance = workspace === "executive_twin" ? `\\n\\n${executiveTwinSystemGuidance()}` : "";
+  const workspaceGuidance = workspace === "executive_twin" ? `\n\n${executiveTwinSystemGuidance()}` : "";
   return `${SYSTEM_PROMPT}${workspaceGuidance}\n\nRuntime identity: You are Q. This response is served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: "Q — AI provider: ${provider.toUpperCase()} (model: ${model})." Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;
 }
 
