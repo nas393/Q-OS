@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
 import { tickSimulation } from "@/lib/simulation/engine";
-import type { EmployeeAgent, SimulationState, SimTask } from "@/lib/simulation/types";
+import type { SimulationState, SimTask } from "@/lib/simulation/types";
 
 type V3 = [number, number, number];
 type Mesh = { positions: number[]; normals: number[]; count: number };
@@ -70,8 +70,8 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const meshes={box:box(),sphere:sphere(),cylinder:cylinder()};
   const buffers=Object.fromEntries(Object.entries(meshes).map(([key,m])=>{const p=gl.createBuffer()!,n=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.positions),gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.normals),gl.STATIC_DRAW);return [key,{p,n,count:m.count}]})) as Record<string,{p:WebGLBuffer;n:WebGLBuffer;count:number}>;
   const ap=gl.getAttribLocation(program,"aPosition"),an=gl.getAttribLocation(program,"aNormal"),um=gl.getUniformLocation(program,"uMvp"),uModel=gl.getUniformLocation(program,"uModel"),uc=gl.getUniformLocation(program,"uColor");
-  let vp:number[]=[];\n  const drawMesh=(kind:keyof typeof meshes,m:number[],color:V3)=>{const b=buffers[kind];gl.bindBuffer(gl.ARRAY_BUFFER,b.p);gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,b.n);gl.enableVertexAttribArray(an);gl.vertexAttribPointer(an,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(uModel,false,new Float32Array(m));gl.uniformMatrix4fv(um,false,new Float32Array(multiply(vp,m)));gl.uniform3fv(uc,new Float32Array(color));gl.drawArrays(gl.TRIANGLES,0,b.count)};
-  let frame=0;const vp:number[]=[];
+  let vp:number[]=[];\n  let vp:number[]=[];\n  const drawMesh=(kind:keyof typeof meshes,m:number[],color:V3)=>{const b=buffers[kind];gl.bindBuffer(gl.ARRAY_BUFFER,b.p);gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,b.n);gl.enableVertexAttribArray(an);gl.vertexAttribPointer(an,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(uModel,false,new Float32Array(m));gl.uniformMatrix4fv(um,false,new Float32Array(multiply(vp,m)));gl.uniform3fv(uc,new Float32Array(color));gl.drawArrays(gl.TRIANGLES,0,b.count)};
+  let frame=0;
   const render=()=>{
    const w=el.clientWidth,h=el.clientHeight,dpr=Math.min(window.devicePixelRatio||1,1.5);if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
    gl.viewport(0,0,el.width,el.height);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.045,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
