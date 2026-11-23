@@ -26,7 +26,7 @@ export default function ChatWorkspace({gold,workspace="general"}:{gold:Gold;work
  const [ctx,setCtx]=useState<{projects:Parameters<typeof buildQContext>[0]["projects"];tasks:Parameters<typeof buildQContext>[0]["tasks"]}>({projects:[],tasks:[]});
  const end=useRef<HTMLDivElement>(null),box=useRef<HTMLTextAreaElement>(null);
  const [ready,setReady]=useState(false);
- const loadConvs=useCallback(async()=>{try{const r=await fetch(`/api/chat?workspace=${workspace}`,{cache:"no-store"});if(!r.ok)throw 0;setStatus("online");setConvs((await r.json()).conversations??[]);}catch{setStatus("offline");}},[]);
+ const loadConvs=useCallback(async()=>{try{const r=await fetch(`/api/chat?workspace=${workspace}`,{cache:"no-store"});if(!r.ok)throw 0;setStatus("online");setConvs((await r.json()).conversations??[]);}catch{setStatus("offline");}},[workspace]);
  const pending=useRef<string|null>(null);
  useEffect(()=>{loadConvs();
   try{const u=new URL(window.location.href),q=u.searchParams.get("q");if(q)pending.current=q.slice(0,2000);if(q||u.searchParams.has("new"))window.history.replaceState(null,"",basePath);}catch{}
