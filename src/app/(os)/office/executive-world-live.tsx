@@ -168,7 +168,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
-  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
+  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];\n  const manager=world.employees.find(e=>e.id===selectedEmployee.reportsTo);\n  const currentTask=world.tasks.find(t=>t.id===selectedEmployee.currentTaskId);
   const setSpeed=(next:0|1|2|4)=>{setWorld(w=>({...w,speed:next,paused:next===0}))};
   return <div className="q3d-shell q3d-living q3d-premium">
     <div className="q3d-toolbar">
@@ -190,7 +190,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
       <div className="q3d-desks">{world.employees.map(e=><button type="button" key={e.id} onClick={()=>setSelected(e.id)} aria-pressed={selected===e.id}>
         <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
       </button>)}</div>
-      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {selectedEmployee.reportsTo}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
+      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
       <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
       <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
     </div>
