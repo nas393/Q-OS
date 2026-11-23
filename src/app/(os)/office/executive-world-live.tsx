@@ -168,7 +168,9 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
-  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];\n  const manager=world.employees.find(e=>e.id===selectedEmployee.reportsTo);\n  const currentTask=world.tasks.find(t=>t.id===selectedEmployee.currentTaskId);
+  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
+  const manager=world.employees.find(e=>e.id===selectedEmployee.reportsTo);
+  const currentTask=world.tasks.find(t=>t.id===selectedEmployee.currentTaskId);
   const setSpeed=(next:0|1|2|4)=>{setWorld(w=>({...w,speed:next,paused:next===0}))};
   return <div className="q3d-shell q3d-living q3d-premium">
     <div className="q3d-toolbar">
