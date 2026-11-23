@@ -261,3 +261,17 @@
 .q3d-profile span{line-height:1.45}
 .q3d-disclaimer{margin:12px 0 0;color:#c3a96c;font:700 9px/1.5 var(--sans);letter-spacing:.12em}
 @media(max-width:650px){.q3d-living .q3d-toolbar>span:nth-child(2){display:none}.q3d-living .q3d-toolbar>div{flex-wrap:wrap}.q3d-living .q3d-toolbar button{min-height:30px;padding:0 8px}.q3d-living .q3d-room-selector{max-height:360px}}
+
+
+/* Premium Executive World scene */
+.q3d-premium{border-color:rgba(201,162,74,.34);background:#101820}
+.q3d-stage{position:relative;height:clamp(560px,62vw,780px);background:radial-gradient(ellipse at 50% 35%,#31424b 0%,#17232c 48%,#0e151c 100%)}
+.q3d-stage canvas{width:100%;height:100%;display:block}
+.q3d-scene-hud{position:absolute;left:18px;bottom:16px;display:flex;gap:12px;flex-wrap:wrap;pointer-events:none}
+.q3d-scene-hud span{padding:7px 10px;border:1px solid rgba(220,195,145,.22);border-radius:6px;background:rgba(10,15,20,.72);backdrop-filter:blur(8px);color:#e3d0a4;font:700 9px var(--sans);letter-spacing:.12em}
+.q3d-loading{display:grid;place-items:center;height:100%;min-height:420px;color:#e7dfcf;font-size:13px}
+.q3d-asset-credit{margin:8px 0 0;color:#777f88;font-size:9px}
+.q3d-premium .q3d-room-selector{background:linear-gradient(180deg,#111a22,#0c1219)}
+.q3d-premium .q3d-desks button[aria-pressed=true]{border-color:rgba(218,183,105,.65);background:rgba(201,162,74,.12)}
+@media(max-width:650px){.q3d-stage{height:460px}.q3d-scene-hud{left:10px;bottom:10px}.q3d-scene-hud span{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.q3d-premium *{scroll-behavior:auto}}
