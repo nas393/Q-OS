@@ -8,12 +8,12 @@ import "../chat/chat.css";
 
 type Conv = { id: string; title: string; updated_at?: string };
 type Msg = { role: "user" | "assistant"; content: string };
-type Role = "partner" | "ceo" | "commercial" | "cfo" | "coo" | "cso" | "negotiator" | "chief_of_staff" | "devils_advocate";
+type Role = "partner" | "ceo" | "commercial" | "cfo" | "coo" | "cso" | "negotiator" | "chief_of_staff" | "sales_analyst" | "devils_advocate";
 const ROLES: { value: Role; label: string }[] = [
   { value: "partner", label: "Executive Partner" }, { value: "ceo", label: "CEO / General Manager" },
   { value: "commercial", label: "Commercial Director" }, { value: "cfo", label: "CFO lens" },
   { value: "coo", label: "COO / Operations" }, { value: "cso", label: "Chief Strategy Officer" },
-  { value: "negotiator", label: "Negotiator" }, { value: "chief_of_staff", label: "Chief of Staff" },
+  { value: "negotiator", label: "Negotiator" }, { value: "chief_of_staff", label: "Chief of Staff" },\n  { value: "sales_analyst", label: "Sales & BI Analyst" },
   { value: "devils_advocate", label: "Devil's Advocate" }
 ];
 const QUICK: [string, string][] = [
@@ -46,7 +46,7 @@ export default function TwinWorkspace() {
       setStatus("online");
     } catch { setStatus("offline"); }
   }, []);
-  useEffect(() => { void loadConvs(); }, [loadConvs]);
+  useEffect(() => {\n    const requested = new URLSearchParams(window.location.search).get("role");\n    const allowed: Role[] = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];\n    if (requested && allowed.includes(requested as Role)) setRole(requested as Role);\n  }, []);\n  useEffect(() => { void loadConvs(); }, [loadConvs]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   async function openConversation(id: string) {
