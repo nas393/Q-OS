@@ -31,7 +31,7 @@ function initialWorld():SimulationState{
   return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
     employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
 }
-type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
+const SIM_DEPARTMENTS=["All","Finance","Commercial","Operations","Strategy","Executive Office"] as const;
 function useAssets(){
   const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
   return [businessMan,businessWoman,casualMan,casualWoman];
@@ -163,8 +163,8 @@ function WorldScene({employees,selected,onSelect,cameraMode}:{employees:Employee
     <OrbitControls enabled={cameraMode!=="CINEMA"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
   </Canvas>;
 }
-export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
-  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"CINEMA">("FREE");
+export function ExecutiveWorld3D(){
+  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
@@ -188,8 +188,8 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
       <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>26 AGENTS · 6 DEPARTMENTS</span></div>
     </div>
     <div className="q3d-room-selector">
-      <div className="q3d-room-tabs">{rooms.map(r=><button type="button" key={r.id} onClick={()=>{const first=r.desks[0];if(first){onSelectDesk(first.id);setSelected(first.id)}}}>{r.label}</button>)}</div>
-      <div className="q3d-desks">{world.employees.map(e=><button type="button" key={e.id} onClick={()=>setSelected(e.id)} aria-pressed={selected===e.id}>
+      <div className="q3d-room-tabs" aria-label="Simulation departments">{SIM_DEPARTMENTS.map(name=><button type="button" key={name} aria-pressed={department===name} onClick={()=>setDepartment(name)}>{name}</button>)}</div>
+      <div className="q3d-desks">{world.employees.filter(e=>department==="All"||e.department===department).map(e=><button type="button" key={e.id} onClick={()=>setSelected(e.id)} aria-pressed={selected===e.id}>
         <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
       </button>)}</div>
       <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
