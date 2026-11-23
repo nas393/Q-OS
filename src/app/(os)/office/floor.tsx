@@ -154,12 +154,8 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
       <div className="of-world-head">
         <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
           <p>A live operational model of the office. Select a desk or room to inspect its real work, tasks and decisions.</p></div>
-        <div className="of-world-controls" aria-label="World view controls">
+        <div className="of-world-controls" aria-label="World view status">
           <span className="of-world-live"><i/>LIVE DATA</span>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.max(.8,Number((z-.1).toFixed(1))))} aria-label="Zoom out">−</button>
-          <span className="of-world-zoom">{Math.round(worldZoom*100)}%</span>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(z=>Math.min(1.2,Number((z+.1).toFixed(1))))} aria-label="Zoom in">+</button>
-          <button type="button" className="btn ghost sm" onClick={()=>setWorldZoom(1)}>Reset</button>
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
