@@ -124,7 +124,7 @@ export default function TwinWorkspace() {
           {c.updated_at && <time>{new Date(c.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</time>}
         </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your Executive Twin discussions will appear here."}</p>}
       </div>
-      <div className="tw-private"><I n="lock"/>Owner-only · separate from Q Assistant</div>
+      <div className="tw-private"><I n="user"/>Owner-only · separate from Q Assistant</div>
     </aside>
     {historyOpen && <button className="qa-scrim" aria-label="Close conversation history" onClick={() => setHistoryOpen(false)}/>}
     <section className="qa-main" aria-label="Executive Twin workspace">
@@ -144,7 +144,7 @@ export default function TwinWorkspace() {
         {!msgs.length && <div className="qa-hello">
           <QMark size={56}/><h2>Your strategic counterpart.</h2>
           <p>Think through decisions, challenge assumptions and build execution plans. Switch perspectives without changing the owner-only workspace.</p>
-          <div className="tw-boundary"><I n="shield-check"/>Private to the owner. No autonomous actions, external messages, spending or access changes.</div>
+          <div className="tw-boundary"><I n="check"/>Private to the owner. No autonomous actions, external messages, spending or access changes.</div>
           <div className="qa-quick">{QUICK.map(([label, prompt]) => <button key={label} className="chip" onClick={() => send(prompt)} disabled={busy || status === "offline"}>{label}</button>)}</div>
         </div>}
         {msgs.map((m, i) => m.role === "user"
