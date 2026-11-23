@@ -61,7 +61,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
  const canvas=useRef<HTMLCanvasElement>(null),[world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE"),[rotation,setRotation]=useState(.55),[zoom,setZoom]=useState(1),[drag,setDrag]=useState(false);
  const pointer=useRef(0),worldRef=useRef(world),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
  worldRef.current=world;
- useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{const next=tickSimulation(w,60_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
+ useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
  const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
  const shader=useMemo(()=>({vs:"attribute vec3 aPosition;attribute vec3 aNormal;uniform mat4 uMvp;uniform mat4 uModel;varying vec3 vNormal;void main(){vNormal=mat3(uModel)*aNormal;gl_Position=uMvp*vec4(aPosition,1.0);}",fs:"precision mediump float;varying vec3 vNormal;uniform vec3 uColor;void main(){float l=max(dot(normalize(vNormal),normalize(vec3(-.4,.9,.5))),0.0);gl_FragColor=vec4(uColor*(.48+l*.7),1.0);}" }),[]);
  useEffect(()=>{
