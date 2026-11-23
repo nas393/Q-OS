@@ -7,19 +7,23 @@ import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
 import {QMark} from "@/components/shell/q-mark";
+import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
 import "./office.css";
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
 type Stats=Record<string,{stats:{label:string;value:string}[]}>;
+type WorkRow={id:string;staff:string;job:string;title:string;body:WorkBody;status:"waiting"|"approved"|"discarded";createdAt:string};
 const LIGHT_TEXT={ok:"All good",watch:"Watching",down:"Needs you",idle:"No data"} as const;
-const KIND_TEXT={alert:"Alert",approval:"Your yes",task:"Late task"} as const;
+const KIND_TEXT={alert:"Alert",approval:"Your yes",draft:"Draft",task:"Late task"} as const;
 const LAYOUT:Room[]=["corner","studio","academy","markets","community","screens","ops"];
 
-export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvalsFailed,today}:{alerts:DeskAlert[];stats:Stats;tasks:DeskTask[];approvals:DeskApproval[];approvalsFailed:string[];today:string}){
+export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvalsFailed,work:initialWork,today}:{alerts:DeskAlert[];stats:Stats;tasks:DeskTask[];approvals:DeskApproval[];approvalsFailed:string[];work:WorkRow[];today:string}){
   const [apps,setApps]=useState<LiveApp[]|null>(null);
   const [tasks,setTasks]=useState(initialTasks);
   const [seen,setSeen]=useState<number[]>([]);
+  const [work,setWork]=useState(initialWork);
+  const [working,setWorking]=useState<string|null>(null);
   const [open,setOpen]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState("");
@@ -41,12 +45,14 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     const rows=STAFF.filter(s=>s.id!=="ops").map(s=>{
       const app=appFor(s);
       const state=app?.state==="EXTERNAL"?"READY":app?.state??(apps?null:"READY");
-      return {staff:s,app,desk:deskFor({state,alerts:mine[s.id]??[],stats:statsFor(s),tasks:theirs[s.id]??[],approvals:approvals.filter(a=>a.app===s.id),today})};
+      return {staff:s,app,desk:deskFor({state,alerts:mine[s.id]??[],stats:statsFor(s),tasks:theirs[s.id]??[],approvals:approvals.filter(a=>a.app===s.id),drafts:work.filter(w=>w.staff===s.id&&w.status==="waiting").map(w=>({id:w.id,title:w.body.summary||w.title})),today})};
     });
     const ops=STAFF.find(s=>s.id==="ops")!;
-    rows.push({staff:ops,app:null,desk:opsDesk(rows.filter(r=>r.staff.id!=="q").map(r=>r.desk),mine.ops??[])});
+    const opsD=opsDesk(rows.filter(r=>r.staff.id!=="q").map(r=>r.desk),mine.ops??[]);
+    const opsDrafts=work.filter(w=>w.staff==="ops"&&w.status==="waiting").map(w=>({kind:"draft" as const,level:"amber" as const,title:w.body.summary||w.title,workId:w.id}));
+    rows.push({staff:ops,app:null,desk:{...opsD,needs:[...opsD.needs,...opsDrafts],light:opsD.light==="ok"&&opsDrafts.length?"watch":opsD.light}});
     return rows;
-  },[apps,alerts,stats,tasks,approvals,seen,today]);
+  },[apps,alerts,stats,tasks,approvals,seen,work,today]);
 
   const team=floor.filter(r=>r.staff.id!=="q");
   const q=floor.find(r=>r.staff.id==="q")!;
@@ -73,6 +79,16 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     try{await send("/api/alerts","POST",{action:"ack",id:alertId});setSeen(s=>[...s,alertId]);setMsg("Alert cleared.")}
     catch(e){setMsg((e as Error).message)}finally{setBusy(false)}
   }
+  async function ask(jobId:string,s:Staff){
+    setWorking(jobId);setMsg("");
+    try{const d=await send("/api/office/work","POST",{job:jobId});if(d.work)setWork(w=>[d.work as WorkRow,...w]);setMsg(`${s.name} finished a draft. Approve or discard it below.`)}
+    catch(e){setMsg((e as Error).message)}finally{setWorking(null)}
+  }
+  async function decide(id:string,decision:"approved"|"discarded"){
+    setBusy(true);setMsg("");
+    try{const d=await send("/api/office/work","PATCH",{id,decision});setWork(w=>w.map(x=>x.id===id?{...x,status:(d.work as WorkRow).status}:x));setMsg(decision==="approved"?"Approved. Copy or open it from the draft.":"Discarded.")}
+    catch(e){setMsg((e as Error).message)}finally{setBusy(false)}
+  }
   async function delegate(e:FormEvent<HTMLFormElement>,s:Staff){
     e.preventDefault();const f=new FormData(e.currentTarget),title=String(f.get("title")??"").trim(),due=String(f.get("due")??"");
     if(!title)return;
@@ -85,6 +101,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
 
   const needAction=(n:Need)=>n.kind==="approval"&&n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Review</a>
     :n.kind==="task"&&n.taskId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>done(n.taskId!)}>Done</button>
+    :n.kind==="draft"?<button type="button" className="btn ghost sm" onClick={()=>{const w=work.find(x=>x.id===n.workId);if(w){setMsg("");setOpen(w.staff)}}}>View</button>
     :n.kind==="alert"&&n.alertId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>markSeen(n.alertId!)}>Clear</button>
     :n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Open</a>:null;
 
@@ -153,6 +170,23 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
         {sel.staff.id==="q"?<ol className="of-list">{meeting.lines.map(l=><li key={l}>{l}</li>)}</ol>:<p>{d.line}</p>}
         {st?.length?<ul className="of-stats">{st.map(s=><li key={s.label}><b>{s.value}</b><span>{s.label}</span></li>)}</ul>:null}
         {d.needs.length>0&&<><h3>Needs you</h3><ul className="of-needs">{d.needs.map((n,i)=><li key={i} data-light={n.level==="red"?"down":"watch"}><span>{KIND_TEXT[n.kind]}: {n.title}</span>{needAction(n)}</li>)}</ul></>}
+        {jobsFor(sel.staff.id).length>0&&<>
+          <h3>Jobs</h3>
+          <div className="of-jobs">{jobsFor(sel.staff.id).map(j=><button key={j.id} type="button" className="btn ghost" disabled={!!working} onClick={()=>ask(j.id,sel.staff)} title={j.what}>{working===j.id?`${sel.staff.name} is working…`:j.label}</button>)}</div>
+          {working&&<p className="of-empty" role="status">Drafting can take up to a minute.</p>}
+        </>}
+        {work.some(w=>w.staff===sel.staff.id)&&<>
+          <h3>Drafts</h3>
+          <ul className="of-drafts">{work.filter(w=>w.staff===sel.staff.id).slice(0,6).map(w=><li key={w.id} data-status={w.status}>
+            <details open={w.status==="waiting"}>
+              <summary><b>{w.body.summary||w.title}</b><small>{w.status==="waiting"?"Waiting for your yes":w.status==="approved"?"Approved":"Discarded"} · {w.createdAt.slice(0,10)}</small></summary>
+              <ol>{w.body.items.map((it,i)=><li key={i}><b>{it.title}</b><p>{it.text}</p>
+                <div className="of-acts"><button type="button" className="btn ghost sm" onClick={()=>{navigator.clipboard?.writeText(`${it.title}\n\n${it.text}`).then(()=>setMsg("Copied."),()=>setMsg("Copy failed."))}}>Copy</button>
+                {it.link&&<a className="btn ghost sm" href={it.link} target="_blank" rel="noreferrer">Open in Studio</a>}</div></li>)}</ol>
+              {w.status==="waiting"&&<div className="of-acts"><button type="button" className="btn sm" disabled={busy} onClick={()=>decide(w.id,"approved")}>Approve</button><button type="button" className="btn ghost sm" disabled={busy} onClick={()=>decide(w.id,"discarded")}>Discard</button></div>}
+            </details>
+          </li>)}</ul>
+        </>}
         {sel.staff.id!=="ops"&&<>
           <h3>Tasks from you</h3>
           {d.open.length?<ul className="of-needs">{d.open.map(t=><li key={t.id} data-light={t.due&&t.due<today?"watch":"ok"}><span>{t.title}{t.due?` · due ${t.due}`:""}</span><button type="button" className="btn ghost sm" disabled={busy} onClick={()=>done(t.id)}>Done</button></li>)}</ul>

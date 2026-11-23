@@ -28,10 +28,8 @@ async function gemini(system:string,user:string){
  return {text:j.candidates?.[0]?.content?.parts?.map(p=>p.text??"").join("")??"",provider:"gemini",model:GEMINI_MODEL};
 }
 
-/* Ask for JSON; parse defensively. Throws a readable error when no provider works. */
-export async function generateJSON<T=Record<string,unknown>>(task:string,shape:string,evidence:string):Promise<AIResult<T>>{
- const system=`${IQ_RULES}\nTASK: ${task}\nJSON SHAPE: ${shape}`;
- const user=`EVIDENCE (from the platform's stored records; may be empty):\n${evidence.slice(0,14000)||"(none)"}`;
+/* Any system/user prompt to parsed JSON: Groq first, then Gemini. Throws a readable error when no provider works. */
+export async function jsonFromAI<T=Record<string,unknown>>(system:string,user:string):Promise<AIResult<T>>{
  const errors:string[]=[];
  for(const call of [groq,gemini]){
   try{
@@ -43,3 +41,9 @@ export async function generateJSON<T=Record<string,unknown>>(task:string,shape:s
  }
  throw new Error(errors.length?`AI unavailable (${errors.join("; ")})`:"AI is not configured (add GROQ_API_KEY or GEMINI_API_KEY).");
 }
+
+/* Ask for JSON; parse defensively. Throws a readable error when no provider works. */
+export async function generateJSON<T=Record<string,unknown>>(task:string,shape:string,evidence:string):Promise<AIResult<T>>{
+ return jsonFromAI<T>(`${IQ_RULES}\nTASK: ${task}\nJSON SHAPE: ${shape}`,`EVIDENCE (from the platform's stored records; may be empty):\n${evidence.slice(0,14000)||"(none)"}`);
+}
+
