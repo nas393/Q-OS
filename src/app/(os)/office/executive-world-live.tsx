@@ -1,128 +1,193 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { ContactShadows, Environment, OrbitControls, Text, useProgress, Html } from "@react-three/drei";
+import { AnimationMixer, Color, Group, MathUtils, MeshStandardMaterial, Object3D, PlaneGeometry, RepeatWrapping, SRGBColorSpace, Vector3 } from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { clone } from "three/addons/utils/SkeletonUtils.js";
+import { useLoader } from "@react-three/fiber";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
 import { tickSimulation } from "@/lib/simulation/engine";
-import type { SimulationState, SimTask } from "@/lib/simulation/types";
+import type { EmployeeAgent, SimulationState, SimTask } from "@/lib/simulation/types";
 
-type V3 = [number, number, number];
-type Mesh = { positions: number[]; normals: number[]; count: number };
+const MODEL_URLS = [
+  "https://models.vinish.dev/people/business-man.glb",
+  "https://models.vinish.dev/people/business-woman.glb",
+  "https://models.vinish.dev/people/casual-man.glb",
+  "https://models.vinish.dev/people/casual-woman.glb",
+];
 const clamp = (n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
-function sphere(lat=12,lon=16):Mesh {
-  const p:number[]=[],n:number[]=[];
-  for(let y=0;y<lat;y++)for(let x=0;x<lon;x++){
-    const a=(y/lat)*Math.PI,b=((y+1)/lat)*Math.PI,c=(x/lon)*Math.PI*2,d=((x+1)/lon)*Math.PI*2;
-    const v=(t:number,u:number):V3=>[Math.sin(t)*Math.cos(u),Math.cos(t),Math.sin(t)*Math.sin(u)];
-    const q=[v(a,c),v(b,c),v(b,d),v(a,c),v(b,d),v(a,d)];
-    for(const w of q){p.push(...w);n.push(...w);}
-  }
-  return {positions:p,normals:n,count:p.length/3};
-}
-function cylinder(segments=12):Mesh {
-  const p:number[]=[],n:number[]=[];
-  for(let i=0;i<segments;i++){
-    const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
-    const p1:V3=[Math.cos(a),-.5,Math.sin(a)],p2:V3=[Math.cos(b),-.5,Math.sin(b)],p3:V3=[Math.cos(b),.5,Math.sin(b)],p4:V3=[Math.cos(a),.5,Math.sin(a)];
-    for(const v of [p1,p2,p3,p1,p3,p4]){p.push(...v);n.push(v[0],0,v[2]);}
-  }
-  return {positions:p,normals:n,count:p.length/3};
-}
-function box():Mesh {
-  const faces:V3[][]=[
-    [[-.5,-.5,-.5],[.5,-.5,-.5],[.5,.5,-.5],[-.5,-.5,-.5],[.5,.5,-.5],[-.5,.5,-.5]],
-    [[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]],
-    [[-.5,-.5,-.5],[-.5,.5,-.5],[-.5,.5,.5],[-.5,-.5,-.5],[-.5,.5,.5],[-.5,-.5,.5]],
-    [[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5],[.5,-.5,-.5],[.5,.5,.5],[.5,-.5,.5]],
-    [[-.5,-.5,-.5],[-.5,-.5,.5],[.5,-.5,.5],[-.5,-.5,-.5],[.5,-.5,.5],[.5,-.5,-.5]],
-    [[-.5,.5,-.5],[-.5,.5,.5],[.5,.5,.5],[-.5,.5,-.5],[.5,.5,.5],[.5,.5,-.5]]
-  ];
-  const ns:V3[]=[[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]],p:number[]=[],n:number[]=[];
-  faces.forEach((f,i)=>f.forEach(v=>{p.push(...v);n.push(...ns[i]);}));
-  return {positions:p,normals:n,count:p.length/3};
-}
-function multiply(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
-function model(x:number,y:number,z:number,sx:number,sy:number,sz:number,rz=0){const c=Math.cos(rz),s=Math.sin(rz);return [c*sx,s*sx,0,0,-s*sy,c*sy,0,0,0,0,sz,0,x,y,z,1];}
-function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,(2*far*n)/(n-far),0];}
-function lookAt(eye:V3,center:V3){const norm=(v:V3):V3=>{const l=Math.hypot(...v)||1;return [v[0]/l,v[1]/l,v[2]/l]},sub=(a:V3,b:V3):V3=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross=(a:V3,b:V3):V3=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
- const z=norm(sub(eye,center)),x=norm(cross([0,1,0],z)),y=cross(z,x);
- return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),1];}
 function makeTasks():SimTask[]{
- const specs=[["Finance","Close monthly forecast",["finance"],4],["Finance","Review working capital",["planning"],3],["Commercial","Analyse key-account performance",["sales"],4],["Commercial","Prepare channel growth plan",["marketing"],3],["Operations","Review supply reliability",["operations"],4],["Operations","Improve process yield",["quality"],3],["Strategy","Assess market opportunity",["strategy"],3],["Strategy","Build transformation roadmap",["research"],2],["Executive Office","Prepare leadership briefing",["coordination"],3]];
- return specs.map((s,i)=>({id:"world-task-"+i,title:String(s[1]),department:String(s[0]),requiredSkills:s[2] as string[],priority:Number(s[3]),effortRemaining:18+i*2,status:"queued",assigneeId:null,dueAt:null,createdAt:i}));
+  const specs:[string,string,string[],number][]=[
+    ["Finance","Close monthly forecast",["finance"],4],["Finance","Review working capital",["planning"],3],
+    ["Commercial","Analyse key-account performance",["sales"],4],["Commercial","Prepare channel growth plan",["marketing"],3],
+    ["Operations","Review supply reliability",["operations"],4],["Operations","Improve process yield",["quality"],3],
+    ["Strategy","Assess market opportunity",["strategy"],3],["Strategy","Build transformation roadmap",["research"],2],
+    ["Executive Office","Prepare leadership briefing",["coordination"],3],
+  ];
+  return specs.map((s,i)=>({id:"world-task-"+i,title:s[1],department:s[0],requiredSkills:s[2],priority:s[3],effortRemaining:18+i*2,status:"queued",assigneeId:null,dueAt:null,createdAt:i}));
 }
-function initialWorld():SimulationState {
- const now=Date.UTC(2026,10,23,9);
- return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
- employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%3===0?{x:e.position.x+(i%2?2.5:-2.5),y:0,z:e.position.z+(i%2?-1.5:1.5)}:null})),
- tasks:makeTasks(),events:[]};
+function initialWorld():SimulationState{
+  const now=Date.UTC(2026,10,23,9);
+  return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
+    employees:INITIAL_EMPLOYEES.map(e=>({...e,position:{...e.position},destination:null})),tasks:makeTasks(),events:[]};
 }
 type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
+type AssetSet=ReturnType<typeof useAssets>;
+function useAssets(){
+  const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
+  return [businessMan,businessWoman,casualMan,casualWoman];
+}
+function MatBox({position,scale,color,roughness=.65,metalness=0}:{position:[number,number,number];scale:[number,number,number];color:string;roughness?:number;metalness?:number}){
+  return <mesh position={position} castShadow receiveShadow><boxGeometry args={scale}/><meshStandardMaterial color={color} roughness={roughness} metalness={metalness}/></mesh>;
+}
+function Desk({position,rotation=0,executive=false}:{position:[number,number,number];rotation?:number;executive?:boolean}){
+  return <group position={position} rotation={[0,rotation,0]}>
+    <MatBox position={[0,.76,0]} scale={[1.75,.12,.82]} color={executive?"#59432f":"#76563b"}/>
+    <MatBox position={[-.72,.37,0]} scale={[.09,.72,.72]} color="#262a30" />
+    <MatBox position={[.72,.37,0]} scale={[.09,.72,.72]} color="#262a30" />
+    <MatBox position={[0,1.05,-.22]} scale={[.62,.42,.055]} color="#141c24" metalness={.25}/>
+    <MatBox position={[0,1.05,-.185]} scale={[.55,.33,.012]} color="#183342" metalness={.2}/>
+    <MatBox position={[.48,.84,.16]} scale={[.22,.025,.28]} color="#24272c"/>
+    <MatBox position={[-.43,.84,.14]} scale={[.28,.025,.2]} color="#b4b6b8"/>
+    <OfficeChair position={[0,0,1.02]}/>
+  </group>;
+}
+function OfficeChair({position}:{position:[number,number,number]}){
+  return <group position={position}>
+    <MatBox position={[0,.52,0]} scale={[.55,.12,.52]} color="#242932"/>
+    <MatBox position={[0,.91,-.2]} scale={[.52,.62,.12]} color="#303640"/>
+    <MatBox position={[0,.25,0]} scale={[.08,.48,.08]} color="#6a7079" metalness={.7}/>
+    {[-.22,.22].map(x=>[-.2,.2].map(z=><MatBox key={x+"-"+z} position={[x,.08,z]} scale={[.08,.08,.08]} color="#7d838b" metalness={.7}/>))}
+  </group>;
+}
+function Plant({position}:{position:[number,number,number]}){
+  return <group position={position}>
+    <mesh position={[0,.28,0]} castShadow><cylinderGeometry args={[.28,.22,.55,16]}/><meshStandardMaterial color="#514237"/></mesh>
+    {Array.from({length:7},(_,i)=><mesh key={i} position={[Math.sin(i*2.4)*.18,.72+(i%3)*.12,Math.cos(i*2.4)*.18]} rotation={[.2,0,(i-3)*.2]} castShadow><coneGeometry args={[.16,.65,7]}/><meshStandardMaterial color={i%2?"#35624b":"#477a57"}/></mesh>)}
+  </group>;
+}
+function Sofa({position,rotation=0}:{position:[number,number,number];rotation?:number}){
+  return <group position={position} rotation={[0,rotation,0]}>
+    <MatBox position={[0,.28,0]} scale={[2.6,.45,.9]} color="#343d49"/>
+    <MatBox position={[0,.68,-.36]} scale={[2.6,.85,.18]} color="#465361"/>
+    {[-.9,0,.9].map(x=><MatBox key={x} position={[x,.56,.02]} scale={[.78,.08,.72]} color="#586574"/>)}
+  </group>;
+}
+function GlassWall({position,scale}:{position:[number,number,number];scale:[number,number,number]}){
+  return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness:.12 metalness:.2 transmission:.15 thickness:.12/></mesh>;
+}
+function RoomSign({children,position}:{children:string;position:[number,number,number]}){
+  return <Text position={position} fontSize={.34} color="#d9c08b" anchorX="center" anchorY="middle" outlineWidth={.012} outlineColor="#11151b">{children}</Text>;
+}
+function Architecture(){
+  const desks=useMemo(()=>Array.from({length:20},(_,i)=>{
+    const col=i%5,row=Math.floor(i/5);
+    return {position:[-15+col*2.2,-.02,-1+row*2.25] as [number,number,number],rotation:Math.PI};
+  }),[]);
+  return <group>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.16,0]} receiveShadow><planeGeometry args={[48,34]}/><meshStandardMaterial color="#222a31" roughness:.82/></mesh>
+    <gridHelper args={[48,48,"#45515a","#303a43"]} position={[0,-.145,0]}/>
+    <MatBox position={[0,-.02,0]} scale={[43,.16,29]} color="#a59b8a" roughness={.82}/>
+    <MatBox position={[0,.03,0]} scale={[41.8,.025,27.8]} color="#c2b9aa" roughness={.7}/>
+    {[-20.8,20.8].map(x=><group key={x}><MatBox position={[x,1.75,0]} scale={[.18,3.5,28]} color="#384752"/><GlassWall position={[x,1.9,0]} scale={[.05,2.95,27.5]}/></group>)}
+    {[-13.8,13.8].map(z=><group key={z}><MatBox position={[0,1.75,z]} scale={[41.6,3.5,.18]} color="#384752"/><GlassWall position={[0,1.9,z]} scale={[41,.05,2.95]}/></group>)}
+    {[-10.2,0,10.2].map(x=><group key={x}><MatBox position={[x,1.5,-2.5]} scale={[.12,3,20]} color="#5c6268"/><GlassWall position={[x,1.5,7.2]} scale={[.06,2.8,5.8]}/></group>)}
+    {[-6,4].map(z=><MatBox key={z} position={[0,1.48,z]} scale={[41,.12,.12]} color="#8c795f"/>)}
+    <RoomSign position={[-15,2.8,-12.4]}>FINANCE</RoomSign>
+    <RoomSign position={[0,2.8,-12.4]}>EXECUTIVE SUITE</RoomSign>
+    <RoomSign position={[15,2.8,-12.4]}>COMMERCIAL</RoomSign>
+    <RoomSign position={[-15,2.8,12.2]}>OPERATIONS</RoomSign>
+    <RoomSign position={[0,2.8,12.2]}>WAR ROOM</RoomSign>
+    <RoomSign position={[15,2.8,12.2]}>STRATEGY</RoomSign>
+    {desks.map((d,i)=><Desk key={i} position={d.position} rotation={d.rotation}/>)}
+    {[-8,8].map(x=><group key={x}><MatBox position={[x,.8,7.5]} scale={[5,.16,2.1]} color="#493d32"/>{[-1.6,1.6].map(dx=><OfficeChair key={dx} position={[x+dx,0,9]}/>)}</group>)}
+    <MatBox position={[0,.78,0]} scale={[5.4,.18,1.7]} color="#59442f" />
+    {[-2,0,2].map(x=><OfficeChair key={x} position={[x,0,1.5]}/>)}
+    <Sofa position={[-5,0,-10]} rotation={Math.PI/2}/><Sofa position={[-1.8,0,-10]} rotation={-Math.PI/2}/>
+    <MatBox position={[-3.4,.38,-10]} scale={[1.2,.12,1.2]} color="#57483b"/>
+    <Plant position={[-19,0,-11]}/><Plant position={[19,0,-11]}/><Plant position={[-19,0,11]}/><Plant position={[19,0,11]}/>
+    {[-18,-9,0,9,18].map(x=><group key={x}><MatBox position={[x,3.25,-13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/><MatBox position={[x,3.25,13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/></group>)}
+    <MatBox position={[0,.85,-13]} scale={[5,.2,.9]} color="#3a454f"/>
+    <MatBox position={[0,1.3,-13.32]} scale={[2.2,.7,.06]} color="#152d3a"/>
+  </group>;
+}
+function Character({employee,index,asset,onSelect,selected}:{employee:EmployeeAgent;index:number;asset:any;onSelect:(id:string)=>void;selected:boolean}){
+  const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<any>(null);
+  const model=useMemo(()=>clone(asset.scene),[asset]);
+  useEffect(()=>{
+    const m=new AnimationMixer(model);mixer.current=m;
+    const clip=asset.animations.find((a:any)=>/idle/i.test(a.name))??asset.animations[0];
+    if(clip){action.current=m.clipAction(clip);action.current.play();}
+    return()=>{m.stopAllAction();mixer.current=null};
+  },[asset,model]);
+  useFrame((_,delta)=>{
+    mixer.current?.update(Math.min(delta,.05));
+    const g=root.current;if(!g)return;
+    const target=new Vector3(employee.position.x,0,employee.position.z);
+    g.position.lerp(target,1-Math.exp(-delta*7));
+    if(employee.destination){
+      const dx=employee.destination.x-employee.position.x,dz=employee.destination.z-employee.position.z;
+      if(Math.abs(dx)+Math.abs(dz)>.05)g.rotation.y=MathUtils.damp(g.rotation.y,Math.atan2(dx,dz),5,delta);
+    }
+  });
+  return <group ref={root} position={[employee.position.x,0,employee.position.z]} onClick={e=>{e.stopPropagation();onSelect(employee.id)}}>
+    <primitive object={model} scale={.98} />
+    {selected&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,48]}/><meshBasicMaterial color="#e1bd70" transparent opacity={.95}/></mesh>}
+    <mesh position={[0,2.12,0]}><sphereGeometry args={[.045,12,12]}/><meshBasicMaterial color={employee.activity==="working"?"#65c18a":employee.activity==="walking"?"#e1bd70":"#7c8793"}/></mesh>
+  </group>;
+}
+function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
+  const assets=useAssets();
+  return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} index={index} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
+}
+function WorldScene({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
+  return <Canvas shadows dpr={[1,1.6]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
+    <color attach="background" args={["#101820"]}/>
+    <fog attach="fog" args={["#101820",42,85]}/>
+    <ambientLight intensity={.75}/>
+    <hemisphereLight args={["#dce8f0","#4a4035",1.1]}/>
+    <directionalLight position={[-15,24,10]} intensity={2.2} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
+    <pointLight position={[0,7,0]} intensity={.7} color="#e8c88d"/>
+    <Architecture/>
+    <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
+    <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
+    <Environment preset="city"/>
+    <OrbitControls makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
+  </Canvas>;
+}
+function LoadingWorld(){const {progress}=useProgress();return <Html center><div style={{padding:"12px 16px",borderRadius:12,background:"#121820",color:"#e7dfcf",fontSize:12,whiteSpace:"nowrap"}}>Loading headquarters assets · {Math.round(progress)}%</div></Html>}
 export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
- const canvas=useRef<HTMLCanvasElement>(null),[world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE"),[rotation,setRotation]=useState(.55),[zoom,setZoom]=useState(1),[drag,setDrag]=useState(false);
- const pointer=useRef(0),worldRef=useRef(world),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
- worldRef.current=world;
- useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
- const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
- const shader=useMemo(()=>({vs:"attribute vec3 aPosition;attribute vec3 aNormal;uniform mat4 uMvp;uniform mat4 uModel;varying vec3 vNormal;void main(){vNormal=mat3(uModel)*aNormal;gl_Position=uMvp*vec4(aPosition,1.0);}",fs:"precision mediump float;varying vec3 vNormal;uniform vec3 uColor;void main(){float l=max(dot(normalize(vNormal),normalize(vec3(-.4,.9,.5))),0.0);gl_FragColor=vec4(uColor*(.48+l*.7),1.0);}" }),[]);
- useEffect(()=>{
-  const el=canvas.current;if(!el)return;const gl=el.getContext("webgl",{antialias:true,alpha:false});if(!gl)return;
-  const compile=(type:number,src:string)=>{const sh=gl.createShader(type)!;gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh)||"shader");return sh};
-  const program=gl.createProgram()!;gl.attachShader(program,compile(gl.VERTEX_SHADER,shader.vs));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,shader.fs));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))return;gl.useProgram(program);
-  const meshes={box:box(),sphere:sphere(),cylinder:cylinder()};
-  const buffers=Object.fromEntries(Object.entries(meshes).map(([key,m])=>{const p=gl.createBuffer()!,n=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.positions),gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.normals),gl.STATIC_DRAW);return [key,{p,n,count:m.count}]})) as Record<string,{p:WebGLBuffer;n:WebGLBuffer;count:number}>;
-  const ap=gl.getAttribLocation(program,"aPosition"),an=gl.getAttribLocation(program,"aNormal"),um=gl.getUniformLocation(program,"uMvp"),uModel=gl.getUniformLocation(program,"uModel"),uc=gl.getUniformLocation(program,"uColor");
-  let vp:number[]=[];
-  const drawMesh=(kind:keyof typeof meshes,m:number[],color:V3)=>{const b=buffers[kind];gl.bindBuffer(gl.ARRAY_BUFFER,b.p);gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,b.n);gl.enableVertexAttribArray(an);gl.vertexAttribPointer(an,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(uModel,false,new Float32Array(m));gl.uniformMatrix4fv(um,false,new Float32Array(multiply(vp,m)));gl.uniform3fv(uc,new Float32Array(color));gl.drawArrays(gl.TRIANGLES,0,b.count)};
-  let frame=0;
-  const render=()=>{
-   const w=el.clientWidth,h=el.clientHeight,dpr=Math.min(window.devicePixelRatio||1,1.5);if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
-   gl.viewport(0,0,el.width,el.height);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.045,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-   const focused=worldRef.current.employees.find(e=>e.id===selected);const target:V3=camera==="CEO"&&focused?[focused.position.x,0,focused.position.z]:[0,0,0];
-   const radius=35/zoom,eye:[number,number,number]=[target[0]+Math.sin(rotation)*radius,22,target[2]+Math.cos(rotation)*radius];const view=lookAt(eye,target),proj=perspective(.66,w/h,.1,100);vp=multiply(proj,view);
-   // One open-plan headquarters shell with glass perimeter, warm timber zones and meeting spaces.
-   const draw=(kind:keyof typeof meshes,x:number,y:number,z:number,sx:number,sy:number,sz:number,c:V3,rz=0)=>drawMesh(kind,model(x,y,z,sx,sy,sz,rz),c);
-   draw("box",0,-.22,0,42,.35,30,[.18,.19,.21]);draw("box",0,-.03,0,40,.08,28,[.30,.25,.18]);
-   for(const x of [-20,20])draw("box",x,2,0,.18,4,28,[.18,.34,.42]);
-   for(const z of [-14,14])draw("box",0,2,z,40,4,.18,[.18,.34,.42]);
-   // Room dividers and glass executive suite.
-   for(const x of [-10,0,10])draw("box",x,1.35,0,.10,2.7,20,[.24,.26,.29]);
-   for(const z of [-4,5])draw("box",0,1.3,z,40,.08,.08,[.65,.48,.24]);
-   // Desks and workstations: distributed by department.
-   worldRef.current.employees.forEach((e,i)=>{const x=e.position.x,z=e.position.z;draw("box",x,.78,z,1.65,.14,.9,[.34,.23,.14]);draw("box",x+.42,1.12,z-.22,.5,.48,.06,[.08,.12,.16]);draw("box",x+.42,1.12,z-.18,.42,.35,.025,[.16,.48,.59]);});
-   // Meeting table and lounge furniture.
-   draw("box",0,.55,-1,4.8,.16,1.5,[.22,.19,.16]);draw("box",-3,.48,-1,1,.7,.9,[.17,.18,.2]);draw("box",3,.48,-1,1,.7,.9,[.17,.18,.2]);
-   // Human characters: ellipsoid heads/torso and articulated cylindrical limbs, animated from simulation state.
-   const now=performance.now()/1000;
-   worldRef.current.employees.forEach((e,i)=>{
-    const x=e.position.x,z=e.position.z,phase=now*5+i*1.7,walkingNow=e.activity==="walking",swing=walkingNow?Math.sin(phase)*.42:Math.sin(now*1.2+i)*.035;
-    const coat=e.tier==="leadership"?[.55,.39,.18] as V3:[.20+(i%4)*.025,.29,.39] as V3,skin=[.68,.48,.34] as V3,shirt=[.72,.73,.70] as V3;
-    const leg=(side:number,angle:number)=>{const hx=x+side*.17,hz=z;draw("cylinder",hx,.48,hz,.13,.68,.13,coat,angle);draw("sphere",hx+Math.sin(angle)*.23,.14,hz+Math.cos(angle)*.23,.14,.14,.14,skin)};
-    const arm=(side:number,angle:number)=>draw("cylinder",x+side*.29,.99,z,.115,.56,.115,skin,angle);
-    const bob=walkingNow?Math.abs(Math.sin(phase*2))*.045:Math.sin(now*1.4+i)*.012;
-    draw("sphere",x,1.38+bob,z,.27,.31,.25,skin);
-    draw("cylinder",x,.91+bob,z,.46,.66,.27,coat);
-    draw("sphere",x,.68+bob,z,.24,.22,.19,shirt);
-    leg(-1,swing);leg(1,-swing);arm(-1,-swing*.8);arm(1,swing*.8);
-    // Dark hair cap gives each character a readable human silhouette.
-    draw("sphere",x,1.55+bob,z-.015,.275,.13,.26,[.10,.085,.075]);
-   });
-   frame=requestAnimationFrame(render);
-  };
-  // Bind drawMesh to the current view-projection matrix without recreating GPU resources.
-  frame=requestAnimationFrame(render);
-  return()=>{cancelAnimationFrame(frame);Object.values(buffers).forEach(b=>{gl.deleteBuffer(b.p);gl.deleteBuffer(b.n)});gl.deleteProgram(program)};
- },[camera,selected,rotation,zoom,shader]);
- const togglePause=()=>setWorld(w=>({...w,paused:!w.paused}));
- const setSpeed=(speed:0|1|2|4)=>setWorld(w=>({...w,speed}));
- return <div className="q3d-shell q3d-living">
-  <div className="q3d-toolbar"><span className="q3d-live"><i/>SIMULATION · {active} PEOPLE</span><span>{working} working · {walking} walking · {world.events.length} events</span>
-   <div><button type="button" onClick={togglePause}>{world.paused?"Resume":"Pause"}</button>{([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}<button type="button" onClick={()=>setCamera(c=>c==="CEO"?"FREE":"CEO")}>{camera==="CEO"?"Free camera":"CEO view"}</button></div>
-  </div>
-  <canvas ref={canvas} aria-label="Live 3D company simulation with autonomous fictional employees" onPointerDown={e=>{pointer.current=e.clientX;setDrag(true);e.currentTarget.setPointerCapture(e.pointerId)}} onPointerMove={e=>{if(drag){const dx=e.clientX-pointer.current;pointer.current=e.clientX;setRotation(r=>r+dx*.008)}}} onPointerUp={()=>setDrag(false)} onPointerCancel={()=>setDrag(false)} onWheel={e=>setZoom(z=>clamp(z-e.deltaY*.0008,.65,1.6))}/>
-  <div className="q3d-room-selector"><div className="q3d-room-tabs">{rooms.map(r=><button type="button" key={r.id} onClick={()=>{setCamera("FREE");if(r.desks[0])onSelectDesk(r.desks[0].id)}}>{r.label}</button>)}</div>
-   <div className="q3d-desks">{world.employees.map(e=><button type="button" key={e.id} onClick={()=>{setSelected(e.id);if(e.tier==="leadership")setCamera("CEO");}}><span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small></button>)}</div>
-   <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {selectedEmployee.reportsTo}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
-   <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
-  </div>
- </div>;
+  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE");
+  const [speed,setSpeedState]=useState<0|1|2|4>(1);
+  useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
+  const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
+  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
+  const setSpeed=(next:0|1|2|4)=>{setSpeedState(next);setWorld(w=>({...w,speed:next,paused:next===0}))};
+  return <div className="q3d-shell q3d-living q3d-premium">
+    <div className="q3d-toolbar">
+      <span className="q3d-live"><i/>SIMULATION · {active} PEOPLE</span>
+      <span>{working} working · {walking} moving · {world.events.length} events</span>
+      <div><button type="button" onClick={()=>setWorld(w=>({...w,paused:!w.paused}))}>{world.paused?"Resume":"Pause"}</button>
+        {([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}
+        <button type="button" onClick={()=>setCamera(c=>c==="CEO"?"FREE":"CEO")}>{camera==="CEO"?"Free camera":"CEO view"}</button>
+      </div>
+    </div>
+    <div className="q3d-stage">
+      <Suspense fallback={<div className="q3d-loading">Loading realistic people and headquarters…</div>}>
+        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("CEO")}}/>
+      </Suspense>
+      <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>26 AGENTS · 6 DEPARTMENTS</span></div>
+    </div>
+    <div className="q3d-room-selector">
+      <div className="q3d-room-tabs">{rooms.map(r=><button type="button" key={r.id} onClick={()=>{const first=r.desks[0];if(first){onSelectDesk(first.id);setSelected(first.id)}}}>{r.label}</button>)}</div>
+      <div className="q3d-desks">{world.employees.map(e=><button type="button" key={e.id} onClick={()=>setSelected(e.id)} aria-pressed={selected===e.id}>
+        <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
+      </button>)}</div>
+      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {selectedEmployee.reportsTo}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
+      <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
+      <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
+    </div>
+  </div>;
 }
