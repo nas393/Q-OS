@@ -40,13 +40,13 @@ export default function TwinWorkspace() {
 
   const loadConvs = useCallback(async () => {
     try {
-      const r = await fetch("/api/chat?workspace=twin", { cache: "no-store" });
+      const r = await fetch("/api/chat?workspace=twin&role=" + role, { cache: "no-store" });
       if (!r.ok) throw new Error("Conversation storage unavailable");
       const data = await r.json();
       setConvs(data.conversations ?? []);
       setStatus("online");
     } catch { setStatus("offline"); }
-  }, []);
+  }, [role]);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("role");
     const allowed: Role[] = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];
@@ -58,7 +58,7 @@ export default function TwinWorkspace() {
   async function openConversation(id: string) {
     setHistoryOpen(false); setError("");
     try {
-      const r = await fetch("/api/chat/" + id + "?workspace=twin", { cache: "no-store" });
+      const r = await fetch("/api/chat/" + id + "?workspace=twin&role=" + role, { cache: "no-store" });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error ?? "Could not open conversation");
       setConvId(id);
@@ -67,7 +67,7 @@ export default function TwinWorkspace() {
       })));
     } catch (e) { setError(e instanceof Error ? e.message : "Could not open conversation"); }
   }
-  function newConversation() {
+  function changeRole(nextRole: Role) {\n    setRole(nextRole); setConvId(undefined); setMsgs([]); setConvs([]); setError(""); setHistoryOpen(false);\n  }\n  function newConversation() {
     setConvId(undefined); setMsgs([]); setError(""); setHistoryOpen(false); box.current?.focus();
   }
   async function send(text: string) {
@@ -91,7 +91,9 @@ export default function TwinWorkspace() {
         const item = await reader.read();
         if (item.done) break;
         buffer += decoder.decode(item.value, { stream: true });
-        const parts = buffer.split("\\n\\n"); buffer = parts.pop() ?? "";
+        const parts = buffer.split("
+
+"); buffer = parts.pop() ?? "";
         for (const part of parts) {
           let event: { delta?: string; conversationId?: string; error?: string };
           try { event = JSON.parse(part.replace(/^data: /, "")); } catch { continue; }
@@ -127,7 +129,7 @@ export default function TwinWorkspace() {
       <div className="qa-list-h"><h2>Private history</h2><button className="btn sm primary" onClick={newConversation}><I n="plus"/>New</button></div>
       <div className="qa-convs">
         {convs.length ? convs.map(c => <button key={c.id} className="qa-conv" aria-current={c.id === convId ? "true" : undefined} onClick={() => openConversation(c.id)}>
-          <span>{c.title.replace(/^Executive Twin · /, "")}</span>
+          <span>{c.title.replace(/^Executive Twin · (?:partner|ceo|commercial|cfo|coo|cso|negotiator|chief_of_staff|sales_analyst|devils_advocate) · /, "").replace(/^Executive Twin · /, "")}</span>
           {c.updated_at && <time>{new Date(c.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</time>}
         </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your private discussions with this executive employee will appear here."}</p>}
       </div>
@@ -142,7 +144,7 @@ export default function TwinWorkspace() {
           <span className={"live" + (status === "online" ? "" : " off")}><i/>{statusLabel} · analysis and recommendations only</span>
         </div>
         <label className="tw-role-label" htmlFor="twin-role">Perspective</label>
-        <select id="twin-role" className="tw-role" value={role} onChange={e => setRole(e.target.value as Role)} aria-label="Executive perspective">
+        <select id="twin-role" className="tw-role" value={role} onChange={e => changeRole(e.target.value as Role)} aria-label="Executive perspective">
           {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <button className="btn sm qa-new-h" onClick={newConversation} aria-label="New conversation"><I n="plus"/>New</button>
