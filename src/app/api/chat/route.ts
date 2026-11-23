@@ -14,10 +14,21 @@ const OWNER_ID = "owner";
 export async function GET(request: Request) {
   if (!await readSession()) return jsonError(401, "Unauthorized");
   try {
-    const twin = new URL(request.url).searchParams.get("workspace") === "twin";
+    const params = new URL(request.url).searchParams;
+    const twin = params.get("workspace") === "twin";
+    const role = params.get("role") ?? "partner";
+    const roles = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];
+    if (twin && !roles.includes(role)) return jsonError(400, "Invalid executive role.");
+    const filter = !twin
+      ? "title NOT LIKE 'Executive Twin · %'"
+      : role === "partner"
+        ? "(title LIKE 'Executive Twin · partner · %' OR (title LIKE 'Executive Twin · %' AND title NOT LIKE 'Executive Twin · % · %'))"
+        : "title LIKE $2";
+    const values: string[] = [OWNER_ID];
+    if (twin && role !== "partner") values.push("Executive Twin · " + role + " · %");
     const result = await getDb().query(
-      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND status='active' AND " + (twin ? "title LIKE 'Executive Twin · %'" : "title NOT LIKE 'Executive Twin · %'") + " ORDER BY updated_at DESC LIMIT 50",
-      [OWNER_ID]
+      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND status='active' AND " + filter + " ORDER BY updated_at DESC LIMIT 50",
+      values
     );
     return NextResponse.json({ conversations: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch {
@@ -51,12 +62,17 @@ export async function POST(request: Request) {
         [conversationId, OWNER_ID]
       );
       const twin = parsed.data.workspace === "twin";
-      const isTwinConversation = String(check.rows[0]?.title ?? "").startsWith("Executive Twin · ");
-      if (!check.rowCount || (twin !== isTwinConversation)) return jsonError(404, "Conversation not found.");
+      const title = String(check.rows[0]?.title ?? "");
+      const isTwinConversation = title.startsWith("Executive Twin · ");
+      const selectedRole = parsed.data.role ?? "partner";
+      const isSelectedRoleConversation = selectedRole === "partner"
+        ? title.startsWith("Executive Twin · partner · ") || (isTwinConversation && !/^Executive Twin · (partner|ceo|commercial|cfo|coo|cso|negotiator|chief_of_staff|sales_analyst|devils_advocate) · /.test(title))
+        : title.startsWith("Executive Twin · " + selectedRole + " · ");
+      if (!check.rowCount || (twin !== isTwinConversation) || (twin && !isSelectedRoleConversation)) return jsonError(404, "Conversation not found.");
     } else {
       const created = await db.query(
         "INSERT INTO conversations (user_id,title) VALUES ($1,$2) RETURNING id",
-        [OWNER_ID, parsed.data.workspace === "twin" ? "Executive Twin · " + parsed.data.message.slice(0, 48) : parsed.data.message.slice(0, 72)]
+        [OWNER_ID, parsed.data.workspace === "twin" ? "Executive Twin · " + (parsed.data.role ?? "partner") + " · " + parsed.data.message.slice(0, 48) : parsed.data.message.slice(0, 72)]
       );
       conversationId = created.rows[0].id;
     }
