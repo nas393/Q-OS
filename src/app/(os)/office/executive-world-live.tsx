@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { ContactShadows, Environment, OrbitControls, Text } from "@react-three/drei";
 import { AnimationMixer, Group, MathUtils, Vector3 } from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
 import { tickSimulation } from "@/lib/simulation/engine";
@@ -108,12 +108,12 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
     <MatBox position={[0,1.3,-13.32]} scale={[2.2,.7,.06]} color="#152d3a"/>
   </group>;
 }
-function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;asset:any;onSelect:(id:string)=>void;selected:boolean}){
+function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;asset:GLTF;onSelect:(id:string)=>void;selected:boolean}){
   const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<any>(null);
   const model=useMemo(()=>clone(asset.scene),[asset]);
   useEffect(()=>{
     const m=new AnimationMixer(model);mixer.current=m;
-    const clip=asset.animations.find((a:any)=>/idle/i.test(a.name))??asset.animations[0];
+    const clip=asset.animations.find((a)=>/idle/i.test(a.name))??asset.animations[0];
     if(clip){action.current=m.clipAction(clip);action.current.play();}
     return()=>{m.stopAllAction();mixer.current=null};
   },[asset,model]);
@@ -155,11 +155,11 @@ function CameraRig({mode}:{mode:"CEO"|"FREE"}){\n  const {camera}=useThree();\n 
 function LoadingWorld(){const {progress}=useProgress();return <Html center><div style={{padding:"12px 16px",borderRadius:12,background:"#121820",color:"#e7dfcf",fontSize:12,whiteSpace:"nowrap"}}>Loading headquarters assets · {Math.round(progress)}%</div></Html>}
 export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE");
-  const [speed,setSpeedState]=useState<0|1|2|4>(1);
+  
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
   const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
-  const setSpeed=(next:0|1|2|4)=>{setSpeedState(next);setWorld(w=>({...w,speed:next,paused:next===0}))};
+  const setSpeed=(next:0|1|2|4)=>{setWorld(w=>({...w,speed:next,paused:next===0}))};
   return <div className="q3d-shell q3d-living q3d-premium">
     <div className="q3d-toolbar">
       <span className="q3d-live"><i/>SIMULATION · {active} PEOPLE</span>
