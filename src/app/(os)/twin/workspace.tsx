@@ -67,7 +67,9 @@ export default function TwinWorkspace() {
       })));
     } catch (e) { setError(e instanceof Error ? e.message : "Could not open conversation"); }
   }
-  function changeRole(nextRole: Role) {\n    setRole(nextRole); setConvId(undefined); setMsgs([]); setConvs([]); setError(""); setHistoryOpen(false);\n  }\n  function newConversation() {
+  function changeRole(nextRole: Role) {
+    setRole(nextRole); setConvId(undefined); setMsgs([]); setConvs([]); setError(""); setHistoryOpen(false);
+  }\n  function newConversation() {
     setConvId(undefined); setMsgs([]); setError(""); setHistoryOpen(false); box.current?.focus();
   }
   async function send(text: string) {
@@ -91,9 +93,7 @@ export default function TwinWorkspace() {
         const item = await reader.read();
         if (item.done) break;
         buffer += decoder.decode(item.value, { stream: true });
-        const parts = buffer.split("
-
-"); buffer = parts.pop() ?? "";
+        const parts = buffer.split("\n\n"); buffer = parts.pop() ?? "";
         for (const part of parts) {
           let event: { delta?: string; conversationId?: string; error?: string };
           try { event = JSON.parse(part.replace(/^data: /, "")); } catch { continue; }
