@@ -142,7 +142,12 @@ function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selecte
   const assets=useAssets();
   return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
 }
-function CameraRig({mode}:{mode:"CEO"|"FREE"}){\n  const {camera}=useThree();\n  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);\n  return null;\n}\nfunction WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"}){
+function CameraRig({mode}:{mode:"CEO"|"FREE"}){
+  const {camera}=useThree();
+  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);
+  return null;
+}
+function WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"}){
   return <Canvas shadows dpr={[1,1.6]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
     <color attach="background" args={["#101820"]}/>
     <fog attach="fog" args={["#101820",42,85]}/>
@@ -150,7 +155,8 @@ function CameraRig({mode}:{mode:"CEO"|"FREE"}){\n  const {camera}=useThree();\n 
     <hemisphereLight args={["#dce8f0","#4a4035",1.1]}/>
     <directionalLight position={[-15,24,10]} intensity={2.2} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
     <pointLight position={[0,7,0]} intensity={.7} color="#e8c88d"/>
-    <Architecture employees={employees}/>\n    <CameraRig mode={cameraMode}/>
+    <Architecture employees={employees}/>
+    <CameraRig mode={cameraMode}/>
     <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
     <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
     <Environment preset="city"/>
