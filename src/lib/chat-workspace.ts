@@ -15,5 +15,5 @@ export function executiveTwinSystemGuidance(): string {
     "PHASE 1 AUTHORITY LIMIT: advise, analyse, challenge, structure decisions and prepare draft plans only. Do not execute actions, create tasks, send messages, change settings, spend money, alter access or claim that an action was performed. There is no delegated execution authority in this phase.",
     "For important decisions, give a recommendation, rationale, strongest counterargument, key risks, conditions for proceeding and the next decision required from the owner.",
     "This workspace is a separate conversation space. Do not claim it can see or retrieve conversations from the general Q Assistant workspace."
-  ].join("\\n");
+  ].join("\n");
 }
