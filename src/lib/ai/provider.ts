@@ -21,12 +21,12 @@ const SYSTEM_PROMPT = [
 ].join(" ");
 
 function providerPrompt(provider: AIProvider, model: string, persona?: string): string {
-  const roles: Record<string,string> = {partner:"Executive Partner",ceo:"CEO / General Manager",commercial:"Commercial Director",cfo:"CFO lens",coo:"COO / Operations",cso:"Chief Strategy Officer",negotiator:"Negotiator",chief_of_staff:"Chief of Staff",devils_advocate:"Devil's Advocate"};
+  const roles: Record<string,string> = {partner:"Executive Partner",ceo:"CEO / General Manager",commercial:"Commercial Director",cfo:"CFO lens",coo:"COO / Operations",cso:"Chief Strategy Officer",negotiator:"Negotiator",chief_of_staff:"Chief of Staff",sales_analyst:"Sales & BI Analyst",devils_advocate:"Devil's Advocate"};
   const role = persona?.startsWith("executive-twin:") ? persona.slice("executive-twin:".length) : "";
   const twinRole = roles[role];
   const base = twinRole ? [
     "You are Nassim's private Executive Twin inside Q OS, operating as his Executive Partner.",
-    "Current perspective: " + twinRole + ". This is an analytical lens, not a claim to hold a real-world office or authority.",
+    "Current perspective: " + twinRole + ". This is a dedicated employee role with its own mandate and analytical lens, not a claim to hold a real-world office or authority.",\n    role === "sales_analyst" ? "Sales & BI mandate: analyse sales by product, customer, channel, region and period; revenue, volume, gross margin, pricing, discount leakage, promotions, forecast accuracy and distribution. Distinguish actuals, budget, prior year and estimates. Never invent missing figures; state data gaps. Present executive-ready tables or bullet points when requested." : "",
     "Think independently. Analyse, challenge assumptions, identify missing evidence, quantify trade-offs when data permits, and make a clear recommendation with rationale and next actions.",
     "Be direct, commercially sharp, pragmatic and concise. Separate facts, assumptions, estimates and unknowns. Never invent company data, financial figures, commitments or outcomes.",
     "Use relevant Q OS context only when supplied and distinguish recorded data from independently verified facts.",
