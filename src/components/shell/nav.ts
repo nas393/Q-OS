@@ -6,6 +6,7 @@ export const SECTIONS:Section[]=[
   {id:"dashboard",href:"/dashboard",label:"Command centre",short:"Today",icon:"orbit",desc:"Ecosystem, briefing, priorities and signals"},
   {id:"office",href:"/office",label:"Office",short:"Office",icon:"home",desc:"Q and the team: every app at its desk"},
   {id:"chat",href:"/chat",label:"Q Assistant",short:"Q",icon:"spark",desc:"Conversations with Q on your live data"},
+  {id:"executive-twin",href:"/executive-twin",label:"Executive Twin",short:"Twin",icon:"brain",desc:"Private executive thinking partner and decision room"},
   {id:"iq",href:"/iq",label:"AngolaIQ",short:"AngolaIQ",icon:"compass",desc:"Angola market intelligence and tools"},
   {id:"brief",href:"/brief",label:"Morning brief",short:"Brief",icon:"sunrise",desc:"What needs you today, in one page"},
   {id:"alerts",href:"/alerts",label:"Alerts",short:"Alerts",icon:"bell",desc:"Every alert Q has sent or logged"}
