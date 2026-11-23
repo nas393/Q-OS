@@ -59,7 +59,8 @@ function initialWorld():SimulationState {
 type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
 export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
  const canvas=useRef<HTMLCanvasElement>(null),[world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE"),[rotation,setRotation]=useState(.55),[zoom,setZoom]=useState(1),[drag,setDrag]=useState(false);
- const pointer=useRef(0),worldRef=useRef(world),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];\n worldRef.current=world;
+ const pointer=useRef(0),worldRef=useRef(world),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
+ worldRef.current=world;
  useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{const next=tickSimulation(w,60_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
  const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
  const shader=useMemo(()=>({vs:"attribute vec3 aPosition;attribute vec3 aNormal;uniform mat4 uMvp;uniform mat4 uModel;varying vec3 vNormal;void main(){vNormal=mat3(uModel)*aNormal;gl_Position=uMvp*vec4(aPosition,1.0);}",fs:"precision mediump float;varying vec3 vNormal;uniform vec3 uColor;void main(){float l=max(dot(normalize(vNormal),normalize(vec3(-.4,.9,.5))),0.0);gl_FragColor=vec4(uColor*(.48+l*.7),1.0);}" }),[]);
@@ -70,7 +71,8 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const meshes={box:box(),sphere:sphere(),cylinder:cylinder()};
   const buffers=Object.fromEntries(Object.entries(meshes).map(([key,m])=>{const p=gl.createBuffer()!,n=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.positions),gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.normals),gl.STATIC_DRAW);return [key,{p,n,count:m.count}]})) as Record<string,{p:WebGLBuffer;n:WebGLBuffer;count:number}>;
   const ap=gl.getAttribLocation(program,"aPosition"),an=gl.getAttribLocation(program,"aNormal"),um=gl.getUniformLocation(program,"uMvp"),uModel=gl.getUniformLocation(program,"uModel"),uc=gl.getUniformLocation(program,"uColor");
-  let vp:number[]=[];\n  let vp:number[]=[];\n  const drawMesh=(kind:keyof typeof meshes,m:number[],color:V3)=>{const b=buffers[kind];gl.bindBuffer(gl.ARRAY_BUFFER,b.p);gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,b.n);gl.enableVertexAttribArray(an);gl.vertexAttribPointer(an,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(uModel,false,new Float32Array(m));gl.uniformMatrix4fv(um,false,new Float32Array(multiply(vp,m)));gl.uniform3fv(uc,new Float32Array(color));gl.drawArrays(gl.TRIANGLES,0,b.count)};
+  let vp:number[]=[];
+  const drawMesh=(kind:keyof typeof meshes,m:number[],color:V3)=>{const b=buffers[kind];gl.bindBuffer(gl.ARRAY_BUFFER,b.p);gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,b.n);gl.enableVertexAttribArray(an);gl.vertexAttribPointer(an,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(uModel,false,new Float32Array(m));gl.uniformMatrix4fv(um,false,new Float32Array(multiply(vp,m)));gl.uniform3fv(uc,new Float32Array(color));gl.drawArrays(gl.TRIANGLES,0,b.count)};
   let frame=0;
   const render=()=>{
    const w=el.clientWidth,h=el.clientHeight,dpr=Math.min(window.devicePixelRatio||1,1.5);if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
