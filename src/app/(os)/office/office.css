@@ -249,3 +249,15 @@
 .q3d-desks b{font:650 11px var(--sans)}.q3d-desks small{color:#9da3ad;font-size:9px}
 @media(max-width:650px){.q3d-toolbar{inset:10px 10px auto;align-items:flex-start;flex-wrap:wrap}.q3d-toolbar>span:nth-child(2){display:none}.q3d-shell canvas{height:390px}.q3d-desks button{flex:1;min-width:145px}}
 @media(prefers-reduced-motion:reduce){.q3d-shell *{scroll-behavior:auto}}
+
+
+/* Living company simulator controls and employee inspector */
+.q3d-living .q3d-toolbar{align-items:flex-start;flex-wrap:wrap}
+.q3d-living .q3d-toolbar>span:nth-child(2){color:#b5b7bd}
+.q3d-living .q3d-toolbar button[aria-pressed=true]{border-color:#d7b45f;background:rgba(201,162,74,.2);color:#f6dfaa}
+.q3d-living .q3d-room-selector{max-height:310px;overflow:auto}
+.q3d-profile{display:grid;gap:4px;margin-top:12px;padding:12px 14px;border:1px solid rgba(201,162,74,.24);border-radius:11px;background:rgba(201,162,74,.07);color:#d4d5d8;font-size:11px}
+.q3d-profile b{color:#f2dfb2;font:700 13px var(--sans)}
+.q3d-profile span{line-height:1.45}
+.q3d-disclaimer{margin:12px 0 0;color:#c3a96c;font:700 9px/1.5 var(--sans);letter-spacing:.12em}
+@media(max-width:650px){.q3d-living .q3d-toolbar>span:nth-child(2){display:none}.q3d-living .q3d-toolbar>div{flex-wrap:wrap}.q3d-living .q3d-toolbar button{min-height:30px;padding:0 8px}.q3d-living .q3d-room-selector{max-height:360px}}
