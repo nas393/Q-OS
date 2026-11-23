@@ -93,7 +93,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
    draw("box",0,.55,-1,4.8,.16,1.5,[.22,.19,.16]);draw("box",-3,.48,-1,1,.7,.9,[.17,.18,.2]);draw("box",3,.48,-1,1,.7,.9,[.17,.18,.2]);
    // Human characters: ellipsoid heads/torso and articulated cylindrical limbs, animated from simulation state.
    const now=performance.now()/1000;
-   world.employees.forEach((e,i)=>{
+   worldRef.current.employees.forEach((e,i)=>{
     const x=e.position.x,z=e.position.z,phase=now*5+i*1.7,walkingNow=e.activity==="walking",swing=walkingNow?Math.sin(phase)*.42:Math.sin(now*1.2+i)*.035;
     const coat=e.tier==="leadership"?[.55,.39,.18] as V3:[.20+(i%4)*.025,.29,.39] as V3,skin=[.68,.48,.34] as V3,shirt=[.72,.73,.70] as V3;
     const leg=(side:number,angle:number)=>{const hx=x+side*.17,hz=z;draw("cylinder",hx,.48,hz,.13,.68,.13,coat,angle);draw("sphere",hx+Math.sin(angle)*.23,.14,hz+Math.cos(angle)*.23,.14,.14,.14,skin)};
@@ -109,12 +109,6 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
    frame=requestAnimationFrame(render);
   };
   // Bind drawMesh to the current view-projection matrix without recreating GPU resources.
-  let vp:number[]=[];const oldDraw=drawMesh;
-  const renderWithVp=()=>{frame=requestAnimationFrame(renderWithVp);};
-  void oldDraw;void renderWithVp;
-  // The frame loop uses a shared matrix assigned immediately before each draw call.
-  const setMatrix=(m:number[])=>{vp=m;};
-  void setMatrix;
   frame=requestAnimationFrame(render);
   return()=>{cancelAnimationFrame(frame);Object.values(buffers).forEach(b=>{gl.deleteBuffer(b.p);gl.deleteBuffer(b.n)});gl.deleteProgram(program)};
  },[camera,selected,rotation,zoom,shader]);
@@ -125,7 +119,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
    <div><button type="button" onClick={togglePause}>{world.paused?"Resume":"Pause"}</button>{([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}<button type="button" onClick={()=>setCamera(c=>c==="CEO"?"FREE":"CEO")}>{camera==="CEO"?"Free camera":"CEO view"}</button></div>
   </div>
   <canvas ref={canvas} aria-label="Live 3D company simulation with autonomous fictional employees" onPointerDown={e=>{pointer.current=e.clientX;setDrag(true);e.currentTarget.setPointerCapture(e.pointerId)}} onPointerMove={e=>{if(drag){const dx=e.clientX-pointer.current;pointer.current=e.clientX;setRotation(r=>r+dx*.008)}}} onPointerUp={()=>setDrag(false)} onPointerCancel={()=>setDrag(false)} onWheel={e=>setZoom(z=>clamp(z-e.deltaY*.0008,.65,1.6))}/>
-  <div className="q3d-room-selector"><div className="q3d-room-tabs">{rooms.map(r=><button type="button" key={r.id} onClick={()=>{setCamera("FREE");setSelected(r.desks[0]?.id??"ceo")}}>{r.label}</button>)}</div>
+  <div className="q3d-room-selector"><div className="q3d-room-tabs">{rooms.map(r=><button type="button" key={r.id} onClick={()=>{setCamera("FREE");if(r.desks[0])onSelectDesk(r.desks[0].id)}}>{r.label}</button>)}</div>
    <div className="q3d-desks">{world.employees.map(e=><button type="button" key={e.id} onClick={()=>{setSelected(e.id);if(e.tier==="leadership")setCamera("CEO");}}><span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small></button>)}</div>
    <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {selectedEmployee.reportsTo}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
    <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
