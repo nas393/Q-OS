@@ -59,7 +59,7 @@ function initialWorld():SimulationState {
 type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
 export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
  const canvas=useRef<HTMLCanvasElement>(null),[world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE"),[rotation,setRotation]=useState(.55),[zoom,setZoom]=useState(1),[drag,setDrag]=useState(false);
- const pointer=useRef(0),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
+ const pointer=useRef(0),worldRef=useRef(world),selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];\n worldRef.current=world;
  useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{const next=tickSimulation(w,60_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
  const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
  const shader=useMemo(()=>({vs:"attribute vec3 aPosition;attribute vec3 aNormal;uniform mat4 uMvp;uniform mat4 uModel;varying vec3 vNormal;void main(){vNormal=mat3(uModel)*aNormal;gl_Position=uMvp*vec4(aPosition,1.0);}",fs:"precision mediump float;varying vec3 vNormal;uniform vec3 uColor;void main(){float l=max(dot(normalize(vNormal),normalize(vec3(-.4,.9,.5))),0.0);gl_FragColor=vec4(uColor*(.48+l*.7),1.0);}" }),[]);
@@ -75,7 +75,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const render=()=>{
    const w=el.clientWidth,h=el.clientHeight,dpr=Math.min(window.devicePixelRatio||1,1.5);if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
    gl.viewport(0,0,el.width,el.height);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.045,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-   const target=camera==="CEO"&&selectedEmployee?[selectedEmployee.position.x,0,selectedEmployee.position.z] as V3:[0,0,0];
+   const focused=worldRef.current.employees.find(e=>e.id===selected);const target=camera==="CEO"&&focused?[focused.position.x,0,focused.position.z] as V3:[0,0,0];
    const radius=35/zoom,eye:[number,number,number]=[target[0]+Math.sin(rotation)*radius,22,target[2]+Math.cos(rotation)*radius];const view=lookAt(eye,target),proj=perspective(.66,w/h,.1,100);vp=multiply(proj,view);
    // One open-plan headquarters shell with glass perimeter, warm timber zones and meeting spaces.
    const draw=(kind:keyof typeof meshes,x:number,y:number,z:number,sx:number,sy:number,sz:number,c:V3,rz=0)=>drawMesh(kind,model(x,y,z,sx,sy,sz,rz),c);
@@ -86,7 +86,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
    for(const x of [-10,0,10])draw("box",x,1.35,0,.10,2.7,20,[.24,.26,.29]);
    for(const z of [-4,5])draw("box",0,1.3,z,40,.08,.08,[.65,.48,.24]);
    // Desks and workstations: distributed by department.
-   world.employees.forEach((e,i)=>{const x=e.position.x,z=e.position.z;draw("box",x,.78,z,1.65,.14,.9,[.34,.23,.14]);draw("box",x+.42,1.12,z-.22,.5,.48,.06,[.08,.12,.16]);draw("box",x+.42,1.12,z-.18,.42,.35,.025,[.16,.48,.59]);});
+   worldRef.current.employees.forEach((e,i)=>{const x=e.position.x,z=e.position.z;draw("box",x,.78,z,1.65,.14,.9,[.34,.23,.14]);draw("box",x+.42,1.12,z-.22,.5,.48,.06,[.08,.12,.16]);draw("box",x+.42,1.12,z-.18,.42,.35,.025,[.16,.48,.59]);});
    // Meeting table and lounge furniture.
    draw("box",0,.55,-1,4.8,.16,1.5,[.22,.19,.16]);draw("box",-3,.48,-1,1,.7,.9,[.17,.18,.2]);draw("box",3,.48,-1,1,.7,.9,[.17,.18,.2]);
    // Human characters: ellipsoid heads/torso and articulated cylindrical limbs, animated from simulation state.
@@ -115,7 +115,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   void setMatrix;
   frame=requestAnimationFrame(render);
   return()=>{cancelAnimationFrame(frame);Object.values(buffers).forEach(b=>{gl.deleteBuffer(b.p);gl.deleteBuffer(b.n)});gl.deleteProgram(program)};
- },[world,camera,selectedEmployee,rotation,zoom,shader]);
+ },[camera,selected,rotation,zoom,shader]);
  const togglePause=()=>setWorld(w=>({...w,paused:!w.paused}));
  const setSpeed=(speed:0|1|2|4)=>setWorld(w=>({...w,speed}));
  return <div className="q3d-shell q3d-living">
