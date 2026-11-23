@@ -18,7 +18,6 @@ type Stats=Record<string,{stats:{label:string;value:string}[]}>;
 type WorkRow={id:string;staff:string;job:string;title:string;body:WorkBody;status:"waiting"|"approved"|"discarded";createdAt:string};
 const LIGHT_TEXT={ok:"All good",watch:"Watching",down:"Needs you",idle:"No data"} as const;
 const KIND_TEXT={alert:"Alert",approval:"Your yes",draft:"Draft",task:"Late task"} as const;
-const LAYOUT:Room[]=["corner","studio","academy","markets","community","screens","ops"];
 
 export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvalsFailed,work:initialWork,today}:{alerts:DeskAlert[];stats:Stats;tasks:DeskTask[];approvals:DeskApproval[];approvalsFailed:string[];work:WorkRow[];today:string}){
   const [apps,setApps]=useState<LiveApp[]|null>(null);
@@ -107,20 +106,6 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     :n.kind==="alert"&&n.alertId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>markSeen(n.alertId!)}>Clear</button>
     :n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Open</a>:null;
 
-  const deskBtn=(r:typeof floor[number],big=false)=>{
-    const d=r.staff.id==="q"?qDesk:r.desk;
-    return <button key={r.staff.id} type="button" className={`of-desk${big?" big":""}`} data-light={d.light} onClick={()=>{setMsg("");setOpen(r.staff.id)}}
-      aria-label={`${r.staff.name}, ${r.staff.role}. ${LIGHT_TEXT[d.light]}. ${d.line}${d.open.length?` ${d.open.length} open tasks.`:""}`}>
-      <span className="of-top" aria-hidden="true">
-        <span className="of-screen">{r.staff.id==="q"?<QMark size={big?40:30}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={big?40:30}/>}</span>
-        {d.needs.length>0&&<b className="of-badge">{d.needs.length}</b>}
-        {d.open.length>0&&<i className="of-tray">{d.open.length}</i>}
-      </span>
-      <span className="of-chair" aria-hidden="true"/>
-      <span className="of-plate"><b>{r.staff.name}</b><small>{r.staff.role}</small>{d.headline&&<em>{d.headline}</em>}</span>
-    </button>;
-  };
-
   return <div className="page office">
     <PageHeader title="Office" desc="Q runs the office. Every app works at its desk. Tap a desk to open it or give it a task."
       meta={apps===null?"Checking every desk…":`${team.filter(r=>r.desk.light==="ok").length} of ${team.length} desks all good`}/>
@@ -159,7 +144,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
-      <ExecutiveWorld3D rooms={LAYOUT.map(room=>({id:room,label:ROOMS[room].label,note:ROOMS[room].note,desks:floor.filter(r=>r.staff.room===room).map(r=>({id:r.staff.id,name:r.staff.name,role:r.staff.role,light:r.desk.light,needs:r.desk.needs.length,open:r.desk.open.length}))}))} onSelectDesk={id=>{setMsg("");setOpen(id)}} />
+      <ExecutiveWorld3D />
       <p className="of-world-foot">The Executive World is a fictional simulation. Live Q OS desks, tasks and business records remain separate and are never changed by simulated activity.</p>
     </section>
 
