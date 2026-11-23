@@ -11,11 +11,12 @@ import { publishQEvent } from "@/lib/events/publisher";
 export const runtime = "nodejs", dynamic = "force-dynamic", maxDuration = 60;
 const OWNER_ID = "owner";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!await readSession()) return jsonError(401, "Unauthorized");
   try {
+    const twin = new URL(request.url).searchParams.get("workspace") === "twin";
     const result = await getDb().query(
-      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND status='active' ORDER BY updated_at DESC LIMIT 50",
+      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND status='active' AND " + (twin ? "title LIKE 'Executive Twin · %'" : "title NOT LIKE 'Executive Twin · %'") + " ORDER BY updated_at DESC LIMIT 50",
       [OWNER_ID]
     );
     return NextResponse.json({ conversations: result.rows }, { headers: { "Cache-Control": "no-store" } });
@@ -31,7 +32,9 @@ export async function POST(request: Request) {
   const parsed = z.object({
     message: z.string().trim().min(1).max(12000),
     conversationId: z.string().uuid().optional(),
-    portfolioContext: z.string().max(9000).optional()
+    portfolioContext: z.string().max(9000).optional(),
+    workspace: z.enum(["q","twin"]).optional(),
+    role: z.enum(["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","devils_advocate"]).optional()
   }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError(400, "Enter a message (maximum 12,000 characters).");
 
@@ -44,14 +47,16 @@ export async function POST(request: Request) {
   try {
     if (conversationId) {
       const check = await db.query(
-        "SELECT id FROM conversations WHERE id=$1 AND user_id=$2 AND status='active'",
+        "SELECT id,title FROM conversations WHERE id=$1 AND user_id=$2 AND status='active'",
         [conversationId, OWNER_ID]
       );
-      if (!check.rowCount) return jsonError(404, "Conversation not found.");
+      const twin = parsed.data.workspace === "twin";
+      const isTwinConversation = String(check.rows[0]?.title ?? "").startsWith("Executive Twin · ");
+      if (!check.rowCount || (twin !== isTwinConversation)) return jsonError(404, "Conversation not found.");
     } else {
       const created = await db.query(
         "INSERT INTO conversations (user_id,title) VALUES ($1,$2) RETURNING id",
-        [OWNER_ID, parsed.data.message.slice(0, 72)]
+        [OWNER_ID, parsed.data.workspace === "twin" ? "Executive Twin · " + parsed.data.message.slice(0, 48) : parsed.data.message.slice(0, 72)]
       );
       conversationId = created.rows[0].id;
     }
@@ -74,7 +79,8 @@ export async function POST(request: Request) {
     const orchestration = await orchestrateChat({
       turns,
       clientContext: parsed.data.portfolioContext,
-      signal
+      signal,
+      persona: parsed.data.workspace === "twin" ? "executive-twin:" + (parsed.data.role ?? "partner") : undefined
     });
     const intent = orchestration.intent;
     const upstream = orchestration.response;

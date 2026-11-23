@@ -20,8 +20,22 @@ const SYSTEM_PROMPT = [
   "No HTML. No tables unless asked."
 ].join(" ");
 
-function providerPrompt(provider: AIProvider, model: string): string {
-  return `${SYSTEM_PROMPT}\n\nRuntime identity: You are Q. This response is served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: "Q — AI provider: ${provider.toUpperCase()} (model: ${model})." Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;
+function providerPrompt(provider: AIProvider, model: string, persona?: string): string {
+  const roles: Record<string,string> = {partner:"Executive Partner",ceo:"CEO / General Manager",commercial:"Commercial Director",cfo:"CFO lens",coo:"COO / Operations",cso:"Chief Strategy Officer",negotiator:"Negotiator",chief_of_staff:"Chief of Staff",devils_advocate:"Devil's Advocate"};
+  const role = persona?.startsWith("executive-twin:") ? persona.slice("executive-twin:".length) : "";
+  const twinRole = roles[role];
+  const base = twinRole ? [
+    "You are Nassim's private Executive Twin inside Q OS, operating as his Executive Partner.",
+    "Current perspective: " + twinRole + ". This is an analytical lens, not a claim to hold a real-world office or authority.",
+    "Think independently. Analyse, challenge assumptions, identify missing evidence, quantify trade-offs when data permits, and make a clear recommendation with rationale and next actions.",
+    "Be direct, commercially sharp, pragmatic and concise. Separate facts, assumptions, estimates and unknowns. Never invent company data, financial figures, commitments or outcomes.",
+    "Use relevant Q OS context only when supplied and distinguish recorded data from independently verified facts.",
+    "This workspace is analysis and planning only. You cannot execute tasks, send communications, publish, spend money, change access, deploy software or modify records. Do not claim to have done so. You may prepare drafts and recommend actions for Nassim's approval.",
+    "Do not emit Q OS action tags. Do not imply that this model is Nassim or that its recommendations are his decisions.",
+    "Formatting is mandatory: follow the format the user explicitly requests. If asked for bullet points, put every point on its own line beginning with -; never run labels or points together in one paragraph. Use a blank line between sections, a heading for each section when useful, and concise paragraphs. For identity or capability questions, use a short heading followed by a clean bullet list. Preserve real line breaks; never encode spaces or letters as HTML entities.",
+    "For important decisions, include the strongest counterargument, key risks, confidence and the single best next move."
+  ].join(" ") : SYSTEM_PROMPT;
+  return base + "\n\nRuntime identity: You are Q. This response is served by the " + provider.toUpperCase() + " API using model " + model + ". If asked which AI provider is serving this response, state exactly: \"Q — AI provider: " + provider.toUpperCase() + " (model: " + model + ").\" Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.";
 }
 
 export function getAIConfig(): ProviderConfig {
@@ -59,7 +73,7 @@ function withProviderHeaders(response: Response, provider: AIProvider, model: st
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+async function callGemini(input: ChatTurn[], signal?: AbortSignal, persona?: string): Promise<Response> {
   const key = process.env.GEMINI_API_KEY!;
   const model = GEMINI_MODEL;
   const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
@@ -67,7 +81,7 @@ async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Resp
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: providerPrompt("gemini", model) }] },
+      systemInstruction: { parts: [{ text: providerPrompt("gemini", model, persona) }] },
       contents: input.map(turn => ({ role: turn.role === "assistant" ? "model" : "user", parts: [{ text: turn.content }] })),
       generationConfig: { maxOutputTokens: 1800, temperature: 0.7 }
     }),
@@ -80,7 +94,7 @@ async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Resp
   return withProviderHeaders(upstream, "gemini", model);
 }
 
-async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+async function callGroq(input: ChatTurn[], signal?: AbortSignal, persona?: string): Promise<Response> {
   const key = process.env.GROQ_API_KEY!;
   const model = GROQ_MODEL;
   const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
@@ -89,7 +103,7 @@ async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Respon
     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: providerPrompt("groq", model) }, ...input.map(turn => ({ role: turn.role, content: turn.content }))],
+      messages: [{ role: "system", content: providerPrompt("groq", model, persona) }, ...input.map(turn => ({ role: turn.role, content: turn.content }))],
       max_tokens: 1800,
       temperature: 0.7,
       stream: true
@@ -104,14 +118,14 @@ async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Respon
 }
 
 /* Provider fallback happens before the first token is exposed to the client. */
-export async function createAIStream(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+export async function createAIStream(input: ChatTurn[], signal?: AbortSignal, persona?: string): Promise<Response> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
   let groqFailure: Response | undefined;
 
   if (groqKey) {
     try {
-      const response = await callGroq(input, signal);
+      const response = await callGroq(input, signal, persona);
       if (response.ok) return response;
       groqFailure = response;
       const detail = await readError(response.clone());
@@ -126,7 +140,7 @@ export async function createAIStream(input: ChatTurn[], signal?: AbortSignal): P
 
   if (geminiKey) {
     try {
-      const response = await callGemini(input, signal);
+      const response = await callGemini(input, signal, persona);
       if (response.ok) return response;
       if (groqFailure) {
         const primary = await readError(groqFailure.clone());
