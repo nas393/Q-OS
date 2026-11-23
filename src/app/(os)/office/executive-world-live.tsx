@@ -30,7 +30,7 @@ function makeTasks():SimTask[]{
 function initialWorld():SimulationState{
   const now=Date.UTC(2026,10,23,9);
   return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
-    employees:INITIAL_EMPLOYEES.map(e=>({...e,position:{...e.position},destination:null})),tasks:makeTasks(),events:[]};
+    employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
 }
 type Props={rooms:{id:string;label:string;note:string;desks:{id:string;name:string;role:string;light:string;needs:number;open:number}[]}[];onSelectDesk:(id:string)=>void};
 function useAssets(){
@@ -113,10 +113,15 @@ function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;as
   const model=useMemo(()=>clone(asset.scene),[asset]);
   useEffect(()=>{
     const m=new AnimationMixer(model);mixer.current=m;
-    const clip=asset.animations.find((a)=>/idle/i.test(a.name))??asset.animations[0];
-    if(clip){action.current=m.clipAction(clip);action.current.play();}
     return()=>{m.stopAllAction();mixer.current=null};
   },[asset,model]);
+  useEffect(()=>{
+    const m=mixer.current;if(!m)return;
+    const preferred=employee.activity==="walking"?/walk/i:/idle/i;
+    const clip=asset.animations.find(a=>preferred.test(a.name))??asset.animations.find(a=>/idle/i.test(a.name))??asset.animations[0];
+    if(!clip)return;
+    const next=m.clipAction(clip);next.reset().fadeIn(.22).play();action.current?.fadeOut(.22);action.current=next;
+  },[asset,employee.activity]);
   useFrame((_,delta)=>{
     mixer.current?.update(Math.min(delta,.05));
     const g=root.current;if(!g)return;
