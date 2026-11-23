@@ -82,7 +82,7 @@ function RoomSign({children,position}:{children:string;position:[number,number,n
 function Architecture({employees}:{employees:EmployeeAgent[]}){
   const desks=employees.filter(e=>e.id!=="ceo").map(e=>({id:e.id,position:[e.position.x,0,e.position.z+1.15] as [number,number,number]}));
   return <group>
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.16,0]} receiveShadow><planeGeometry args={[48,34]}/><meshStandardMaterial color="#222a31" roughness:.82/></mesh>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.16,0]} receiveShadow><planeGeometry args={[48,34]}/><meshStandardMaterial color="#222a31" roughness={.82}/></mesh>
     <gridHelper args={[48,48,"#45515a","#303a43"]} position={[0,-.145,0]}/>
     <MatBox position={[0,-.02,0]} scale={[43,.16,29]} color="#a59b8a" roughness={.82}/>
     <MatBox position={[0,.03,0]} scale={[41.8,.025,27.8]} color="#c2b9aa" roughness={.7}/>
