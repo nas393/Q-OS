@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { ContactShadows, Environment, OrbitControls, Text } from "@react-three/drei";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { AnimationMixer, Group, MathUtils, Vector3, type AnimationAction } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
@@ -75,8 +75,8 @@ function Sofa({position,rotation=0}:{position:[number,number,number];rotation?:n
 function GlassWall({position,scale}:{position:[number,number,number];scale:[number,number,number]}){
   return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness={.12} metalness={.2} transmission={.15} thickness={.12}/></mesh>;
 }
-function RoomSign({children,position}:{children:string;position:[number,number,number]}){
-  return <Text position={position} fontSize={.34} color="#d9c08b" anchorX="center" anchorY="middle" outlineWidth={.012} outlineColor="#11151b">{children}</Text>;
+function RoomSign({position}:{children:string;position:[number,number,number]}){
+  return <group position={position}><mesh><boxGeometry args={[2.6,.055,.045]}/><meshStandardMaterial color="#d9c08b" emissive="#8a7044" emissiveIntensity={.35}/></mesh></group>;
 }
 function Architecture({employees}:{employees:EmployeeAgent[]}){
   const desks=employees.filter(e=>e.id!=="ceo").map(e=>({id:e.id,position:[e.position.x,0,e.position.z+1.15] as [number,number,number]}));
@@ -89,12 +89,12 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
     {[-13.8,13.8].map(z=><group key={z}><MatBox position={[0,1.75,z]} scale={[41.6,3.5,.18]} color="#384752"/><GlassWall position={[0,1.9,z]} scale={[41,.05,2.95]}/></group>)}
     {[-10.2,0,10.2].map(x=><group key={x}><MatBox position={[x,1.5,-2.5]} scale={[.12,3,20]} color="#5c6268"/><GlassWall position={[x,1.5,7.2]} scale={[.06,2.8,5.8]}/></group>)}
     {[-6,4].map(z=><MatBox key={z} position={[0,1.48,z]} scale={[41,.12,.12]} color="#8c795f"/>)}
-    <RoomSign position={[-15,2.8,-12.4]}>FINANCE</RoomSign>
-    <RoomSign position={[0,2.8,-12.4]}>EXECUTIVE SUITE</RoomSign>
-    <RoomSign position={[15,2.8,-12.4]}>COMMERCIAL</RoomSign>
-    <RoomSign position={[-15,2.8,12.2]}>OPERATIONS</RoomSign>
-    <RoomSign position={[0,2.8,12.2]}>WAR ROOM</RoomSign>
-    <RoomSign position={[15,2.8,12.2]}>STRATEGY</RoomSign>
+    <RoomSign position={[-15,2.8,-12.4}>
+    <RoomSign position={[0,2.8,-12.4}>
+    <RoomSign position={[15,2.8,-12.4}>
+    <RoomSign position={[-15,2.8,12.2}>
+    <RoomSign position={[0,2.8,12.2}>
+    <RoomSign position={[15,2.8,12.2}>
     {desks.map(d=><Desk key={d.id} position={d.position}/>)}
     {[-8,8].map(x=><group key={x}><MatBox position={[x,.8,7.5]} scale={[5,.16,2.1]} color="#493d32"/>{[-1.6,1.6].map(dx=><OfficeChair key={dx} position={[x+dx,0,9]}/>)}</group>)}
     <MatBox position={[0,.78,0]} scale={[5.4,.18,1.7]} color="#59442f" />
@@ -141,6 +141,20 @@ function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selecte
   const assets=useAssets();
   return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
 }
+
+function FallbackPeople({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
+  return <>{employees.map(e=><group key={e.id} position={[e.position.x,0,e.position.z]} onClick={event=>{event.stopPropagation();onSelect(e.id)}}>
+    <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.25,.72,5,10]}/><meshStandardMaterial color={e.id==="ceo"?"#b89a68":"#526779"}/></mesh>
+    <mesh position={[0,1.72,0]} castShadow><sphereGeometry args={[.19,16,16]}/><meshStandardMaterial color="#bd9274" roughness={.8}/></mesh>
+    {selected===e.id&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,32]}/><meshBasicMaterial color="#e1bd70" /></mesh>}
+  </group>)}</>;
+}
+class PeopleErrorBoundary extends Component<{children:ReactNode;fallback:ReactNode},{failed:boolean}>{
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(error:Error){console.error("Executive World character assets failed; using local fallback characters.",error);}
+  render(){return this.state.failed?this.props.fallback:this.props.children;}
+}
 function CameraRig({mode}:{mode:"CEO"|"FREE"|"CINEMA"}){
   const {camera}=useThree(),elapsed=useRef(0);
   useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);
@@ -157,9 +171,9 @@ function WorldScene({employees,selected,onSelect,cameraMode}:{employees:Employee
     <pointLight position={[0,7,0]} intensity={.7} color="#e8c88d"/>
     <Architecture employees={employees}/>
     <CameraRig mode={cameraMode}/>
-    <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
+    <PeopleErrorBoundary fallback={<FallbackPeople employees={employees} selected={selected} onSelect={onSelect}/> }><Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense></PeopleErrorBoundary>
     <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
-    <Environment preset="city"/>
+
     <OrbitControls enabled={cameraMode!=="CINEMA"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
   </Canvas>;
 }
