@@ -7,16 +7,20 @@ import { orchestrateChat } from "@/lib/core/orchestrator";
 import { extractProviderText, isProviderStreamFinished, readSseData, splitSseEvents, type AIProvider } from "@/lib/ai/stream";
 import { jsonError, requestOriginAllowed } from "@/lib/http";
 import { publishQEvent } from "@/lib/events/publisher";
+import {ensureSchema} from "@/lib/schema";
+import {parseChatWorkspace} from "@/lib/chat-workspace";
 
 export const runtime = "nodejs", dynamic = "force-dynamic", maxDuration = 60;
 const OWNER_ID = "owner";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!await readSession()) return jsonError(401, "Unauthorized");
+  const workspace = parseChatWorkspace(new URL(request.url).searchParams.get("workspace"));
   try {
+    await ensureSchema();
     const result = await getDb().query(
-      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND status='active' ORDER BY updated_at DESC LIMIT 50",
-      [OWNER_ID]
+      "SELECT id,title,status,created_at,updated_at FROM conversations WHERE user_id=$1 AND workspace=$2 AND status='active' ORDER BY updated_at DESC LIMIT 50",
+      [OWNER_ID, workspace]
     );
     return NextResponse.json({ conversations: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch {
@@ -31,7 +35,8 @@ export async function POST(request: Request) {
   const parsed = z.object({
     message: z.string().trim().min(1).max(12000),
     conversationId: z.string().uuid().optional(),
-    portfolioContext: z.string().max(9000).optional()
+    portfolioContext: z.string().max(9000).optional(),
+    workspace: z.enum(["general","executive_twin"]).default("general")
   }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError(400, "Enter a message (maximum 12,000 characters).");
 
@@ -42,16 +47,17 @@ export async function POST(request: Request) {
   const db = getDb();
   let conversationId = parsed.data.conversationId;
   try {
+    await ensureSchema();
     if (conversationId) {
       const check = await db.query(
-        "SELECT id FROM conversations WHERE id=$1 AND user_id=$2 AND status='active'",
-        [conversationId, OWNER_ID]
+        "SELECT id FROM conversations WHERE id=$1 AND user_id=$2 AND workspace=$3 AND status='active'",
+        [conversationId, OWNER_ID, parsed.data.workspace]
       );
       if (!check.rowCount) return jsonError(404, "Conversation not found.");
     } else {
       const created = await db.query(
-        "INSERT INTO conversations (user_id,title) VALUES ($1,$2) RETURNING id",
-        [OWNER_ID, parsed.data.message.slice(0, 72)]
+        "INSERT INTO conversations (user_id,title,workspace) VALUES ($1,$2,$3) RETURNING id",
+        [OWNER_ID, parsed.data.message.slice(0, 72), parsed.data.workspace]
       );
       conversationId = created.rows[0].id;
     }
@@ -74,6 +80,7 @@ export async function POST(request: Request) {
     const orchestration = await orchestrateChat({
       turns,
       clientContext: parsed.data.portfolioContext,
+      workspace: parsed.data.workspace,
       signal
     });
     const intent = orchestration.intent;
