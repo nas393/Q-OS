@@ -10,7 +10,7 @@ export type SimTask = {
   assigneeId: string | null; dueAt: number | null; createdAt: number;
 };
 export type EmployeeAgent = {
-  id: string; name: string; role: string; department: string; skills: string[];
+  id: string; name: string; role: string; department: string; reportsTo: string; tier: "leadership" | "workforce"; skills: string[];
   personality: { conscientiousness: number; sociability: number; curiosity: number };
   position: Vec3; destination: Vec3 | null; activity: EmployeeActivity; status: EmployeeStatus;
   energy: number; focus: number; morale: number; stress: number; currentTaskId: string | null;
