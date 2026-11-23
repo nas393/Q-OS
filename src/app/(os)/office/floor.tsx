@@ -10,6 +10,7 @@ import {QMark} from "@/components/shell/q-mark";
 import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
 import "./office.css";
+import { ExecutiveTeam } from "./executive-team";
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
 type Stats=Record<string,{stats:{label:string;value:string}[]}>;
@@ -122,6 +123,8 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   return <div className="page office">
     <PageHeader title="Office" desc="Q runs the office. Every app works at its desk. Tap a desk to open it or give it a task."
       meta={apps===null?"Checking every desk…":`${team.filter(r=>r.desk.light==="ok").length} of ${team.length} desks all good`}/>
+
+    <ExecutiveTeam />
 
     <section className={`of-standup${meeting.allClear?" clear":""}`} aria-labelledby="of-st">
       <div className="of-st-q"><QMark size={34}/></div>

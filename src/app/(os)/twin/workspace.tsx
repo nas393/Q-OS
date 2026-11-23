@@ -8,12 +8,13 @@ import "../chat/chat.css";
 
 type Conv = { id: string; title: string; updated_at?: string };
 type Msg = { role: "user" | "assistant"; content: string };
-type Role = "partner" | "ceo" | "commercial" | "cfo" | "coo" | "cso" | "negotiator" | "chief_of_staff" | "devils_advocate";
+type Role = "partner" | "ceo" | "commercial" | "cfo" | "coo" | "cso" | "negotiator" | "chief_of_staff" | "sales_analyst" | "devils_advocate";
 const ROLES: { value: Role; label: string }[] = [
   { value: "partner", label: "Executive Partner" }, { value: "ceo", label: "CEO / General Manager" },
   { value: "commercial", label: "Commercial Director" }, { value: "cfo", label: "CFO lens" },
   { value: "coo", label: "COO / Operations" }, { value: "cso", label: "Chief Strategy Officer" },
   { value: "negotiator", label: "Negotiator" }, { value: "chief_of_staff", label: "Chief of Staff" },
+  { value: "sales_analyst", label: "Sales & BI Analyst" },
   { value: "devils_advocate", label: "Devil's Advocate" }
 ];
 const QUICK: [string, string][] = [
@@ -39,12 +40,17 @@ export default function TwinWorkspace() {
 
   const loadConvs = useCallback(async () => {
     try {
-      const r = await fetch("/api/chat?workspace=twin", { cache: "no-store" });
+      const r = await fetch("/api/chat?workspace=twin&role=" + role, { cache: "no-store" });
       if (!r.ok) throw new Error("Conversation storage unavailable");
       const data = await r.json();
       setConvs(data.conversations ?? []);
       setStatus("online");
     } catch { setStatus("offline"); }
+  }, [role]);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("role");
+    const allowed: Role[] = ["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"];
+    if (requested && allowed.includes(requested as Role)) setRole(requested as Role);
   }, []);
   useEffect(() => { void loadConvs(); }, [loadConvs]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
@@ -52,7 +58,7 @@ export default function TwinWorkspace() {
   async function openConversation(id: string) {
     setHistoryOpen(false); setError("");
     try {
-      const r = await fetch("/api/chat/" + id + "?workspace=twin", { cache: "no-store" });
+      const r = await fetch("/api/chat/" + id + "?workspace=twin&role=" + role, { cache: "no-store" });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error ?? "Could not open conversation");
       setConvId(id);
@@ -60,6 +66,9 @@ export default function TwinWorkspace() {
         role: m.role === "user" ? "user" : "assistant", content: m.content
       })));
     } catch (e) { setError(e instanceof Error ? e.message : "Could not open conversation"); }
+  }
+  function changeRole(nextRole: Role) {
+    setRole(nextRole); setConvId(undefined); setMsgs([]); setConvs([]); setError(""); setHistoryOpen(false);
   }
   function newConversation() {
     setConvId(undefined); setMsgs([]); setError(""); setHistoryOpen(false); box.current?.focus();
@@ -103,7 +112,7 @@ export default function TwinWorkspace() {
       setStatus("offline");
       setMsgs(current => {
         const next = [...current];
-        next[next.length - 1] = { role: "assistant", content: "Executive Twin could not answer: " + (e instanceof Error ? e.message : "Service unavailable") + "." };
+        next[next.length - 1] = { role: "assistant", content: "Executive employee could not answer: " + (e instanceof Error ? e.message : "Service unavailable") + "." };
         return next;
       });
     } finally { setBusy(false); }
@@ -114,15 +123,16 @@ export default function TwinWorkspace() {
   }, [input]);
 
   const current = convs.find(c => c.id === convId);
+  const roleLabel = ROLES.find(r => r.value === role)?.label ?? "Executive Partner";
   const statusLabel = status === "online" ? "Private workspace online" : status === "offline" ? "Storage or AI unavailable" : "Connecting";
   return <div className="qa twin">
-    <aside className={"qa-list" + (historyOpen ? " open" : "")} aria-label="Executive Twin conversations">
+    <aside className={"qa-list" + (historyOpen ? " open" : "")} aria-label="Executive employee conversations">
       <div className="qa-list-h"><h2>Private history</h2><button className="btn sm primary" onClick={newConversation}><I n="plus"/>New</button></div>
       <div className="qa-convs">
         {convs.length ? convs.map(c => <button key={c.id} className="qa-conv" aria-current={c.id === convId ? "true" : undefined} onClick={() => openConversation(c.id)}>
-          <span>{c.title.replace(/^Executive Twin · /, "")}</span>
+          <span>{c.title.replace(/^Executive Twin · (?:partner|ceo|commercial|cfo|coo|cso|negotiator|chief_of_staff|sales_analyst|devils_advocate) · /, "").replace(/^Executive Twin · /, "")}</span>
           {c.updated_at && <time>{new Date(c.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</time>}
-        </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your Executive Twin discussions will appear here."}</p>}
+        </button>) : <p className="qa-none">{status === "offline" ? "History is unavailable." : "Your private discussions with this executive employee will appear here."}</p>}
       </div>
       <div className="tw-private"><I n="user"/>Owner-only · separate from Q Assistant</div>
     </aside>
@@ -131,11 +141,11 @@ export default function TwinWorkspace() {
       <header className="qa-h">
         <button className="icon-btn qa-hist-btn" onClick={() => setHistoryOpen(v => !v)} aria-label="Conversation history" aria-expanded={historyOpen}><I n="list"/></button>
         <div className="qa-t">
-          <h1>{current?.title.replace(/^Executive Twin · /, "") ?? "Executive Twin"}</h1>
+          <h1>{current?.title.replace(/^Executive Twin · (?:partner|ceo|commercial|cfo|coo|cso|negotiator|chief_of_staff|sales_analyst|devils_advocate) · /, "").replace(/^Executive Twin · /, "") ?? roleLabel}</h1>
           <span className={"live" + (status === "online" ? "" : " off")}><i/>{statusLabel} · analysis and recommendations only</span>
         </div>
         <label className="tw-role-label" htmlFor="twin-role">Perspective</label>
-        <select id="twin-role" className="tw-role" value={role} onChange={e => setRole(e.target.value as Role)} aria-label="Executive perspective">
+        <select id="twin-role" className="tw-role" value={role} onChange={e => changeRole(e.target.value as Role)} aria-label="Executive perspective">
           {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <button className="btn sm qa-new-h" onClick={newConversation} aria-label="New conversation"><I n="plus"/>New</button>
@@ -143,7 +153,7 @@ export default function TwinWorkspace() {
       <div className="qa-thread" aria-live="polite">
         {!msgs.length && <div className="qa-hello">
           <QMark size={56}/><h2>Your strategic counterpart.</h2>
-          <p>Think through decisions, challenge assumptions and build execution plans. Switch perspectives without changing the owner-only workspace.</p>
+          <p>Think through decisions, challenge assumptions and build execution plans. Each executive employee has a separate private conversation history. Switch roles without mixing their work.</p>
           <div className="tw-boundary"><I n="check"/>Private to the owner. No autonomous actions, external messages, spending or access changes.</div>
           <div className="qa-quick">{QUICK.map(([label, prompt]) => <button key={label} className="chip" onClick={() => send(prompt)} disabled={busy || status === "offline"}>{label}</button>)}</div>
         </div>}
