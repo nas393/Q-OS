@@ -50,7 +50,12 @@ CREATE TABLE IF NOT EXISTS iq_jobs (name text PRIMARY KEY, every_minutes int NOT
 ALTER TABLE q_tasks ADD COLUMN IF NOT EXISTS priority text NOT NULL DEFAULT 'normal' CHECK (priority IN ('high','normal','low'));
 ALTER TABLE q_tasks ADD COLUMN IF NOT EXISTS recur text CHECK (recur IS NULL OR recur IN ('daily','weekdays','weekly','monthly'));
 ALTER TABLE q_alerts ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz;
-CREATE INDEX IF NOT EXISTS q_alerts_created ON q_alerts(created_at DESC);`}
+CREATE INDEX IF NOT EXISTS q_alerts_created ON q_alerts(created_at DESC);`},
+ {id:3,name:"office_work_v1",sql:`
+CREATE TABLE IF NOT EXISTS q_office_work (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), staff text NOT NULL, job text NOT NULL, title text NOT NULL, body jsonb NOT NULL,
+  status text NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','approved','discarded')), period text, created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz);
+CREATE INDEX IF NOT EXISTS q_office_work_status ON q_office_work(status, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS q_office_work_period ON q_office_work(staff, job, period) WHERE period IS NOT NULL;`}
 ];
 
 let ready:Promise<void>|null=null;

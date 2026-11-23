@@ -10,8 +10,9 @@ export type DeskAlert={id?:number;level:"red"|"amber"|"info";title:string;body?:
 export type DeskTask={id:string;title:string;project:string|null;due:string|null;done:boolean};
 export type DeskApproval={app:string;kind:string;label:string;count:number;url:string};
 /** Something that needs you at a desk: an alert, an approval waiting for your yes, or a delegated task that is late. */
-export type Need={kind:"alert"|"approval"|"task";level:"red"|"amber";title:string;url?:string|null;alertId?:number;taskId?:string};
-export type DeskInput={state?:string|null;alerts:DeskAlert[];stats:{label:string;value:string}[];tasks?:DeskTask[];approvals?:DeskApproval[];today?:string};
+export type DeskDraft={id:string;title:string};
+export type Need={kind:"alert"|"approval"|"draft"|"task";level:"red"|"amber";title:string;url?:string|null;alertId?:number;taskId?:string;workId?:string};
+export type DeskInput={state?:string|null;alerts:DeskAlert[];stats:{label:string;value:string}[];tasks?:DeskTask[];approvals?:DeskApproval[];drafts?:DeskDraft[];today?:string};
 export type Desk={light:Light;headline:string|null;needs:Need[];line:string;open:DeskTask[];overdue:DeskTask[]};
 
 export const ROOMS:Record<Room,{label:string;note:string}>={
@@ -69,14 +70,16 @@ export function deskFor(i:DeskInput):Desk{
   const alertNeeds:Need[]=i.alerts.filter(a=>a.level!=="info").map(a=>({kind:"alert",level:a.level as "red"|"amber",title:a.title,url:a.url??null,alertId:a.id}));
   const approvalNeeds:Need[]=(i.approvals??[]).filter(a=>a.count>0).map(a=>({kind:"approval",level:"amber",title:`${a.label}: ${a.count}`,url:a.url}));
   const taskNeeds:Need[]=overdue.map(t=>({kind:"task",level:"amber",title:t.title,taskId:t.id}));
-  const rank=(n:Need)=>n.level==="red"?0:n.kind==="approval"?1:n.kind==="task"?2:3;
-  const needs=[...alertNeeds,...approvalNeeds,...taskNeeds].sort((a,b)=>rank(a)-rank(b));
+  const draftNeeds:Need[]=(i.drafts??[]).map(d=>({kind:"draft",level:"amber",title:d.title,workId:d.id}));
+  const rank=(n:Need)=>n.level==="red"?0:n.kind==="approval"?1:n.kind==="draft"?2:n.kind==="task"?3:4;
+  const needs=[...alertNeeds,...approvalNeeds,...draftNeeds,...taskNeeds].sort((a,b)=>rank(a)-rank(b));
   const state=(i.state??"").toUpperCase();
   const light:Light=BAD.has(state)||needs.some(n=>n.level==="red")?"down":BUSY.has(state)||needs.length?"watch":!state&&!i.stats.length&&!open.length?"idle":"ok";
   const s=i.stats[0],headline=s?`${s.value} ${s.label}`:null;
   const top=needs[0];
   const line=light==="down"?`Needs you: ${top?.title??"the last deploy failed"}.`
     :top?.kind==="approval"?`Waiting for your yes: ${top.title}.`
+    :top?.kind==="draft"?`Draft ready for your yes: ${top.title}.`
     :top?.kind==="task"?`Behind on a task you gave: ${top.title}.`
     :light==="watch"?(top?`Watching: ${top.title}.`:"Shipping a new version now.")
     :light==="idle"?"No live data at this desk yet."
@@ -87,7 +90,7 @@ export function deskFor(i:DeskInput):Desk{
 
 /** Q's stand-up: what needs you first (red, approvals, late tasks, then the rest), at most three items, or a clear all-good. */
 export function standup(desks:{staff:Staff;desk:Desk}[]):{lines:string[];allClear:boolean}{
-  const rank=(d:Desk)=>d.light==="down"?0:d.needs[0]?.kind==="approval"?1:d.needs[0]?.kind==="task"?2:3;
+  const rank=(d:Desk)=>d.light==="down"?0:d.needs[0]?.kind==="approval"?1:d.needs[0]?.kind==="draft"?2:d.needs[0]?.kind==="task"?3:4;
   // Ops only speaks for alerts no app owns; its roll-up would repeat the other desks.
   const urgent=desks.filter(d=>(d.desk.light==="down"||d.desk.light==="watch")&&!(d.staff.id==="ops"&&!d.desk.needs.length)).sort((a,b)=>rank(a.desk)-rank(b.desk));
   if(!urgent.length)return {lines:["Nothing needs you right now. Every desk reports in."],allClear:true};
@@ -105,7 +108,7 @@ export function opsDesk(desks:Desk[],stray:DeskAlert[]):Desk{
 
 /** Every need on the floor, for the approvals inbox: red first, then approvals, late tasks and amber alerts. */
 export function inbox(desks:{staff:Staff;desk:Desk}[]):{staff:Staff;need:Need}[]{
-  const rank=(n:Need)=>n.level==="red"?0:n.kind==="approval"?1:n.kind==="task"?2:3;
+  const rank=(n:Need)=>n.level==="red"?0:n.kind==="approval"?1:n.kind==="draft"?2:n.kind==="task"?3:4;
   return desks.flatMap(d=>d.desk.needs.map(need=>({staff:d.staff,need}))).sort((a,b)=>rank(a.need)-rank(b.need));
 }
 

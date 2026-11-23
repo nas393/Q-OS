@@ -198,13 +198,22 @@ async function morningBrief(out:string[]){
 }
 
 /* Main entry. force=true skips the 10-minute throttle (owner "check now"). */
+/* Office phase 3: weekly drafts (NOVAE posts, Lumeris reels, gold note, health report, weekly review).
+   At most every 6 hours; each job drafts once per ISO week. Loaded lazily (the office module reads alerts too). */
+async function officeWeekly(out:string[]){
+  const last=(await kvGet<number>("office_weekly_last"))??0;
+  if(Date.now()-last<6*3600_000)return;
+  await kvSet("office_weekly_last",Date.now());
+  const {runWeeklyJobs}=await import("@/lib/office/work");
+  await runWeeklyJobs(out);
+}
 export async function runChecks(force=false){
   await ensure();
   const last=(await kvGet<number>("last_check"))??0;
   if(!force&&Date.now()-last<10*60_000)return {skipped:true,events:[] as string[]};
   await kvSet("last_check",Date.now());
   const started=Date.now(),out:string[]=[],errors:string[]=[];
-  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["build-resolve",()=>resolveBuildAlerts(out)],["app-stats",()=>collectAppStats(out).then(()=>undefined)],["gold",()=>checkGold(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
+  for(const [name,fn] of [["uptime",()=>checkUptime(out)],["builds",()=>checkBuilds(out)],["build-resolve",()=>resolveBuildAlerts(out)],["app-stats",()=>collectAppStats(out).then(()=>undefined)],["gold",()=>checkGold(out)],["office-weekly",()=>officeWeekly(out)],["brief",()=>morningBrief(out)],["angolaiq",async()=>{const r=await runIqJobs();if(Object.keys(r).length>1)out.push("iq:"+Object.keys(r).join(","));}]] as const){
     try{await fn();}catch(e){
       const msg=e instanceof Error?e.message:"failed";
       errors.push(`${name}: ${msg}`);
