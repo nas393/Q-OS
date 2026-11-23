@@ -7,7 +7,7 @@ const base = (): SimulationState => ({
   worldId: "q-world", version: 0, simulatedAt: Date.UTC(2026, 10, 23, 9), lastWallClockAt: 0,
   speed: 1, paused: false,
   employees: [{
-    id: "e1", name: "Maya", role: "Analyst", department: "Finance", skills: ["analysis"],
+    id: "e1", name: "Maya", role: "Analyst", department: "Finance", reportsTo: "cfo", tier: "workforce", skills: ["analysis"],
     personality: { conscientiousness: 80, sociability: 50, curiosity: 70 },
     position: { x: 0, y: 0, z: 0 }, destination: null, activity: "idle", status: "active",
     energy: 90, focus: 90, morale: 70, stress: 10, currentTaskId: null,
