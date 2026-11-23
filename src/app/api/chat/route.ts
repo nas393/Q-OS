@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     conversationId: z.string().uuid().optional(),
     portfolioContext: z.string().max(9000).optional(),
     workspace: z.enum(["q","twin"]).optional(),
-    role: z.enum(["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","devils_advocate"]).optional()
+    role: z.enum(["partner","ceo","commercial","cfo","coo","cso","negotiator","chief_of_staff","sales_analyst","devils_advocate"]).optional()
   }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError(400, "Enter a message (maximum 12,000 characters).");
 
