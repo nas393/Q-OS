@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { ContactShadows, Environment, OrbitControls, Text } from "@react-three/drei";
-import { AnimationMixer, Group, MathUtils, Vector3 } from "three";
+import { AnimationMixer, Group, MathUtils, Vector3, type AnimationAction } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
@@ -16,7 +16,6 @@ const MODEL_URLS = [
   "https://models.vinish.dev/people/casual-man.glb",
   "https://models.vinish.dev/people/casual-woman.glb",
 ];
-const clamp = (n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
 function makeTasks():SimTask[]{
   const specs:[string,string,string[],number][]=[
     ["Finance","Close monthly forecast",["finance"],4],["Finance","Review working capital",["planning"],3],
@@ -109,7 +108,7 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
   </group>;
 }
 function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;asset:GLTF;onSelect:(id:string)=>void;selected:boolean}){
-  const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<any>(null);
+  const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<AnimationAction|null>(null);
   const model=useMemo(()=>clone(asset.scene),[asset]);
   useEffect(()=>{
     const m=new AnimationMixer(model);mixer.current=m;
@@ -163,7 +162,6 @@ function WorldScene({employees,selected,onSelect,cameraMode}:{employees:Employee
     <OrbitControls makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
   </Canvas>;
 }
-function LoadingWorld(){const {progress}=useProgress();return <Html center><div style={{padding:"12px 16px",borderRadius:12,background:"#121820",color:"#e7dfcf",fontSize:12,whiteSpace:"nowrap"}}>Loading headquarters assets · {Math.round(progress)}%</div></Html>}
 export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE">("FREE");
   
