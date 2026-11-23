@@ -89,12 +89,12 @@ function Architecture({employees}:{employees:EmployeeAgent[]}){
     {[-13.8,13.8].map(z=><group key={z}><MatBox position={[0,1.75,z]} scale={[41.6,3.5,.18]} color="#384752"/><GlassWall position={[0,1.9,z]} scale={[41,.05,2.95]}/></group>)}
     {[-10.2,0,10.2].map(x=><group key={x}><MatBox position={[x,1.5,-2.5]} scale={[.12,3,20]} color="#5c6268"/><GlassWall position={[x,1.5,7.2]} scale={[.06,2.8,5.8]}/></group>)}
     {[-6,4].map(z=><MatBox key={z} position={[0,1.48,z]} scale={[41,.12,.12]} color="#8c795f"/>)}
-    <RoomSign position={[-15,2.8,-12.4}>
-    <RoomSign position={[0,2.8,-12.4}>
-    <RoomSign position={[15,2.8,-12.4}>
-    <RoomSign position={[-15,2.8,12.2}>
-    <RoomSign position={[0,2.8,12.2}>
-    <RoomSign position={[15,2.8,12.2}>
+    <RoomSign position={[-15,2.8,-12.4]} />
+    <RoomSign position={[0,2.8,-12.4]} />
+    <RoomSign position={[15,2.8,-12.4]} />
+    <RoomSign position={[-15,2.8,12.2]} />
+    <RoomSign position={[0,2.8,12.2]} />
+    <RoomSign position={[15,2.8,12.2]} />
     {desks.map(d=><Desk key={d.id} position={d.position}/>)}
     {[-8,8].map(x=><group key={x}><MatBox position={[x,.8,7.5]} scale={[5,.16,2.1]} color="#493d32"/>{[-1.6,1.6].map(dx=><OfficeChair key={dx} position={[x+dx,0,9]}/>)}</group>)}
     <MatBox position={[0,.78,0]} scale={[5.4,.18,1.7]} color="#59442f" />
