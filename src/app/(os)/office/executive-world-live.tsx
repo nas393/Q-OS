@@ -77,7 +77,7 @@ export function ExecutiveWorld3D({rooms,onSelectDesk}:Props){
   const render=()=>{
    const w=el.clientWidth,h=el.clientHeight,dpr=Math.min(window.devicePixelRatio||1,1.5);if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
    gl.viewport(0,0,el.width,el.height);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.045,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-   const focused=worldRef.current.employees.find(e=>e.id===selected);const target=camera==="CEO"&&focused?[focused.position.x,0,focused.position.z] as V3:[0,0,0];
+   const focused=worldRef.current.employees.find(e=>e.id===selected);const target:V3=camera==="CEO"&&focused?[focused.position.x,0,focused.position.z]:[0,0,0];
    const radius=35/zoom,eye:[number,number,number]=[target[0]+Math.sin(rotation)*radius,22,target[2]+Math.cos(rotation)*radius];const view=lookAt(eye,target),proj=perspective(.66,w/h,.1,100);vp=multiply(proj,view);
    // One open-plan headquarters shell with glass perimeter, warm timber zones and meeting spaces.
    const draw=(kind:keyof typeof meshes,x:number,y:number,z:number,sx:number,sy:number,sz:number,c:V3,rz=0)=>drawMesh(kind,model(x,y,z,sx,sy,sz,rz),c);
