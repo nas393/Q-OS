@@ -2,7 +2,7 @@
 /* The Office, drawn: Q's glass corner office and the rooms where every app works at its desk.
    Each desk shows its status light, one number, its tasks from you and what needs you; tap a desk to open it.
    The inbox lists everything waiting for you across the floor: approvals, late tasks and alerts. */
-import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
+import {useEffect,useMemo,useRef,useState,type CSSProperties,type FormEvent} from "react";
 import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
@@ -164,7 +164,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
       <div className="of-world-viewport">
-        <div className="of-floor" role="group" aria-label="Interactive executive headquarters floor plan" style={{"--world-zoom":worldZoom} as React.CSSProperties}>
+        <div className="of-floor" role="group" aria-label="Interactive executive headquarters floor plan" style={{"--world-zoom":worldZoom} as CSSProperties}>
           {LAYOUT.map(room=>{
             const here=floor.filter(r=>r.staff.room===room);
             const needs=here.reduce((n,r)=>n+r.desk.needs.length,0);
