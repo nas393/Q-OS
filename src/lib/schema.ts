@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS q_office_work (id uuid PRIMARY KEY DEFAULT gen_random
   status text NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','approved','discarded')), period text, created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz);
 CREATE INDEX IF NOT EXISTS q_office_work_status ON q_office_work(status, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS q_office_work_period ON q_office_work(staff, job, period) WHERE period IS NOT NULL;`}
+,
+ {id:4,name:"executive_twin_workspace_v1",sql:`
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS workspace text NOT NULL DEFAULT 'general' CHECK (workspace IN ('general','executive_twin'));
+CREATE INDEX IF NOT EXISTS conversations_user_workspace_updated_idx ON conversations(user_id,workspace,updated_at DESC);`}
 ];
 
 let ready:Promise<void>|null=null;
