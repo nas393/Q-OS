@@ -65,6 +65,7 @@ The first runtime uses a deterministic rules engine for predictable movement, sc
 
 ### Client
 - Three.js via React Three Fiber and Drei for scene graph, cameras, lighting, assets and animation.
+- Phase 1 visual asset baseline: four rigged business/casual human GLB models by vinish.dev (Business Man, Business Woman, Casual Man, Casual Woman), licensed CC BY 4.0. Preserve attribution in the in-app credits and release notes: “Models by vinish.dev (https://vinish.dev/free-3d-models/), CC BY 4.0”. These are textured game-ready characters, not photorealistic scans; replace/augment them with approved premium character assets before claiming photorealism.
 - Rigged character assets with animation state machines and locomotion blending.
 - Navigation mesh/pathfinding and collision-aware movement; Rapier only where physical interaction adds value.
 - LOD, instancing, asset streaming, capped device pixel ratio and reduced-motion/low-power fallbacks.
