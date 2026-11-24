@@ -24,7 +24,7 @@ const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17],glass:[number,number,number]=[.28,.49,.56],dark:[number,number,number]=[.055,.075,.09],gold:[number,number,number]=[.62,.43,.22];
 const floorY=()=>.35;
 const roomZ=0;
-// A single cutaway headquarters shell: three office floors, open front elevation,
+// A single-storey cutaway headquarters shell with an open front elevation,
 // rear service core and continuous side walls keep the interior legible in isometric view.
 scene.push(
  cube(0,-.72,0,44,1.1,34,ground),
@@ -90,6 +90,19 @@ for(const u of UNITS){
    cube(0,y+.78,-.05,4.0,.55,1.65,[.32,.36,.38]),
    cube(-2.55,y+.42,-.05,.16,.72,.16,gold),
    cube(2.55,y+.42,-.05,.16,.72,.16,gold),
+   // Six boardroom chairs around the conference table.
+   cube(-2.15,y+.42,-1.35,.72,.18,.72,dark),
+   cube(-2.15,y+.92,-1.72,.72,.82,.16,[.28,.32,.34]),
+   cube(0,y+.42,-1.35,.72,.18,.72,dark),
+   cube(0,y+.92,-1.72,.72,.82,.16,[.28,.32,.34]),
+   cube(2.15,y+.42,-1.35,.72,.18,.72,dark),
+   cube(2.15,y+.92,-1.72,.72,.82,.16,[.28,.32,.34]),
+   cube(-2.15,y+.42,1.25,.72,.18,.72,dark),
+   cube(-2.15,y+.92,1.62,.72,.82,.16,[.28,.32,.34]),
+   cube(0,y+.42,1.25,.72,.18,.72,dark),
+   cube(0,y+.92,1.62,.72,.82,.16,[.28,.32,.34]),
+   cube(2.15,y+.42,1.25,.72,.18,.72,dark),
+   cube(2.15,y+.92,1.62,.72,.82,.16,[.28,.32,.34]),
    cube(0,y+.48,-2.45,3.8,.18,1.05,[.82,.16,.19]),
    cube(0,y+.98,-2.45,3.6,.82,.9,[.28,.32,.34]),
    cube(0,y+1.52,-2.45,1.9,1.18,.14,dark),
@@ -286,14 +299,14 @@ export function QWorldView(){
  const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-16,Math.min(16,p.x+dx));p.z=Math.max(-10,Math.min(21,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
-  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected floor with W A S D or arrow keys · walk the single floor with W A S D or arrow keys"}</span></div>
+  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected office with W A S D or arrow keys"}</span></div>
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
     {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ONE EXECUTIVE HQ · EIGHT BUSINESS UNITS</span></div>}
     {mode==="third-person"&&<div className="qw-pad" aria-label="Walk controls"><button type="button" onClick={()=>move(0,-2)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>move(-2,0)} aria-label="Move left">←</button><button type="button" onClick={()=>move(2,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>move(0,2)} aria-label="Move backward">↓</button></div>}
    </section>
-   <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED BUSINESS UNIT</span><h2>{active.name}</h2><div className="qw-floor-tag">SINGLE-LEVEL EXECUTIVE SUITE</div><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
+   <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED OFFICE</span><h2>{active.name}</h2><div className="qw-floor-tag">SINGLE-LEVEL EXECUTIVE SUITE</div><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
   </div>
   <section className="qw-director" aria-labelledby="qw-director-title">
    <div className="qw-director-head"><div><span className="qw-kicker">OWNER CONTROL PANEL</span><h2 id="qw-director-title">Visual Director</h2><p>Change the look and presentation of the Q executive headquarters.</p></div><button type="button" aria-expanded={directorOpen} onClick={()=>setDirectorOpen(v=>!v)}>{directorOpen?"Hide controls":"Show controls"}</button></div>
