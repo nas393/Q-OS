@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import "./q-world.css";
+import QWorldSpacePlan from "./q-world-space-plan";
 
 type Unit = { id:string; name:string; department:string; role:string; color:[number,number,number]; x:number; z:number; mission:string };
 const UNITS:Unit[] = [
@@ -253,6 +254,7 @@ export function QWorldView(){
  const canvas=useRef<HTMLCanvasElement>(null);
  const [mode,setMode]=useState<"isometric"|"third-person">("isometric");
  const [selected,setSelected]=useState("q");
+ const [viewMode,setViewMode]=useState<"world"|"plan">("world");
  const [webgl,setWebgl]=useState(true);
  const [visuals,setVisuals]=useState<VisualSettings>(DEFAULT_VISUALS);
  const [directorOpen,setDirectorOpen]=useState(true);
@@ -298,7 +300,8 @@ export function QWorldView(){
  const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-16,Math.min(16,p.x+dx));p.z=Math.max(-10,Math.min(21,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
-  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected office with W A S D or arrow keys"}</span></div>
+  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected office with W A S D or arrow keys"}</span><div className="qw-mode" role="group" aria-label="Headquarters view"><button type="button" aria-pressed={viewMode==="world"} onClick={()=>setViewMode("world")}>3D HQ</button><button type="button" aria-pressed={viewMode==="plan"} onClick={()=>setViewMode("plan")}>Space plan</button></div></div>
+  {viewMode==="plan" ? <QWorldSpacePlan/> : <> 
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
@@ -322,5 +325,6 @@ export function QWorldView(){
    <p className="qw-simulation-note">Visual settings are saved in this browser on this device. They do not change live business data.</p>
   </section>
   <section className="qw-units" aria-labelledby="qw-units-title"><div><span className="qw-kicker">HQ OFFICE DIRECTORY</span><h2 id="qw-units-title">Choose an office</h2></div><div className="qw-unit-grid">{UNITS.map(u=><button key={u.id} type="button" className={selected===u.id?"active":""} onClick={()=>setSelected(u.id)} aria-pressed={selected===u.id}><span style={{background:`rgb(${u.color.map(v=>Math.round(v*255)).join(",")})`}}/><b>{u.name}</b><small>{u.department} · Executive suite</small></button>)}</div><p className="qw-simulation-note">One headquarters · one executive floor · nine dedicated offices. No live tasks, revenue or costs are changed. Real KPIs will only appear after verified data connections.</p></section>
+  </>}
  </main>;
 }
