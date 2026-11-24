@@ -5,6 +5,7 @@ export type Section={id:string;href:string;label:string;short:string;icon:string
 export const SECTIONS:Section[]=[
   {id:"dashboard",href:"/dashboard",label:"Command centre",short:"Today",icon:"orbit",desc:"Ecosystem, briefing, priorities and signals"},
   {id:"office",href:"/office",label:"Office",short:"Office",icon:"home",desc:"Q and the team: every app at its desk"},
+  {id:"q-world",href:"/q-world",label:"Q WORLD",short:"World",icon:"orbit",desc:"The 3D company campus and business simulator"},
   {id:"chat",href:"/chat",label:"Q Assistant",short:"Q",icon:"spark",desc:"Conversations with Q on your live data"},
   {id:"executive-twin",href:"/executive-twin",label:"Executive Twin",short:"Twin",icon:"spark",desc:"Private executive thinking partner and decision room"},
   {id:"iq",href:"/iq",label:"AngolaIQ",short:"AngolaIQ",icon:"compass",desc:"Angola market intelligence and tools"},
