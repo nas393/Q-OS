@@ -14,6 +14,10 @@ export const LEADERSHIP_TEAM: LeadershipSeat[] = [
   { id: "coo", title: "Chief Operating Officer", department: "Operations", mandate: "Coordinate delivery, service levels, processes, capacity and operational resilience." },
   { id: "cso", title: "Chief Strategy Officer", department: "Strategy", mandate: "Own strategic planning, market intelligence, transformation and new opportunities." },
   { id: "chief-of-staff", title: "Chief of Staff", department: "Executive Office", mandate: "Coordinate priorities, executive cadence, follow-through and cross-team alignment." },
+  { id: "cto", title: "Chief Technology Officer", department: "Technology", mandate: "Own digital platforms, engineering quality, architecture, security and technology delivery." },
+  { id: "chro", title: "Chief Human Resources Officer", department: "People & Culture", mandate: "Own talent, organisation design, people operations, learning, performance and culture." },
+  { id: "cmo", title: "Chief Marketing Officer", department: "Marketing", mandate: "Own brand strategy, market positioning, demand generation and communications." },
+  { id: "clo", title: "Chief Legal & Risk Officer", department: "Legal & Risk", mandate: "Own legal governance, enterprise risk, policy, compliance and internal controls." },
 ];
 
 type EmployeeSeed = {
@@ -28,9 +32,17 @@ const LEADERS: EmployeeSeed[] = [
   { id: "coo", name: "Morgan Blake", role: "Chief Operating Officer", department: "Operations", reportsTo: "ceo", skills: ["operations", "supply-chain", "quality"], position: [-8, 0, 4] },
   { id: "cso", name: "Casey Jordan", role: "Chief Strategy Officer", department: "Strategy", reportsTo: "ceo", skills: ["strategy", "research", "analytics"], position: [8, 0, 4] },
   { id: "chief-of-staff", name: "Riley Quinn", role: "Chief of Staff", department: "Executive Office", reportsTo: "ceo", skills: ["coordination", "communication", "planning"], position: [0, 0, -8] },
+  { id: "cto", name: "Ari Bennett", role: "Chief Technology Officer", department: "Technology", reportsTo: "ceo", skills: ["technology", "engineering", "security", "architecture"], position: [-4, 0, 8] },
+  { id: "chro", name: "Sofia Laurent", role: "Chief Human Resources Officer", department: "People & Culture", reportsTo: "ceo", skills: ["hr", "people-ops", "leadership", "talent"], position: [4, 0, 8] },
+  { id: "cmo", name: "Noah Williams", role: "Chief Marketing Officer", department: "Marketing", reportsTo: "ceo", skills: ["marketing", "brand", "campaigns", "strategy"], position: [-4, 0, -8] },
+  { id: "clo", name: "Maya Clarke", role: "Chief Legal & Risk Officer", department: "Legal & Risk", reportsTo: "ceo", skills: ["legal", "risk", "compliance", "governance"], position: [4, 0, -8] },
 ];
 
 const WORKFORCE: EmployeeSeed[] = [
+  { id: "hr-01", name: "Isabella Moore", role: "HR Business Partner", department: "People & Culture", reportsTo: "chro", skills: ["hr", "people-ops", "employee-relations"], position: [0, 0, 10] },
+  { id: "hr-02", name: "Ethan Brooks", role: "Talent Acquisition Lead", department: "People & Culture", reportsTo: "chro", skills: ["talent", "recruitment", "interviewing"], position: [2, 0, 10] },
+  { id: "hr-03", name: "Amara Lewis", role: "Learning & Development Manager", department: "People & Culture", reportsTo: "chro", skills: ["learning", "development", "training"], position: [6, 0, 10] },
+  { id: "hr-04", name: "Lucas Martin", role: "People Operations Analyst", department: "People & Culture", reportsTo: "chro", skills: ["people-ops", "hr", "analytics"], position: [8, 0, 10] },
   { id: "fin-01", name: "Avery Brooks", role: "Financial Controller", department: "Finance", reportsTo: "cfo", skills: ["finance", "controls", "reporting"], position: [-12, 0, -2] },
   { id: "fin-02", name: "Jamie Carter", role: "FP&A Analyst", department: "Finance", reportsTo: "cfo", skills: ["planning", "forecasting", "analytics"], position: [-12, 0, 0] },
   { id: "fin-03", name: "Drew Parker", role: "Accounts Specialist", department: "Finance", reportsTo: "cfo", skills: ["accounting", "reconciliation"], position: [-12, 0, 2] },
@@ -61,6 +73,8 @@ function createAgent(seed: EmployeeSeed, index: number): EmployeeAgent {
   return {
     id: seed.id, name: seed.name, role: seed.role, department: seed.department,
     reportsTo: seed.reportsTo, tier: index < LEADERS.length ? "leadership" : "workforce",
+    goal: seed.role + " outcomes: deliver assigned work independently, maintain quality and escalate material blockers.",
+    autonomyMode: "independent",
     skills: seed.skills,
     personality: {
       conscientiousness: 62 + (index * 7) % 35,
@@ -77,7 +91,7 @@ function createAgent(seed: EmployeeSeed, index: number): EmployeeAgent {
   };
 }
 
-/** 6 executive agents and 20 fictional employees. Every workforce member reports to one executive seat. */
+/** 10 executive agents and 24 fictional employees. Every workforce member reports to one executive seat. */
 export const INITIAL_EMPLOYEES: EmployeeAgent[] = [...LEADERS, ...WORKFORCE].map(createAgent);
 
 /** Useful for org charts, reporting-line validation and workforce sizing. */
