@@ -408,6 +408,7 @@ export function QWorldView(){
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
     {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ONE EXECUTIVE HQ · EIGHT BUSINESS UNITS</span></div>}
+    <div className="qw-scene-caption"><span>NOW VIEWING</span><b>{active.name}</b><small>{active.department} · EXECUTIVE HQ</small></div>
     {mode==="third-person"&&<div className="qw-pad" aria-label="Walk controls"><button type="button" onClick={()=>move(0,-2)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>move(-2,0)} aria-label="Move left">←</button><button type="button" onClick={()=>move(2,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>move(0,2)} aria-label="Move backward">↓</button></div>}
    </section>
    <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED OFFICE</span><h2>{active.name}</h2><div className="qw-floor-tag">SINGLE-LEVEL EXECUTIVE SUITE</div><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
