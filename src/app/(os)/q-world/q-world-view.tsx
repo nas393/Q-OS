@@ -197,6 +197,35 @@ scene.push(
  cube(0,2.7,10.68,6.8,1.55,.12,[.19,.25,.29]),
  cube(0,3.72,10.58,3.6,.08,.08,gold)
 );
+// Signature executive arrival architecture: layered portal, stone piers and a recessed glass canopy.
+scene.push(
+ cube(0,6.45,14.0,21,.32,3.2,dark),
+ cube(0,6.28,14.0,19,.08,2.8,gold),
+ cube(-9.4,3.15,13.65,.72,6.3,.8,[.34,.37,.37]),
+ cube(9.4,3.15,13.65,.72,6.3,.8,[.34,.37,.37]),
+ cube(-9.4,5.95,13.65,1.0,.16,1.05,gold),
+ cube(9.4,5.95,13.65,1.0,.16,1.05,gold),
+ cube(0,5.92,15.35,18,.14,.12,[.72,.55,.31]),
+ // Sculptural Q-inspired arrival feature on the reception wall.
+ cube(-.05,3.0,10.52,2.15,2.15,.16,[.65,.12,.15]),
+ cube(-.05,3.0,10.39,1.42,1.42,.12,[.13,.17,.19]),
+ cube(.45,2.35,10.30,.5,.32,.1,[.78,.62,.39]),
+ // Architectural wall reveals and continuous warm cove-light details.
+ cube(-17.55,3.0,-.1,.08,4.7,22,[.49,.39,.27]),
+ cube(17.55,3.0,-.1,.08,4.7,22,[.49,.39,.27]),
+ cube(-17.55,5.6,-.1,.12,.12,24,[.76,.59,.36]),
+ cube(17.55,5.6,-.1,.12,.12,24,[.76,.59,.36])
+);
+// Landscaped arrival planters with layered foliage, not single low-detail blobs.
+for(const x of [-15.2,-12.8,12.8,15.2]){
+ scene.push(
+  primitive("cylinder",x,.58,15.1,1.15,.9,1.15,[.24,.2,.16]),
+  primitive("cylinder",x,.98,15.1,.98,.12,.98,[.52,.39,.24]),
+  primitive("cone",x,2.0,15.1,1.35,2.2,1.35,[.18,.31,.24]),
+  primitive("cone",x-.34,1.75,14.85,.8,1.5,.8,[.2,.36,.27]),
+  primitive("cone",x+.34,1.72,15.34,.82,1.45,.82,[.15,.29,.22])
+ );
+}
 // Entrance forecourt is compact and directly connected to the single building.
 scene.push(
  cube(0,-.05,17.6,22,.16,7,[.2,.24,.26]),
