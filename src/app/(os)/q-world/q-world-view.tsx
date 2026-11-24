@@ -88,11 +88,12 @@ export function QWorldView(){
    window.addEventListener("keydown",down);window.addEventListener("keyup",up);
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-48,Math.min(48,p.x));p.z=Math.max(-38,Math.min(38,p.z));}
-    gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[57,52,62] :[position.current.x,3.2,position.current.z];
+    const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
+    const eye=mode==="isometric"?[57/v.zoom,52/v.zoom,62/v.zoom] :[position.current.x,3.2,position.current.z];
     const target=mode==="isometric"?[0,0,0] :[position.current.x+Math.sin(position.current.yaw)*14,2.6,position.current.z-Math.cos(position.current.yaw)*14];
-    const proj=perspective(mode==="isometric"?.78:1.02,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
-    for(const o of OBJECTS){gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,36);}
+    const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
+    gl!.uniform1f(intensity,v.brightness);
+    for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,36);}
    }raf=window.requestAnimationFrame(render);};
    const observer=new ResizeObserver(resize);observer.observe(el);raf=window.requestAnimationFrame(render);
    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);};
