@@ -335,9 +335,9 @@ export function QWorldView(){
    const resize=()=>{const rect=el.getBoundingClientRect(),quality=visualsRef.current.quality,dpr=Math.min(window.devicePixelRatio||1,quality==="high"?1.5:quality==="balanced"?1.25:1),w=Math.max(1,Math.floor(rect.width*dpr)),h=Math.max(1,Math.floor(rect.height*dpr));if(el.width!==w||el.height!==h){el.width=w;el.height=h;gl!.viewport(0,0,w,h);}};
    const keys=new Set<string>();const down=(e:KeyboardEvent)=>{if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());if(mode==="third-person")e.preventDefault();}};const up=(e:KeyboardEvent)=>keys.delete(e.key.toLowerCase());
    let dragging=false,lastPointerX=0;
-   const pointerDown=(e:PointerEvent)=>{if(mode!=="third-person")return;dragging=true;lastPointerX=e.clientX;el.setPointerCapture?.(e.pointerId);};
-   const pointerMove=(e:PointerEvent)=>{if(!dragging||mode!=="third-person")return;position.current.yaw-=(e.clientX-lastPointerX)*.008;lastPointerX=e.clientX;};
-   const pointerUp=()=>{dragging=false;};
+   const pointerDown=(e:PointerEvent)=>{if(mode!=="third-person"||e.button!==0)return;dragging=true;lastPointerX=e.clientX;e.preventDefault();try{el.setPointerCapture(e.pointerId);}catch{}};
+   const pointerMove=(e:PointerEvent)=>{if(!dragging||mode!=="third-person")return;const delta=e.clientX-lastPointerX;lastPointerX=e.clientX;if(delta!==0)position.current.yaw-=delta*.014;};
+   const pointerUp=(e:PointerEvent)=>{dragging=false;try{if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);}catch{}};
    el.addEventListener("pointerdown",pointerDown);el.addEventListener("pointermove",pointerMove);el.addEventListener("pointerup",pointerUp);el.addEventListener("pointercancel",pointerUp);
    window.addEventListener("keydown",down);window.addEventListener("keyup",up);
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
@@ -386,6 +386,8 @@ export function QWorldView(){
     <label className="qw-range">Lighting <b>{Math.round(visuals.brightness*100)}%</b><input type="range" min=".55" max="1.45" step=".05" value={visuals.brightness} onChange={e=>updateVisuals({brightness:Number(e.target.value)})}/></label>
     <label className="qw-range">Camera zoom <b>{Math.round(visuals.zoom*100)}%</b><input type="range" min=".65" max="1.45" step=".05" value={visuals.zoom} onChange={e=>updateVisuals({zoom:Number(e.target.value)})}/></label>
     <label className="qw-range">Isometric camera angle <b>{Math.round(visuals.orbit)}°</b><input type="range" min="0" max="360" step="5" value={visuals.orbit} onChange={e=>updateVisuals({orbit:Number(e.target.value)})}/></label>
+    {mode==="third-person"&&<label className="qw-range">Walk camera angle <b>{Math.round(((position.current.yaw*180/Math.PI)%360+360)%360)}°</b><input type="range" min="0" max="360" step="1" value={((position.current.yaw*180/Math.PI)%360+360)%360} onChange={e=>{position.current.yaw=Number(e.target.value)*Math.PI/180;}}/></label>}
+    {mode==="third-person"&&<button type="button" className="qw-reset" onClick={()=>{position.current.yaw=0;}}>Reset walk camera</button>}
     <label className="qw-toggle"><input type="checkbox" checked={visuals.labels} onChange={e=>updateVisuals({labels:e.target.checked})}/> Show headquarters labels</label>
     <button type="button" className="qw-reset" onClick={()=>setVisuals(DEFAULT_VISUALS)}>Reset visual settings</button>
    </div>}
