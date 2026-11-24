@@ -1,280 +1,118 @@
 "use client";
 
-import { Component, Suspense, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { AnimationMixer, Group, MathUtils, Vector3, type AnimationAction } from "three";
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { clone } from "three/addons/utils/SkeletonUtils.js";
-import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
-import { tickSimulation } from "@/lib/simulation/engine";
-import type { EmployeeAgent, SimulationState, SimTask } from "@/lib/simulation/types";
-import { applyRecruitAction, type RecruitAction } from "@/lib/simulation/recruit";
-import { HiringDesk } from "./hiring-desk";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import type { EmployeeAgent, SimulationState } from "@/lib/simulation/types";
+import type { RecruitAction } from "@/lib/simulation/recruit";
+import { summarize } from "@/lib/simulation/autopilot";
+import type { WorldAction } from "@/lib/office/world-contract";
+import { loadWorld, runWorldAction } from "./world-actions";
+import { SceneErrorBoundary, WorldScene, type CameraMode } from "./office-scene";
+import { CompanyPanel, companyClock, type PanelTab } from "./company-panel";
 
-const MODEL_URLS = [
-  "https://models.vinish.dev/people/business-man.glb",
-  "https://models.vinish.dev/people/business-woman.glb",
-  "https://models.vinish.dev/people/casual-man.glb",
-  "https://models.vinish.dev/people/casual-woman.glb",
-];
-function makeTasks():SimTask[]{
-  const specs:[string,string,string[],number][]=[
-    ["Finance","Close monthly forecast",["finance"],4],["Finance","Review working capital",["planning"],3],
-    ["Commercial","Analyse key-account performance",["sales"],4],["Commercial","Prepare channel growth plan",["marketing"],3],
-    ["Operations","Review supply reliability",["operations"],4],["Operations","Improve process yield",["quality"],3],
-    ["Strategy","Assess market opportunity",["strategy"],3],["Strategy","Build transformation roadmap",["research"],2],
-    ["Executive Office","Prepare leadership briefing",["coordination"],3],
-    ["People & Culture","Prepare workforce capacity review",["people-ops"],4],
-    ["People & Culture","Build talent acquisition shortlist",["talent","recruitment"],3],
-    ["People & Culture","Design employee learning pathway",["learning","development"],3],
-    ["People & Culture","Analyse employee engagement pulse",["people-ops","analytics"],2],
-    ["Technology","Review platform reliability roadmap",["technology","architecture"],4],["Technology","Build the analytics data pipeline",["data-engineering"],3],
-    ["Marketing","Prepare brand growth strategy",["brand","marketing"],3],
-    ["Legal & Risk","Review enterprise risk register",["risk","governance"],4],
-    ["Executive","Set quarterly company priorities",["leadership"],5],
-  ];
-  return specs.map((s,i)=>({id:"world-task-"+i,title:s[1],department:s[0],requiredSkills:s[2],priority:s[3],effortRemaining:18+i*2,status:"queued",assigneeId:null,dueAt:null,createdAt:i}));
-}
-function initialWorld():SimulationState{
-  const now=Date.UTC(2026,10,23,9);
-  return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
-    employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[],recruitment:{requests:[],cursor:0}};
-}
-const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office","People & Culture","Technology","Marketing","Legal & Risk"] as const;
+/* The fictional executive world. The company runs on the server (autopilot), this page shows it and sends owner actions.
+   Nothing here changes Q OS records. */
+const REFRESH_MS = 15_000;
+
 /* Whether this device can start a WebGL context. Some devices and browsers have WebGL switched off. */
-function canUseWebGL():boolean{
-  try{
-    const c=document.createElement("canvas");
-    return !!(c.getContext("webgl2")||c.getContext("webgl")||c.getContext("experimental-webgl"));
-  }catch{return false}
+function canUseWebGL(): boolean {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl") || c.getContext("experimental-webgl"));
+  } catch { return false; }
 }
-function MatBox({position,scale,color,roughness=.65,metalness=0,emissive="#000000",emissiveIntensity=0}:{position:[number,number,number];scale:[number,number,number];color:string;roughness?:number;metalness?:number;emissive?:string;emissiveIntensity?:number}){
-  return <mesh position={position} castShadow receiveShadow><boxGeometry args={scale}/><meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity}/></mesh>;
-}
-function Desk({position,rotation=0,executive=false}:{position:[number,number,number];rotation?:number;executive?:boolean}){
-  return <group position={position} rotation={[0,rotation,0]}>
-    <MatBox position={[0,.76,0]} scale={[1.75,.12,.82]} color={executive?"#59432f":"#76563b"}/>
-    <MatBox position={[-.72,.37,0]} scale={[.09,.72,.72]} color="#262a30" />
-    <MatBox position={[.72,.37,0]} scale={[.09,.72,.72]} color="#262a30" />
-    <MatBox position={[0,1.05,-.22]} scale={[.62,.42,.055]} color="#141c24" metalness={.25}/>
-    <MatBox position={[0,1.05,-.185]} scale={[.55,.33,.012]} color="#183342" metalness={.2}/>
-    <MatBox position={[.48,.84,.16]} scale={[.22,.025,.28]} color="#24272c"/>
-    <MatBox position={[-.43,.84,.14]} scale={[.28,.025,.2]} color="#b4b6b8"/>
-    <OfficeChair position={[0,0,1.02]}/>
-  </group>;
-}
-function OfficeChair({position}:{position:[number,number,number]}){
-  return <group position={position}>
-    <MatBox position={[0,.52,0]} scale={[.55,.12,.52]} color="#242932"/>
-    <MatBox position={[0,.91,-.2]} scale={[.52,.62,.12]} color="#303640"/>
-    <MatBox position={[0,.25,0]} scale={[.08,.48,.08]} color="#6a7079" metalness={.7}/>
-    {[-.22,.22].map(x=>[-.2,.2].map(z=><MatBox key={x+"-"+z} position={[x,.08,z]} scale={[.08,.08,.08]} color="#7d838b" metalness={.7}/>))}
-  </group>;
-}
-function Plant({position}:{position:[number,number,number]}){
-  return <group position={position}>
-    <mesh position={[0,.28,0]} castShadow><cylinderGeometry args={[.28,.22,.55,16]}/><meshStandardMaterial color="#514237"/></mesh>
-    {Array.from({length:7},(_,i)=><mesh key={i} position={[Math.sin(i*2.4)*.18,.72+(i%3)*.12,Math.cos(i*2.4)*.18]} rotation={[.2,0,(i-3)*.2]} castShadow><coneGeometry args={[.16,.65,7]}/><meshStandardMaterial color={i%2?"#35624b":"#477a57"}/></mesh>)}
-  </group>;
-}
-function Sofa({position,rotation=0}:{position:[number,number,number];rotation?:number}){
-  return <group position={position} rotation={[0,rotation,0]}>
-    <MatBox position={[0,.28,0]} scale={[2.6,.45,.9]} color="#343d49"/>
-    <MatBox position={[0,.68,-.36]} scale={[2.6,.85,.18]} color="#465361"/>
-    {[-.9,0,.9].map(x=><MatBox key={x} position={[x,.56,.02]} scale={[.78,.08,.72]} color="#586574"/>)}
-  </group>;
-}
-function GlassWall({position,scale}:{position:[number,number,number];scale:[number,number,number]}){
-  return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness={.12} metalness={.2} transmission={.15} thickness={.12}/></mesh>;
-}
-function RoomSign({position}:{position:[number,number,number]}){
-  return <group position={position}><mesh><boxGeometry args={[2.6,.055,.045]}/><meshStandardMaterial color="#d9c08b" emissive="#8a7044" emissiveIntensity={.35}/></mesh></group>;
-}
-function Architecture({employees}:{employees:EmployeeAgent[]}){
-  const desks=employees.filter(e=>e.id!=="ceo").map(e=>({id:e.id,position:[e.position.x,0,e.position.z+1.15] as [number,number,number]}));
-  return <group>
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.16,0]} receiveShadow><planeGeometry args={[48,34]}/><meshStandardMaterial color="#222a31" roughness={.82}/></mesh>
-    <gridHelper args={[48,48,"#45515a","#303a43"]} position={[0,-.145,0]}/>
-    <MatBox position={[0,-.02,0]} scale={[43,.16,29]} color="#a59b8a" roughness={.82}/>
-    <MatBox position={[0,.03,0]} scale={[41.8,.025,27.8]} color="#c2b9aa" roughness={.7}/>
-    {[-20.8,20.8].map(x=><group key={x}><MatBox position={[x,1.75,0]} scale={[.18,3.5,28]} color="#384752"/><GlassWall position={[x,1.9,0]} scale={[.05,2.95,27.5]}/></group>)}
-    {[-13.8,13.8].map(z=><group key={z}><MatBox position={[0,1.75,z]} scale={[41.6,3.5,.18]} color="#384752"/><GlassWall position={[0,1.9,z]} scale={[41,.05,2.95]}/></group>)}
-    {[-10.2,0,10.2].map(x=><group key={x}><MatBox position={[x,1.5,-2.5]} scale={[.12,3,20]} color="#5c6268"/><GlassWall position={[x,1.5,7.2]} scale={[.06,2.8,5.8]}/></group>)}
-    {[-6,4].map(z=><MatBox key={z} position={[0,1.48,z]} scale={[41,.12,.12]} color="#8c795f"/>)}
-    <RoomSign position={[-15,2.8,-12.4]} />
-    <RoomSign position={[0,2.8,-12.4]} />
-    <RoomSign position={[15,2.8,-12.4]} />
-    <RoomSign position={[-15,2.8,12.2]} />
-    <RoomSign position={[0,2.8,12.2]} />
-    <RoomSign position={[15,2.8,12.2]} />
-    {desks.map(d=><Desk key={d.id} position={d.position}/>)}
-    {[-8,8].map(x=><group key={x}><MatBox position={[x,.8,7.5]} scale={[5,.16,2.1]} color="#493d32"/>{[-1.6,1.6].map(dx=><OfficeChair key={dx} position={[x+dx,0,9]}/>)}</group>)}
-    <MatBox position={[0,.78,0]} scale={[5.4,.18,1.7]} color="#59442f" />
-    {[-2,0,2].map(x=><OfficeChair key={x} position={[x,0,1.5]}/>)}
-    <Sofa position={[-5,0,-10]} rotation={Math.PI/2}/><Sofa position={[-1.8,0,-10]} rotation={-Math.PI/2}/>
-    <MatBox position={[-3.4,.38,-10]} scale={[1.2,.12,1.2]} color="#57483b"/>
-    <Plant position={[-19,0,-11]}/><Plant position={[19,0,-11]}/><Plant position={[-19,0,11]}/><Plant position={[19,0,11]}/>
-    {[-18,-9,0,9,18].map(x=><group key={x}><MatBox position={[x,3.25,-13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7" emissiveIntensity={.45}/><MatBox position={[x,3.25,13.4]} scale={[.12,.12,.7]} color="#d7c9a7" emissive="#d7c9a7"/></group>)}
-    <MatBox position={[0,.85,-13]} scale={[5,.2,.9]} color="#3a454f"/>
-    <MatBox position={[0,1.3,-13.32]} scale={[2.2,.7,.06]} color="#152d3a"/>
-  </group>;
-}
-function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;asset:GLTF;onSelect:(id:string)=>void;selected:boolean}){
-  const root=useRef<Group>(null),mixer=useRef<AnimationMixer|null>(null),action=useRef<AnimationAction|null>(null);
-  const model=useMemo(()=>clone(asset.scene),[asset]);
-  useEffect(()=>{
-    const m=new AnimationMixer(model);mixer.current=m;
-    return()=>{m.stopAllAction();mixer.current=null};
-  },[asset,model]);
-  useEffect(()=>{
-    const m=mixer.current;if(!m)return;
-    const preferred=employee.activity==="walking"?/walk/i:/idle/i;
-    const clip=asset.animations.find(a=>preferred.test(a.name))??asset.animations.find(a=>/idle/i.test(a.name))??asset.animations[0];
-    if(!clip)return;
-    const next=m.clipAction(clip);next.reset().fadeIn(.22).play();action.current?.fadeOut(.22);action.current=next;
-  },[asset,employee.activity]);
-  useFrame((_,delta)=>{
-    mixer.current?.update(Math.min(delta,.05));
-    const g=root.current;if(!g)return;
-    const target=new Vector3(employee.position.x,0,employee.position.z);
-    g.position.lerp(target,1-Math.exp(-delta*7));
-    if(employee.destination){
-      const dx=employee.destination.x-employee.position.x,dz=employee.destination.z-employee.position.z;
-      if(Math.abs(dx)+Math.abs(dz)>.05)g.rotation.y=MathUtils.damp(g.rotation.y,Math.atan2(dx,dz),5,delta);
-    }
-  });
-  return <group ref={root} position={[employee.position.x,0,employee.position.z]} onClick={e=>{e.stopPropagation();onSelect(employee.id)}}>
-    <primitive object={model} scale={.98} />
-    {selected&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,48]}/><meshBasicMaterial color="#e1bd70" transparent opacity={.95}/></mesh>}
-    <mesh position={[0,2.12,0]}><sphereGeometry args={[.045,12,12]}/><meshBasicMaterial color={employee.activity==="working"?"#65c18a":employee.activity==="walking"?"#e1bd70":"#7c8793"}/></mesh>
-  </group>;
-}
-/* Each person's model is loaded once and cached. Loading never throws into React: a failure is only
-   recorded, and that person is shown with a simple figure. Every promise here settles, none is left unhandled. */
-type ModelEntry={status:"pending"|"ok"|"error";value?:GLTF;done:Promise<void>};
-const modelCache=new Map<string,ModelEntry>();
-function startModel(url:string):ModelEntry{
-  const existing=modelCache.get(url);
-  if(existing)return existing;
-  const entry:ModelEntry={status:"pending",done:Promise.resolve()};
-  /* Fetch and parse ourselves so every failure stays inside this chain. */
-  entry.done=fetch(url,{credentials:"omit"})
-    .then(r=>{if(!r.ok)throw new Error(`Model ${url} returned HTTP ${r.status}`);return r.arrayBuffer();})
-    .then(buffer=>new Promise<GLTF>((resolve,reject)=>new GLTFLoader().parse(buffer,"",resolve,reject)))
-    .then(
-      v=>{entry.status="ok";entry.value=v;},
-      err=>{entry.status="error";console.warn("Executive World: a character model could not load; a simple figure is shown instead.",err);});
-  modelCache.set(url,entry);
-  return entry;
-}
-/* Each person has their own model and their own error boundary: if one model fails, only that person
-   is shown as a simple figure. A failed model never takes down the others or the page. */
-function PersonFallback({employee,selected,onSelect}:{employee:EmployeeAgent;selected:boolean;onSelect:(id:string)=>void}){
-  return <group position={[employee.position.x,0,employee.position.z]} onClick={event=>{event.stopPropagation();onSelect(employee.id)}}>
-    <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.25,.72,5,10]}/><meshStandardMaterial color={employee.id==="ceo"?"#b89a68":"#526779"}/></mesh>
-    <mesh position={[0,1.72,0]} castShadow><sphereGeometry args={[.19,16,16]}/><meshStandardMaterial color="#bd9274" roughness={.8}/></mesh>
-    {selected&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,32]}/><meshBasicMaterial color="#e1bd70" /></mesh>}
-  </group>;
-}
-function PersonModel({employee,url,selected,onSelect}:{employee:EmployeeAgent;url:string;selected:boolean;onSelect:(id:string)=>void}){
-  const [,rerender]=useReducer((n:number)=>n+1,0);
-  const entry=startModel(url);
-  useEffect(()=>{let live=true;entry.done.then(()=>{if(live)rerender()});return()=>{live=false}},[entry]);
-  if(entry.status!=="ok"||!entry.value)return <PersonFallback employee={employee} selected={selected} onSelect={onSelect}/>;
-  return <Character employee={employee} asset={entry.value} selected={selected} onSelect={onSelect}/>;
-}
-function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
-  return <>{employees.map((employee,index)=>{
-    const isSelected=selected===employee.id;
-    const fallback=<PersonFallback employee={employee} selected={isSelected} onSelect={onSelect}/>;
-    return <SceneErrorBoundary key={employee.id} label={`figure for ${employee.name}`} fallback={fallback}>
-      <PersonModel employee={employee} url={MODEL_URLS[index%MODEL_URLS.length]} selected={isSelected} onSelect={onSelect}/>
-    </SceneErrorBoundary>;
-  })}</>;
-}
-/* A boundary for any part of the 3D world: if it fails, the fallback shows and the rest of the page keeps working. */
-class SceneErrorBoundary extends Component<{children:ReactNode;fallback:ReactNode;label?:string},{failed:boolean}>{
-  state={failed:false};
-  static getDerivedStateFromError(){return {failed:true};}
-  componentDidCatch(error:Error){console.error(`Executive World: ${this.props.label??"part of the 3D view"} failed; showing a fallback.`,error);}
-  render(){return this.state.failed?this.props.fallback:this.props.children;}
-}
-function WorldUnavailable({reason,onRetry}:{reason:string;onRetry?:()=>void}){
+
+function WorldUnavailable({ reason, onRetry }: { reason: string; onRetry?: () => void }) {
   return <div className="q3d-unavailable" role="status">
     <b>3D view unavailable</b>
-    <p>{reason} The team list below still works: pick a person to see their role, status and current focus.</p>
-    {onRetry&&<button type="button" className="btn ghost" onClick={onRetry}>Try the 3D view again</button>}
+    <p>{reason} The team list below still works: pick a person to see their role, status and current task.</p>
+    {onRetry && <button type="button" className="btn ghost" onClick={onRetry}>Try the 3D view again</button>}
   </div>;
 }
-function CameraRig({mode,followPosition}:{mode:"CEO"|"FREE"|"FOLLOW"|"CINEMA";followPosition:{x:number;z:number}}){
-  const {camera}=useThree(),elapsed=useRef(0);
-  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,9,18):mode==="FOLLOW"?new Vector3(followPosition.x+7,5.5,followPosition.z+8):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(mode==="FOLLOW"?new Vector3(followPosition.x,1,followPosition.z):new Vector3(0,0,0));},[camera,mode]);
-  useFrame((_,delta)=>{if(mode==="FOLLOW"){const target=new Vector3(followPosition.x+7,5.5,followPosition.z+8);camera.position.lerp(target,1-Math.exp(-delta*2.4));camera.lookAt(followPosition.x,1.1,followPosition.z);return;}if(mode!=="CINEMA")return;elapsed.current+=delta;const a=elapsed.current*.075;const target=new Vector3(Math.cos(a)*34,17+Math.sin(a*.7)*2.2,Math.sin(a)*34);camera.position.lerp(target,1-Math.exp(-delta*.65));camera.lookAt(0,1.1,0);});
-  return null;
-}
-function WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"|"FOLLOW"|"CINEMA"}){
-  return <Canvas shadows dpr={[1,1.35]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
-    <color attach="background" args={["#101820"]}/>
-    <fog attach="fog" args={["#101820",58,112]}/>
-    <ambientLight intensity={1.15}/>
-    <hemisphereLight args={["#eaf4ff","#665744",1.45]}/>
-    <directionalLight position={[-15,24,10]} intensity={2.8} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
-    <pointLight position={[0,7,0]} intensity={1.05} color="#f2d6a0"/><pointLight position={[-14,4,-8]} intensity={.55} color="#8ebbd5"/><pointLight position={[14,4,8]} intensity={.45} color="#d6ad70"/><Environment resolution={256} environmentIntensity={0.38}>
-      <Lightformer intensity={2.2} position={[0,9,0]} rotation={[-Math.PI/2,0,0]} scale={[30,30,1]} color="#f4e6cc"/>
-      <Lightformer intensity={0.9} position={[-15,5,-10]} scale={[10,6,1]} color="#9fc4d4"/>
-      <Lightformer intensity={0.7} position={[15,5,10]} scale={[10,6,1]} color="#e1bd70"/>
-    </Environment>
-    <Architecture employees={employees}/>
-    <CameraRig mode={cameraMode} followPosition={employees.find(e=>e.id===selected)?.position??{x:0,z:0}}/>
-    <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
-    <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
 
-    <OrbitControls enabled={cameraMode==="FREE"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
-  </Canvas>;
-}
-export function ExecutiveWorld3D(){
-  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"FOLLOW"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
-  const [webgl]=useState<boolean>(()=>typeof document==="undefined"||canUseWebGL());
-  const [attempt,setAttempt]=useState(0);
-  const [notice,setNotice]=useState<string|null>(null);
-  const worldRef=useRef(world);
-  useEffect(()=>{worldRef.current=world},[world]);
-  /* Hiring actions are simulated: they change only this browser's fictional world, never Q OS records. */
-  const onRecruit=(action:RecruitAction)=>{const result=applyRecruitAction(worldRef.current,action,Date.now());setNotice(result.ok?result.message:result.error);if(result.ok){worldRef.current=result.state;setWorld(result.state)}};
-  
-  useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
-  const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
-  const selectedEmployee=world.employees.find(e=>e.id===selected)??world.employees[0];
-  const manager=world.employees.find(e=>e.id===selectedEmployee.reportsTo);
-  const currentTask=world.tasks.find(t=>t.id===selectedEmployee.currentTaskId);
-  const setSpeed=(next:0|1|2|4)=>{setWorld(w=>({...w,speed:next,paused:next===0}))};
+export function ExecutiveWorld3D() {
+  const [world, setWorld] = useState<SimulationState | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState("ceo");
+  const [camera, setCamera] = useState<CameraMode>("FREE");
+  const [tab, setTab] = useState<PanelTab>("overview");
+  const [department, setDepartment] = useState("All");
+  const [webgl] = useState<boolean>(() => typeof document === "undefined" || canUseWebGL());
+  const [attempt, setAttempt] = useState(0);
+  const refreshing = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (refreshing.current) return;
+    refreshing.current = true;
+    try {
+      setWorld(await loadWorld());
+      setLoadError(null);
+    } catch {
+      setLoadError("The company could not be reached. Retrying shortly.");
+    } finally {
+      refreshing.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  const act = useCallback(async (action: WorldAction) => {
+    setBusy(true);
+    try {
+      const reply = await runWorldAction(action);
+      if (reply.state) setWorld(reply.state);
+      setNotice(reply.ok ? reply.message : reply.error);
+      if (reply.ok) setLoadError(null);
+    } catch {
+      setNotice("That did not go through. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const focus = useCallback((id: string) => { setSelected(id); setCamera("FOLLOW"); }, []);
+
+  if (!world) {
+    return <div className="q3d-shell q3d-living q3d-premium">
+      <div className="q3d-loading" role="status">{loadError ?? "Opening the company…"}</div>
+    </div>;
+  }
+
+  const s = summarize(world);
+  const selectedEmployee: EmployeeAgent = world.employees.find(e => e.id === selected) ?? world.employees[0];
+
   return <div className="q3d-shell q3d-living q3d-premium">
     <div className="q3d-toolbar">
-      <span className="q3d-live"><i/>SIMULATION · {active} PEOPLE</span>
-      <span>{working} working · {walking} moving · {world.events.length} events</span>
-      <div><button type="button" onClick={()=>setWorld(w=>({...w,paused:!w.paused}))}>{world.paused?"Resume":"Pause"}</button>
-        {([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}
-        <button type="button" aria-pressed={camera==="CEO"} onClick={()=>setCamera("CEO")}>CEO</button><button type="button" aria-pressed={camera==="FREE"} onClick={()=>setCamera("FREE")}>Explore</button><button type="button" aria-pressed={camera==="FOLLOW"} onClick={()=>setCamera("FOLLOW")}>Follow</button><button type="button" aria-pressed={camera==="CINEMA"} onClick={()=>setCamera("CINEMA")}>Cinematic</button>
+      <span className="q3d-live"><i />LIVE · {companyClock(world, world.simulatedAt)}</span>
+      <span>{s.completedTasks} tasks done · {s.results} results{busy ? " · saving…" : ""}</span>
+      <div>
+        <button type="button" disabled={busy} onClick={() => act({ type: world.paused ? "resume" : "pause" })}>{world.paused ? "Resume" : "Pause"}</button>
+        {([1, 2, 4] as const).map(sp => <button key={sp} type="button" disabled={busy} aria-pressed={world.speed === sp} onClick={() => act({ type: "speed", speed: sp })}>{sp}×</button>)}
+        <button type="button" aria-pressed={camera === "CEO"} onClick={() => setCamera("CEO")}>CEO</button>
+        <button type="button" aria-pressed={camera === "FREE"} onClick={() => setCamera("FREE")}>Explore</button>
+        <button type="button" aria-pressed={camera === "FOLLOW"} onClick={() => setCamera("FOLLOW")}>Follow</button>
+        <button type="button" aria-pressed={camera === "CINEMA"} onClick={() => setCamera("CINEMA")}>Cinematic</button>
       </div>
     </div>
     <div className="q3d-stage">
-      {webgl?<SceneErrorBoundary key={attempt} label="3D view" fallback={<WorldUnavailable reason="The 3D view stopped on this device." onRetry={()=>setAttempt(a=>a+1)}/>}>
+      {webgl ? <SceneErrorBoundary key={attempt} label="3D view" fallback={<WorldUnavailable reason="The 3D view stopped on this device." onRetry={() => setAttempt(a => a + 1)} />}>
         <Suspense fallback={<div className="q3d-loading">Loading headquarters…</div>}>
-          <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("FOLLOW")}} cameraMode={camera}/>
+          <WorldScene employees={world.employees} selected={selected} onSelect={focus} cameraMode={camera} />
         </Suspense>
-      </SceneErrorBoundary>:<WorldUnavailable reason="This device cannot start the 3D view (WebGL is switched off or unavailable)."/>}
-      <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>{world.employees.filter(e=>e.tier==="leadership").length} EXECUTIVES · {world.employees.length} PEOPLE</span></div>
+      </SceneErrorBoundary> : <WorldUnavailable reason="This device cannot start the 3D view (WebGL is switched off or unavailable)." />}
+      <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS · FICTIONAL</span><span>{world.employees.filter(e => e.tier === "leadership").length} EXECUTIVES · {world.employees.length} PEOPLE</span></div>
     </div>
-    <div className="q3d-room-selector">
-      <div className="q3d-room-tabs" aria-label="Simulation departments">{SIM_DEPARTMENTS.map(name=><button type="button" key={name} aria-pressed={department===name} onClick={()=>setDepartment(name)}>{name}</button>)}</div>
-      <div className="q3d-desks">{world.employees.filter(e=>department==="All"||e.department===department).map(e=><button type="button" key={e.id} onClick={()=>{setSelected(e.id);setCamera("FOLLOW")}} aria-pressed={selected===e.id}>
-        <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
-      </button>)}</div>
-      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Individual goal: {selectedEmployee.goal??"Deliver assigned outcomes independently"}</span><span>Work mode: {selectedEmployee.autonomyMode??"independent"} · Skills: {selectedEmployee.skills.join(" · ")}</span></div>
-      <HiringDesk world={world} onAction={onRecruit} notice={notice}/>
-      <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
-      <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
-    </div>
+    {loadError && <p className="q3d-hiring-notice" role="alert">{loadError}</p>}
+    <CompanyPanel
+      world={world} tab={tab} onTab={setTab} department={department} onDepartment={setDepartment}
+      selected={selectedEmployee} onSelect={focus} onAction={(a: RecruitAction) => act(a)} notice={notice}
+    />
+    <p className="q3d-disclaimer">FICTIONAL COMPANY · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
+    <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
   </div>;
 }
