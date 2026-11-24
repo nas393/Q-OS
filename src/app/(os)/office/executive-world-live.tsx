@@ -75,7 +75,7 @@ function Sofa({position,rotation=0}:{position:[number,number,number];rotation?:n
 function GlassWall({position,scale}:{position:[number,number,number];scale:[number,number,number]}){
   return <mesh position={position} castShadow><boxGeometry args={scale}/><meshPhysicalMaterial color="#9fc4d4" transparent opacity={.2} roughness={.12} metalness={.2} transmission={.15} thickness={.12}/></mesh>;
 }
-function RoomSign({position}:{children:string;position:[number,number,number]}){
+function RoomSign({position}:{position:[number,number,number]}){
   return <group position={position}><mesh><boxGeometry args={[2.6,.055,.045]}/><meshStandardMaterial color="#d9c08b" emissive="#8a7044" emissiveIntensity={.35}/></mesh></group>;
 }
 function Architecture({employees}:{employees:EmployeeAgent[]}){
