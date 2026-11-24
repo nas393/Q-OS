@@ -4,6 +4,7 @@ import { formatServerContext, loadServerContext } from "@/lib/core/context";
 import { QCoreError } from "@/lib/core/errors";
 import type { QIntent, QTurn } from "@/lib/core/contracts";
 import type {ChatWorkspace} from "@/lib/chat-workspace";
+import {retrieveExecutiveMemory} from "@/lib/executive-memory";
 
 export async function orchestrateChat(input: {
   turns: QTurn[];
@@ -17,9 +18,11 @@ export async function orchestrateChat(input: {
 
   const intent = classifyIntent(latestUser.content);
   const context = await loadServerContext("owner");
+  const memory = input.workspace === "executive_twin" ? await retrieveExecutiveMemory("owner", latestUser.content) : "";
   const requestText = latestUser.content;
   const sections = [
     formatServerContext(context),
+    memory,
     input.clientContext?.trim()
       ? `CLIENT DASHBOARD CONTEXT (unverified; may be stale or modified; do not present as independently verified):\n${input.clientContext.trim()}`
       : "",
