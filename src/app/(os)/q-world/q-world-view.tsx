@@ -26,11 +26,6 @@ const ground:[number,number,number]=[.12,.16,.17],glass:[number,number,number]=[
 const floorY=()=>.35;
 // A single-storey cutaway headquarters shell with an open front elevation,
 // rear service core and continuous side walls keep the interior legible in isometric view.
-scene.push(
- cube(0,-.72,0,44,1.1,34,ground),
- primitive("sphere",0,-.13,0,40,.08,30,[.035,.045,.052]),
- primitive("beveled",0,-.02,0,39,.52,29,[.23,.27,.29])
-);
 // Single-storey executive headquarters: one continuous level, nine private suites.
 scene.push(
  cube(0,-.72,0,44,1.1,34,ground),
@@ -284,7 +279,7 @@ export function QWorldView(){
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-16,Math.min(16,p.x));p.z=Math.max(-10,Math.min(21,p.z));}
     const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*58/v.zoom,37/v.zoom,Math.cos(v.orbit*Math.PI/180)*58/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,floorY()+4.2,position.current.z+Math.cos(position.current.yaw)*7];
+    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*50/v.zoom,32/v.zoom,Math.cos(v.orbit*Math.PI/180)*50/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,floorY()+4.2,position.current.z+Math.cos(position.current.yaw)*7];
     const target=mode==="isometric"?[0,0,0] :[position.current.x,floorY()+1.45,position.current.z];
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
