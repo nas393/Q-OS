@@ -315,3 +315,22 @@
 }
 @media(max-width:360px){.q3d-desks{grid-template-columns:1fr}.q3d-toolbar button{padding-inline:7px}}
 @media(prefers-reduced-motion:reduce){.q3d-room-tabs{scroll-behavior:auto}}
+/* Hiring desk (fictional candidates, simulated approvals) */
+.q3d-hiring{margin-top:12px;padding:12px 14px;border:1px solid rgba(201,162,74,.24);border-radius:11px;background:rgba(255,255,255,.03);color:#d4d5d8;font-size:11px}
+.q3d-hiring h3{margin:0 0 4px;color:#f2dfb2;font:700 13px var(--sans)}
+.q3d-hiring h4{margin:12px 0 6px;color:#c3a96c;font:700 10px var(--sans);letter-spacing:.08em;text-transform:uppercase}
+.q3d-hiring-note,.q3d-hiring-empty{margin:0;color:#9da3ad;font-size:10px}
+.q3d-hiring-notice{margin:8px 0;padding:8px 10px;border-radius:8px;background:rgba(101,185,135,.12);color:#cfe9da;font-size:11px}
+.q3d-hiring-needs,.q3d-hiring-requests{display:grid;gap:8px}
+.q3d-hire-card{display:grid;gap:5px;padding:10px 11px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.035)}
+.q3d-hire-card header{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.q3d-hire-card small{color:#9da3ad;font-size:10px;line-height:1.4}
+.q3d-hire-card progress{width:100%;height:6px;accent-color:#c9a24a}
+.q3d-hire-status{padding:2px 7px;border-radius:99px;background:rgba(201,162,74,.14);color:#f2dfb2;font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+.q3d-hire-status[data-status=hired]{background:rgba(101,185,135,.18);color:#cfe9da}
+.q3d-hire-status[data-status=declined]{background:rgba(227,93,102,.16);color:#f4c4c8}
+.q3d-hire-card button{justify-self:start;min-height:32px;padding:0 10px;border:1px solid rgba(201,162,74,.4);border-radius:8px;background:rgba(201,162,74,.1);color:#f2dfb2;font:600 11px var(--sans);cursor:pointer}
+.q3d-hire-actions{display:flex;gap:6px;flex-wrap:wrap}
+.q3d-hire-decisions{display:flex;gap:12px;color:#d4d5d8;font-size:10px}
+.q3d-shortlist,.q3d-training{margin:0;padding-left:18px;font-size:10px;line-height:1.5}
+@media(max-width:650px){.q3d-hiring{padding:10px;font-size:10px}.q3d-hire-card button{min-height:38px}}

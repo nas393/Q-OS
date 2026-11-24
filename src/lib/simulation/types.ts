@@ -19,12 +19,25 @@ export type EmployeeAgent = {
 };
 export type SimulationEvent = {
   id: string; at: number;
-  type: "employee.started_task" | "employee.finished_task" | "employee.started_break" | "employee.moved" | "simulation.tick";
+  type: "employee.started_task" | "employee.finished_task" | "employee.started_break" | "employee.moved" | "simulation.tick"
+    | "recruitment.requested" | "recruitment.search_opened" | "recruitment.shortlist_ready" | "recruitment.approval" | "recruitment.declined" | "recruitment.hired";
   employeeId?: string; taskId?: string; message: string; source: "simulation";
 };
+/* Hiring workflow inside the fictional company. Nothing here posts a job or contacts a real person. */
+export type StaffingStatus = "needs-review" | "sourcing" | "awaiting-approval" | "hired" | "declined";
+export type CandidateProfile = { id: string; name: string; currentRole: string; skills: string[]; yearsExperience: number; fit: number; fictional: true };
+export type TrainingModule = { id: string; title: string; weeks: number; closesSkill: string };
+export type ApprovalRecord = { stage: "search" | "hire"; by: "hr" | "ceo"; actorId: string; decision: "approved" | "declined"; at: number };
+export type StaffingRequest = {
+  id: string; requestedBy: string; department: string; roleTitle: string; skills: string[]; reason: string;
+  status: StaffingStatus; createdAt: number; shortlist: CandidateProfile[]; chosenCandidateId: string | null;
+  trainingPlan: TrainingModule[]; approvals: ApprovalRecord[]; hiredEmployeeId: string | null;
+};
+export type RecruitmentState = { requests: StaffingRequest[]; cursor: number };
 export type SimulationState = {
   worldId: string; version: number; simulatedAt: number; lastWallClockAt: number;
   speed: 0 | 1 | 2 | 4; paused: boolean; employees: EmployeeAgent[]; tasks: SimTask[]; events: SimulationEvent[];
+  recruitment?: RecruitmentState;
 };
 export type SimulationCommand =
   | { type: "pause" } | { type: "resume" } | { type: "set-speed"; speed: 0 | 1 | 2 | 4 }
