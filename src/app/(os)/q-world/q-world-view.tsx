@@ -23,7 +23,6 @@ const primitive=(shape:Exclude<Cube["shape"],"cube">,x:number,y:number,z:number,
 const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17],glass:[number,number,number]=[.28,.49,.56],dark:[number,number,number]=[.055,.075,.09],gold:[number,number,number]=[.62,.43,.22];
 const floorY=()=>.35;
-const roomZ=0;
 // A single-storey cutaway headquarters shell with an open front elevation,
 // rear service core and continuous side walls keep the interior legible in isometric view.
 scene.push(
