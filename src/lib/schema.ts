@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS q_office_work (id uuid PRIMARY KEY DEFAULT gen_random
   status text NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','approved','discarded')), period text, created_at timestamptz NOT NULL DEFAULT now(), decided_at timestamptz);
 CREATE INDEX IF NOT EXISTS q_office_work_status ON q_office_work(status, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS q_office_work_period ON q_office_work(staff, job, period) WHERE period IS NOT NULL;`},
- {id:4,name:"world_state_v1",sql:`
+ {id:5,name:"world_state_v1",sql:`
 CREATE TABLE IF NOT EXISTS q_world_state (id text PRIMARY KEY, state jsonb NOT NULL, revision integer NOT NULL DEFAULT 1, updated_at timestamptz NOT NULL DEFAULT now());`}
 ];
 
