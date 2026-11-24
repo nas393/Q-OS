@@ -216,10 +216,10 @@ function buildFrustum(){
  const quad=(a:number[],b:number[],c:number[],d:number[],n:number[])=>{tri(a,b,c,n);tri(a,c,d,n);};
  // Four sloped faces with deliberate normals for clean directional lighting.
  const sides=[
-  [[-bottom,y0,-bottom],[bottom,y0,-bottom],[top,y1,-top],[-top,y1,-top],[0,0,-1]],
-  [[bottom,y0,-bottom],[bottom,y0,bottom],[top,y1,top],[top,y1,-top],[1,0,0]],
-  [[bottom,y0,bottom],[-bottom,y0,bottom],[-top,y1,top],[top,y1,top],[0,0,1]],
-  [[-bottom,y0,bottom],[-bottom,y0,-bottom],[-top,y1,-top],[-top,y1,top],[-1,0,0]]
+  [[-bottom,y0,-bottom],[-top,y1,-top],[top,y1,-top],[bottom,y0,-bottom],[0,0,-1]],
+  [[bottom,y0,-bottom],[top,y1,-top],[top,y1,top],[bottom,y0,bottom],[1,0,0]],
+  [[bottom,y0,bottom],[top,y1,top],[-top,y1,top],[-bottom,y0,bottom],[0,0,1]],
+  [[-bottom,y0,bottom],[-bottom,y0,-bottom],[-top,y1,-top],[-bottom,y0,-bottom],[-1,0,0]]
  ] as [number[],number[],number[],number[],number[]][];
  for(const [a,b,c,d,n] of sides){
   const u=[c[0]-a[0],c[1]-a[1],c[2]-a[2]],v=[d[0]-a[0],d[1]-a[1],d[2]-a[2]];
