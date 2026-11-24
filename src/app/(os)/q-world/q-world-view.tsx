@@ -107,11 +107,24 @@ export function QWorldView(){
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional campus">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q company campus, with headquarters and business-unit buildings"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The business campus remains accessible in the unit directory.</p></div>}
-    <div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ANGOLA · GLOBAL DIGITAL BUSINESS CAMPUS</span></div>
+    {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ANGOLA · GLOBAL DIGITAL BUSINESS CAMPUS</span></div>}
     {mode==="third-person"&&<div className="qw-pad" aria-label="Walk controls"><button type="button" onClick={()=>move(0,-2)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>move(-2,0)} aria-label="Move left">←</button><button type="button" onClick={()=>move(2,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>move(0,2)} aria-label="Move backward">↓</button></div>}
    </section>
    <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED BUSINESS UNIT</span><h2>{active.name}</h2><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
   </div>
+  <section className="qw-director" aria-labelledby="qw-director-title">
+   <div className="qw-director-head"><div><span className="qw-kicker">OWNER CONTROL PANEL</span><h2 id="qw-director-title">Visual Director</h2><p>Change the look and presentation of your company campus.</p></div><button type="button" aria-expanded={directorOpen} onClick={()=>setDirectorOpen(v=>!v)}>{directorOpen?"Hide controls":"Show controls"}</button></div>
+   {directorOpen&&<div className="qw-control-grid">
+    <label>Environment<select value={visuals.environment} onChange={e=>updateVisuals({environment:e.target.value as VisualSettings["environment"]})}><option value="executive">Executive night</option><option value="daylight">Daylight</option><option value="sunset">Sunset</option></select></label>
+    <label>Building colour style<select value={visuals.palette} onChange={e=>updateVisuals({palette:e.target.value as VisualSettings["palette"]})}><option value="brand">Brand colours</option><option value="vibrant">Vibrant</option><option value="monochrome">Monochrome</option></select></label>
+    <label>Graphics quality<select value={visuals.quality} onChange={e=>updateVisuals({quality:e.target.value as VisualSettings["quality"]})}><option value="performance">Performance · 1×</option><option value="balanced">Balanced · 1.25×</option><option value="high">High · 1.5×</option></select></label>
+    <label className="qw-range">Lighting <b>{Math.round(visuals.brightness*100)}%</b><input type="range" min=".55" max="1.45" step=".05" value={visuals.brightness} onChange={e=>updateVisuals({brightness:Number(e.target.value)})}/></label>
+    <label className="qw-range">Camera zoom <b>{Math.round(visuals.zoom*100)}%</b><input type="range" min=".65" max="1.45" step=".05" value={visuals.zoom} onChange={e=>updateVisuals({zoom:Number(e.target.value)})}/></label>
+    <label className="qw-toggle"><input type="checkbox" checked={visuals.labels} onChange={e=>updateVisuals({labels:e.target.checked})}/> Show campus labels</label>
+    <button type="button" className="qw-reset" onClick={()=>setVisuals(DEFAULT_VISUALS)}>Reset visual settings</button>
+   </div>}
+   <p className="qw-simulation-note">Visual settings are saved in this browser on this device. They do not change live business data.</p>
+  </section>
   <section className="qw-units" aria-labelledby="qw-units-title"><div><span className="qw-kicker">THE COMPANY</span><h2 id="qw-units-title">Business units</h2></div><div className="qw-unit-grid">{UNITS.map(u=><button key={u.id} type="button" className={selected===u.id?"active":""} onClick={()=>setSelected(u.id)} aria-pressed={selected===u.id}><span style={{background:`rgb(${u.color.map(v=>Math.round(v*255)).join(",")})`}}/><b>{u.name}</b><small>{u.department}</small></button>)}</div><p className="qw-simulation-note">Illustrative campus layout · no live tasks, revenue or costs are changed. Real KPIs will only appear after verified data connections.</p></section>
  </main>;
 }
