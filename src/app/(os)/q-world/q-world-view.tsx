@@ -16,8 +16,8 @@ const UNITS:Unit[] = [
  {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
 type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number]};
-type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;quality:"performance"|"balanced"|"high";labels:boolean};
-const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,quality:"balanced",labels:true};
+type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
+const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color});
 const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17], road:[number,number,number]=[.19,.23,.25], glass:[number,number,number]=[.28,.49,.56], dark:[number,number,number]=[.055,.075,.09], leaf:[number,number,number]=[.13,.31,.22], gold:[number,number,number]=[.62,.43,.22];
@@ -89,7 +89,7 @@ export function QWorldView(){
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-48,Math.min(48,p.x));p.z=Math.max(-38,Math.min(38,p.z));}
     const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[57/v.zoom,52/v.zoom,62/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,4.2,position.current.z+Math.cos(position.current.yaw)*7];
+    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*84/v.zoom,52/v.zoom,Math.cos(v.orbit*Math.PI/180)*84/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,4.2,position.current.z+Math.cos(position.current.yaw)*7];
     const target=mode==="isometric"?[0,0,0] :[position.current.x,1.45,position.current.z];
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
@@ -121,6 +121,7 @@ export function QWorldView(){
     <label>Graphics quality<select value={visuals.quality} onChange={e=>updateVisuals({quality:e.target.value as VisualSettings["quality"]})}><option value="performance">Performance · 1×</option><option value="balanced">Balanced · 1.25×</option><option value="high">High · 1.5×</option></select></label>
     <label className="qw-range">Lighting <b>{Math.round(visuals.brightness*100)}%</b><input type="range" min=".55" max="1.45" step=".05" value={visuals.brightness} onChange={e=>updateVisuals({brightness:Number(e.target.value)})}/></label>
     <label className="qw-range">Camera zoom <b>{Math.round(visuals.zoom*100)}%</b><input type="range" min=".65" max="1.45" step=".05" value={visuals.zoom} onChange={e=>updateVisuals({zoom:Number(e.target.value)})}/></label>
+    <label className="qw-range">Isometric camera angle <b>{Math.round(visuals.orbit)}°</b><input type="range" min="0" max="360" step="5" value={visuals.orbit} onChange={e=>updateVisuals({orbit:Number(e.target.value)})}/></label>
     <label className="qw-toggle"><input type="checkbox" checked={visuals.labels} onChange={e=>updateVisuals({labels:e.target.checked})}/> Show campus labels</label>
     <button type="button" className="qw-reset" onClick={()=>setVisuals(DEFAULT_VISUALS)}>Reset visual settings</button>
    </div>}
