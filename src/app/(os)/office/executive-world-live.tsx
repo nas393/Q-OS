@@ -23,6 +23,14 @@ function makeTasks():SimTask[]{
     ["Operations","Review supply reliability",["operations"],4],["Operations","Improve process yield",["quality"],3],
     ["Strategy","Assess market opportunity",["strategy"],3],["Strategy","Build transformation roadmap",["research"],2],
     ["Executive Office","Prepare leadership briefing",["coordination"],3],
+    ["People & Culture","Prepare workforce capacity review",["people-ops"],4],
+    ["People & Culture","Build talent acquisition shortlist",["talent","recruitment"],3],
+    ["People & Culture","Design employee learning pathway",["learning","development"],3],
+    ["People & Culture","Analyse employee engagement pulse",["people-ops","analytics"],2],
+    ["Technology","Review platform reliability roadmap",["technology","architecture"],4],
+    ["Marketing","Prepare brand growth strategy",["brand","marketing"],3],
+    ["Legal & Risk","Review enterprise risk register",["risk","governance"],4],
+    ["Executive","Set quarterly company priorities",["leadership"],5],
   ];
   return specs.map((s,i)=>({id:"world-task-"+i,title:s[1],department:s[0],requiredSkills:s[2],priority:s[3],effortRemaining:18+i*2,status:"queued",assigneeId:null,dueAt:null,createdAt:i}));
 }
@@ -31,7 +39,7 @@ function initialWorld():SimulationState{
   return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
     employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
 }
-const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office"] as const;
+const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office","People & Culture","Technology","Marketing","Legal & Risk"] as const;
 function useAssets(){
   const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
   return [businessMan,businessWoman,casualMan,casualWoman];
@@ -199,14 +207,14 @@ export function ExecutiveWorld3D(){
       <Suspense fallback={<div className="q3d-loading">Loading realistic people and headquarters…</div>}>
         <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("FOLLOW")}} cameraMode={camera}/>
       </Suspense>
-      <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>26 AGENTS · 6 DEPARTMENTS</span></div>
+      <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>{world.employees.filter(e=>e.tier==="leadership").length} EXECUTIVES · {world.employees.length} PEOPLE</span></div>
     </div>
     <div className="q3d-room-selector">
       <div className="q3d-room-tabs" aria-label="Simulation departments">{SIM_DEPARTMENTS.map(name=><button type="button" key={name} aria-pressed={department===name} onClick={()=>setDepartment(name)}>{name}</button>)}</div>
       <div className="q3d-desks">{world.employees.filter(e=>department==="All"||e.department===department).map(e=><button type="button" key={e.id} onClick={()=>{setSelected(e.id);setCamera("FOLLOW")}} aria-pressed={selected===e.id}>
         <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
       </button>)}</div>
-      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
+      <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Individual goal: {selectedEmployee.goal??"Deliver assigned outcomes independently"}</span><span>Work mode: {selectedEmployee.autonomyMode??"independent"} · Skills: {selectedEmployee.skills.join(" · ")}</span></div>
       <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
       <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
     </div>
