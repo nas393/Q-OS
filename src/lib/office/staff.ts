@@ -37,7 +37,10 @@ export const STAFF:Staff[]=[
   {id:"radio",keys:["radio","radio-cedars"],name:"Radio Cedars",role:"Family Host",job:"The family living room: radio, TV, rooms, games and the cookbook.",room:"community"},
   {id:"ala-hawa",keys:["ala-hawa"],name:"Ala Hawa",role:"TV Producer",job:"The IPTV app for the TV, with skins and multi-view.",room:"screens"},
   {id:"arz",keys:["arz-vidaa","arz"],name:"ARZ",role:"Streaming Lead",job:"The VIDAA TV streaming app, still in development.",room:"screens"},
-  {id:"ops",keys:[],name:"Ops",role:"IT Manager",job:"Watches builds, uptime and speed across every app.",room:"ops"}
+  {id:"ops",keys:[],name:"Ops",role:"IT Manager",job:"Watches builds, uptime and speed across every app.",room:"ops"},
+  {id:"forge",keys:[],name:"Forge",role:"Backend Architect",job:"Reviews Q OS's architecture each week: fragile parts and the first fixes. Drafts only.",room:"ops"},
+  {id:"shield",keys:[],name:"Shield",role:"Security Engineer",job:"Reviews each week's security signals across Q OS. Drafts only, never secrets.",room:"ops"},
+  {id:"quill",keys:[],name:"Quill",role:"Content Creator",job:"Plans what NOVAÉ, Lumeris and Certigo should publish each week. Plans only.",room:"studio"}
 ];
 
 const BAD=new Set(["ERROR","CANCELED","FAILED"]),BUSY=new Set(["BUILDING","QUEUED","INITIALIZING"]);
