@@ -28,3 +28,25 @@
 
 .qw-toolbar{align-items:center}
 .qw-plan{min-width:0}
+
+.qw-plan{display:grid;gap:16px}
+.qw-plan-header{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:20px;border:1px solid var(--card-line);border-radius:16px;background:var(--card-bg)}
+.qw-plan-header h2{margin:5px 0;font-size:clamp(21px,3vw,29px)}.qw-plan-header p{margin:0;color:var(--text-2);font-size:12px;max-width:620px;line-height:1.5}
+.qw-plan-metrics{display:flex;gap:8px;flex-wrap:wrap}.qw-plan-metrics div{display:grid;gap:3px;min-width:105px;padding:10px 12px;border:1px solid var(--card-line);border-radius:10px}.qw-plan-metrics b{font-size:16px;font-variant-numeric:tabular-nums}.qw-plan-metrics span{font-size:10px;color:var(--text-2)}
+.qw-plan-map{display:grid;gap:12px;padding:16px;border:1px solid var(--card-line);border-radius:16px;background:linear-gradient(145deg,#111a22,#0a1017);color:#f4f2ed}
+.qw-plan-band{display:grid;gap:8px;padding:12px;border:1px solid #ffffff1c;border-radius:12px;background:#ffffff05}.qw-plan-band-title{font-size:10px;font-weight:800;letter-spacing:.14em;color:#c7a36c}
+.qw-plan-room-grid{display:grid;gap:8px}.qw-plan-front{grid-template-columns:repeat(6,minmax(0,1fr))}.qw-plan-exec{grid-template-columns:repeat(3,minmax(0,1fr))}.qw-plan-functions{grid-template-columns:repeat(4,minmax(0,1fr))}
+.qw-plan-room{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:130px;padding:12px;border:1px solid #ffffff25;border-radius:10px;background:linear-gradient(145deg,#263541,#18232d);min-width:0}
+.qw-plan-front .qw-plan-room:nth-child(1){grid-column:span 2}.qw-plan-front .qw-plan-room:nth-child(2){grid-column:span 1}.qw-plan-front .qw-plan-room:nth-child(3){grid-column:span 1}.qw-plan-front .qw-plan-room:nth-child(4){grid-column:span 2}
+.qw-plan-room>span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b8c4cc}.qw-plan-room h3{font-size:13px;line-height:1.3;margin:0}.qw-plan-room>b{font-size:17px;color:#f0c98e}.qw-plan-room>small{font-size:10px;color:#d0d8dd}.qw-plan-room p{margin:2px 0 0;font-size:10px;line-height:1.4;color:#aebbc4}
+.qw-plan-room-exec{background:linear-gradient(145deg,#392d2c,#1c2229);border-color:#b78b5b66}
+.qw-plan-unit-grid{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}.qw-plan-unit-room{flex:1 1 220px;min-height:145px;background:linear-gradient(145deg,#26353d,#17212a);border-top:3px solid #c08d4f}
+.qw-allocation{display:grid;gap:12px;padding:18px;border:1px solid var(--card-line);border-radius:16px;background:var(--card-bg)}
+.qw-allocation-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.qw-allocation-heading h3{margin:4px 0;font-size:18px}.qw-allocation-heading button{border:1px solid var(--card-line);border-radius:9px;padding:8px 11px;background:transparent;color:var(--text);font:600 11px var(--sans)}
+.qw-allocation>p{margin:0;color:var(--text-2);font-size:11px;line-height:1.5}
+.qw-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.qw-score{display:grid;gap:8px;padding:11px;border:1px solid var(--card-line);border-radius:10px;min-width:0}.qw-score>span{display:flex;justify-content:space-between;gap:8px;align-items:center}.qw-score b{font-size:11px}.qw-score strong{font-size:12px;white-space:nowrap}.qw-score input{width:100%;accent-color:var(--accent)}.qw-score small{font-size:10px;color:var(--text-2)}
+.qw-allocation-foot{display:grid;gap:5px;padding-top:10px;border-top:1px solid var(--card-line)}.qw-allocation-foot b{font-size:11px}.qw-allocation-foot span,.qw-plan-disclaimer{font-size:10px;line-height:1.5;color:var(--text-2)}
+.qw-plan-disclaimer{margin:0;padding:0 3px}
+@media(max-width:900px){.qw-plan-front{grid-template-columns:repeat(2,minmax(0,1fr))}.qw-plan-front .qw-plan-room{grid-column:span 1!important}.qw-plan-functions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.qw-plan-map{padding:8px}.qw-plan-band{padding:8px}.qw-plan-front,.qw-plan-exec,.qw-plan-functions,.qw-score-grid{grid-template-columns:1fr}.qw-plan-metrics{width:100%}.qw-plan-metrics div{flex:1;min-width:0}.qw-plan-room{min-height:unset}.qw-plan-unit-room{flex-basis:100%}}
