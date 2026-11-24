@@ -129,7 +129,7 @@ export default function QWorldSpacePlan() {
           <div><span className="qw-kicker">OWNER SPACE ALLOCATION CONTROL</span><h3>Adjust business-unit contribution indices</h3></div>
           <button type="button" onClick={() => setScores(Object.fromEntries(UNIT_OFFICES.map((unit) => [unit.id, 50])))}>Reset baseline</button>
         </div>
-        <p>Each unit keeps a 24 m² minimum. A 160 m² variable office-space pool is distributed proportionally across the eight units using the planning index below. Changing one index reallocates the variable pool across all units.</p>
+        <p>Each unit keeps a 24 m² minimum. A 160 m² variable office-space pool is distributed proportionally across the eight units using the planning index below. The intended production index is weighted: verified contribution 50%, strategic importance 20%, headcount 15% and operational workload 15%. Until those data sources are connected, these sliders are scenario controls only — not actual performance scores. Changing one index reallocates the variable pool across all units.</p>
         <div className="qw-score-grid">
           {allocations.map((unit) => (
             <label className="qw-score" key={unit.id}>
