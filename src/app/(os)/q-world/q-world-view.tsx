@@ -15,7 +15,7 @@ const UNITS:Unit[] = [
  {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-39,z:-18,mission:"Create engaging educational experiences"},
  {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
-type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"};
+type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"|"beveled"};
 type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
 const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});
@@ -31,10 +31,10 @@ function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,
  // Architectural plinth, layered facade and floating roof line.
  scene.push(
   primitive("sphere",x,-.145,z,w+4,.08,d+4,[.035,.045,.052]),
-  cube(x,.18,z,w+1.7,.36,d+1.7,stone),
+  primitive("beveled",x,.18,z,w+1.7,.36,d+1.7,stone),
   cube(x,.43,z,w+.8,.14,d+.8,trim),
-  cube(x,h/2,z,w,h,d,c),
-  cube(x,h+.12,z,w+.75,.24,d+.75,dark),
+  primitive("beveled",x,h/2,z,w,h,d,c),
+  primitive("beveled",x,h+.12,z,w+.75,.24,d+.75,dark),
   cube(x,h+.28,z,w+.25,.1,d+.25,trim),
   cube(x,h*.52,z-d/2-.08,w*.82,h*.55,.12,glass),
   cube(x,h*.52,z+d/2+.08,w*.82,h*.55,.12,glass),
@@ -178,7 +178,36 @@ function buildMesh(shape:"sphere"|"cylinder"|"cone"){
  }
  return {positions,normals,count:positions.length/3};
 }
-const GEOMETRY={cube:{positions:POS,normals:NOR,count:POS.length/3},sphere:buildMesh("sphere"),cylinder:buildMesh("cylinder"),cone:buildMesh("cone")};
+function buildBeveledBox(){
+ const positions:number[]=[],normals:number[]=[];
+ const tri=(a:number[],b:number[],c:number[],n:number[])=>{for(const p of [a,b,c]){positions.push(...p);normals.push(...n);}};
+ const quad=(a:number[],b:number[],c:number[],d:number[],n:number[])=>{tri(a,b,c,n);tri(a,c,d,n);};
+ const f=.42;
+ quad([-.5,-f,-f],[-.5,-f,f],[-.5,f,f],[-.5,f,-f],[-1,0,0]);
+ quad([.5,-f,-f],[.5,f,-f],[.5,f,f],[.5,-f,f],[1,0,0]);
+ quad([-f,.5,-f],[-f,.5,f],[f,.5,f],[f,.5,-f],[0,1,0]);
+ quad([-f,-.5,-f],[f,-.5,-f],[f,-.5,f],[-f,-.5,f],[0,-1,0]);
+ quad([-f,-f,.5],[f,-f,.5],[f,f,.5],[-f,f,.5],[0,0,1]);
+ quad([-f,-f,-.5],[-f,f,-.5],[f,f,-.5],[f,-f,-.5],[0,0,-1]);
+ for(const sx of [-1,1])for(const sy of [-1,1]){
+  const n=[sx/Math.SQRT2,sy/Math.SQRT2,0];
+  quad([sx*.5,sy*f,-f],[sx*f,sy*.5,-f],[sx*f,sy*.5,f],[sx*.5,sy*f,f],n);
+ }
+ for(const sx of [-1,1])for(const sz of [-1,1]){
+  const n=[sx/Math.SQRT2,0,sz/Math.SQRT2];
+  quad([sx*.5,-f,sz*f],[sx*f,-f,sz*.5],[sx*f,f,sz*.5],[sx*.5,f,sz*f],n);
+ }
+ for(const sy of [-1,1])for(const sz of [-1,1]){
+  const n=[0,sy/Math.SQRT2,sz/Math.SQRT2];
+  quad([-f,sy*.5,sz*f],[f,sy*.5,sz*f],[f,sy*f,sz*.5],[-f,sy*f,sz*.5],n);
+ }
+ for(const sx of [-1,1])for(const sy of [-1,1])for(const sz of [-1,1]){
+  const l=1/Math.sqrt(3),n=[sx*l,sy*l,sz*l];
+  tri([sx*.5,sy*f,sz*f],[sx*f,sy*.5,sz*f],[sx*f,sy*f,sz*.5],n);
+ }
+ return {positions,normals,count:positions.length/3};
+}
+const GEOMETRY={cube:{positions:POS,normals:NOR,count:POS.length/3},sphere:buildMesh("sphere"),cylinder:buildMesh("cylinder"),cone:buildMesh("cone"),beveled:buildBeveledBox()};
 function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
