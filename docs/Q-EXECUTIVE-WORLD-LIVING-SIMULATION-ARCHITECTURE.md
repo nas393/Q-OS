@@ -22,7 +22,7 @@ Every simulated event is labelled as simulated. Real Q OS tasks, deployments, ex
 
 ## Organisation model
 
-The initial playable organisation is seeded with **6 AI leadership agents and 20 fictional workforce employees** across Finance, Commercial, Operations, Strategy and the Executive Office. Each fictional employee has a named identity, role, skills, personality profile, schedule, starting position and explicit reporting line. The workforce reports to the relevant executive seat; the CEO reports to the owner. The roster is fictional simulation data and does not represent real Q OS staff.
+The initial playable organisation is seeded with **10 AI leadership agents and 24 fictional workforce employees** across Finance, Commercial, Operations, Strategy, Executive Office and People & Culture. The executive team includes CEO, CFO, Commercial Director, COO, CSO, Chief of Staff, CTO, CHRO, CMO and Chief Legal & Risk Officer. Each fictional employee has a named identity, role, skills, personality profile, individual outcome goal, independent work mode, schedule, starting position and explicit reporting line. The workforce reports to the relevant executive seat; the CEO reports to the owner. The roster is fictional simulation data and does not represent real Q OS staff.
 
 The workforce is deliberately separate from Q OS app identities and live project owners. The initial roster is a vertical-slice cast and can expand by department after performance and simulation load are measured.
 
