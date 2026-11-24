@@ -61,7 +61,7 @@ No KPI is fabricated. Missing data displays as unavailable. Forecasts and scenar
 - Separate `/q-world` route and navigation entry.
 - Responsive 3D campus, isometric management and third-person follow-camera modes.
 - Stylised low-poly business-unit avatars and department buildings, with accessible selection/inspection.
-- Owner Visual Director: environment preset, building colour treatment, lighting, camera zoom, graphics quality and campus-label visibility; settings persist locally in the browser.
+- Owner Visual Director: environment preset, building colour treatment, lighting, camera zoom, isometric orbit, graphics quality and campus-label visibility; settings persist locally in the browser.
 - Reduced-motion, WebGL fallback, hidden-tab pause, DPR cap.
 - No persistence, AI autonomy or real-world side effects.
 
