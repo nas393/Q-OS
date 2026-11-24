@@ -59,7 +59,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS q_office_work_period ON q_office_work(staff, j
 ,
  {id:4,name:"executive_twin_workspace_v1",sql:`
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS workspace text NOT NULL DEFAULT 'general' CHECK (workspace IN ('general','executive_twin'));
-CREATE INDEX IF NOT EXISTS conversations_user_workspace_updated_idx ON conversations(user_id,workspace,updated_at DESC);`}
+CREATE INDEX IF NOT EXISTS conversations_user_workspace_updated_idx ON conversations(user_id,workspace,updated_at DESC);`},
+ {id:5,name:"executive_memory_lifecycle_v1",sql:`
+ALTER TABLE memory_records ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','archived','superseded'));
+ALTER TABLE memory_records ADD COLUMN IF NOT EXISTS supersedes_id uuid REFERENCES memory_records(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS memory_records_owner_status_updated_idx ON memory_records(user_id,status,updated_at DESC);
+CREATE INDEX IF NOT EXISTS memory_records_active_expiry_idx ON memory_records(user_id,expires_at) WHERE status='active';`}
 ];
 
 let ready:Promise<void>|null=null;
