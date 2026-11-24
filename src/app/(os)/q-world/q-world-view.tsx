@@ -29,8 +29,13 @@ const floorY=()=>.35;
 // Single-storey executive headquarters: one continuous level, nine private suites.
 scene.push(
  cube(0,-.72,0,44,1.1,34,ground),
- primitive("sphere",0,-.13,0,40,.08,30,[.035,.045,.052]),
- primitive("beveled",0,-.02,0,39,.52,29,[.23,.27,.29]),
+ primitive("beveled",0,-.02,0,39,.52,29,[.27,.29,.29]),
+ cube(0,.255,0,37.8,.035,27.8,[.16,.19,.2]),
+ cube(0,.28,0,37.4,.025,27.4,[.19,.21,.21]),
+ cube(-16,.305,0,.045,.012,25,[.48,.36,.21]),
+ cube(16,.305,0,.045,.012,25,[.48,.36,.21]),
+ cube(0,.305,-11.8,32,.012,.045,[.48,.36,.21]),
+ cube(0,.305,11.8,32,.012,.045,[.48,.36,.21]),
  cube(-18,2.8,0,.8,5.6,27,[.23,.28,.31]),
  cube(18,2.8,0,.8,5.6,27,[.23,.28,.31]),
  cube(0,2.8,-13.1,36,5.6,.8,[.23,.28,.31]),
@@ -300,7 +305,8 @@ function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
 const VS=`attribute vec3 p;attribute vec3 n;uniform mat4 mvp;varying vec3 normal;void main(){normal=n;gl_Position=mvp*vec4(p,1.0);}`;
-const FS=`precision mediump float;uniform vec3 color;uniform float intensity;varying vec3 normal;void main(){vec3 n=normalize(normal);vec3 l=normalize(vec3(-.42,.88,.36));float diffuse=max(dot(n,l),0.0);float sky=.42+max(n.y,0.0)*.16;float spec=pow(max(dot(reflect(-l,n),normalize(vec3(.25,.72,.58))),0.0),22.0)*.12;float rim=pow(1.0-max(dot(n,normalize(vec3(.2,.7,.65))),0.0),3.0)*.055;vec3 lit=color*(sky+diffuse*.62)*intensity+vec3(spec+rim);lit=lit/(vec3(1.0)+lit*.12);gl_FragColor=vec4(pow(max(lit,vec3(0.0)),vec3(.92)),1.0);}`;
+const FS=`precision mediump float;uniform vec3 color;uniform float intensity;varying vec3 normal;void main(){vec3 n=normalize(normal);vec3 key=normalize(vec3(-.48,.82,.34));vec3 fill=normalize(vec3(.62,.32,-.58));float ndl=max(dot(n,key),0.0);float fillLight=max(dot(n,fill),0.0);float hemi=.34+.22*max(n.y,0.0);float diffuse=hemi+ndl*.72+fillLight*.16;vec3 viewDir=normalize(vec3(.18,.72,.66));vec3 halfDir=normalize(key+viewDir);float spec=pow(max(dot(n,halfDir),0.0),36.0)*.2;float edge=pow(1.0-max(dot(n,viewDir),0.0),3.0)*.045;vec3 warm=vec3(1.0,.82,.62)*spec;vec3 lit=color*diffuse*intensity+warm+vec3(edge);lit=lit/(vec3(1.0)+lit*.08);gl_FragColor=vec4(pow(max(lit,vec3(0.0)),vec3(.88)),1.0);`;
+
 function shader(gl:WebGLRenderingContext,type:number,src:string){const s=gl.createShader(type);if(!s)throw Error("WebGL shader unavailable");gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||"Shader compile failed");return s;}
 function translateScale(o:Cube){return [o.sx,0,0,0,0,o.sy,0,0,0,0,o.sz,0,o.x,o.y,o.z,1];}
 
@@ -344,9 +350,9 @@ export function QWorldView(){
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("arrowleft"))p.yaw+=.035;if(keys.has("arrowright"))p.yaw-=.035;if(keys.has("a")){p.x-=Math.cos(p.yaw)*step;p.z-=Math.sin(p.yaw)*step;}if(keys.has("d")){p.x+=Math.cos(p.yaw)*step;p.z+=Math.sin(p.yaw)*step;}if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-16,Math.min(16,p.x));p.z=Math.max(-10,Math.min(21,p.z));}
     const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*50/v.zoom,32/v.zoom,Math.cos(v.orbit*Math.PI/180)*50/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*6.2,floorY()+3.5,position.current.z+Math.cos(position.current.yaw)*6.2];
+    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*55/v.zoom,35/v.zoom,Math.cos(v.orbit*Math.PI/180)*55/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*6.2,floorY()+3.5,position.current.z+Math.cos(position.current.yaw)*6.2];
     const target=mode==="isometric"?[0,0,0] :[position.current.x,floorY()+1.45,position.current.z];
-    const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
+    const proj=perspective((mode==="isometric"?.72:0.92)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
     for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}
     if(mode==="third-person"){const pos=position.current,parts=[primitive("cylinder",pos.x,1.35,pos.z,.78,1.05,.46,[.82,.16,.19]),primitive("cylinder",pos.x,1.92,pos.z,.22,.22,.22,[.82,.72,.59]),primitive("sphere",pos.x,2.18,pos.z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",pos.x-.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x+.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("sphere",pos.x-.68,.92,pos.z,.24,.24,.24,[.82,.72,.59]),primitive("sphere",pos.x+.68,.92,pos.z,.24,.24,.24,[.82,.72,.59]),primitive("cylinder",pos.x-.22,.48,pos.z,.3,.88,.34,dark),primitive("cylinder",pos.x+.22,.48,pos.z,.3,.88,.34,dark)];for(const o of parts){const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}}
