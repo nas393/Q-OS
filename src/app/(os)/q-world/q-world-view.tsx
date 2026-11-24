@@ -307,6 +307,7 @@ function translateScale(o:Cube){return [o.sx,0,0,0,0,o.sy,0,0,0,0,o.sz,0,o.x,o.y
 export function QWorldView(){
  const canvas=useRef<HTMLCanvasElement>(null);
  const [mode,setMode]=useState<"isometric"|"third-person">("isometric");
+ const [walkCameraAngle,setWalkCameraAngle]=useState(0);
  const [selected,setSelected]=useState("q");
  const [viewMode,setViewMode]=useState<"world"|"plan">("world");
  const [webgl,setWebgl]=useState(true);
@@ -336,7 +337,7 @@ export function QWorldView(){
    const keys=new Set<string>();const down=(e:KeyboardEvent)=>{if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());if(mode==="third-person")e.preventDefault();}};const up=(e:KeyboardEvent)=>keys.delete(e.key.toLowerCase());
    let dragging=false,lastPointerX=0;
    const pointerDown=(e:PointerEvent)=>{if(mode!=="third-person"||e.button!==0)return;dragging=true;lastPointerX=e.clientX;e.preventDefault();try{el.setPointerCapture(e.pointerId);}catch{}};
-   const pointerMove=(e:PointerEvent)=>{if(!dragging||mode!=="third-person")return;const delta=e.clientX-lastPointerX;lastPointerX=e.clientX;if(delta!==0)position.current.yaw-=delta*.014;};
+   const pointerMove=(e:PointerEvent)=>{if(!dragging||mode!=="third-person")return;const delta=e.clientX-lastPointerX;lastPointerX=e.clientX;if(delta!==0){position.current.yaw-=delta*.014;setWalkCameraAngle(((position.current.yaw*180/Math.PI)%360+360)%360);}};
    const pointerUp=(e:PointerEvent)=>{dragging=false;try{if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);}catch{}};
    el.addEventListener("pointerdown",pointerDown);el.addEventListener("pointermove",pointerMove);el.addEventListener("pointerup",pointerUp);el.addEventListener("pointercancel",pointerUp);
    window.addEventListener("keydown",down);window.addEventListener("keyup",up);
@@ -363,6 +364,7 @@ export function QWorldView(){
   else if(active.x>0){p.x=6.05;p.z=active.z;p.yaw=Math.PI/2;}
   else if(active.z>0){p.x=0;p.z=4.85;p.yaw=Math.PI;}
   else{p.x=0;p.z=-4.85;p.yaw=0;}
+  setWalkCameraAngle(((p.yaw*180/Math.PI)%360+360)%360);
  },[active]);
  const move=(dx:number,dz:number)=>{const p=position.current;const strafe=dx,forward=-dz;p.x+=Math.cos(p.yaw)*strafe+Math.sin(p.yaw)*forward;p.z+=Math.sin(p.yaw)*strafe-Math.cos(p.yaw)*forward;p.x=Math.max(-16,Math.min(16,p.x));p.z=Math.max(-10,Math.min(21,p.z));};
  return <main className="qw-shell">
@@ -386,8 +388,8 @@ export function QWorldView(){
     <label className="qw-range">Lighting <b>{Math.round(visuals.brightness*100)}%</b><input type="range" min=".55" max="1.45" step=".05" value={visuals.brightness} onChange={e=>updateVisuals({brightness:Number(e.target.value)})}/></label>
     <label className="qw-range">Camera zoom <b>{Math.round(visuals.zoom*100)}%</b><input type="range" min=".65" max="1.45" step=".05" value={visuals.zoom} onChange={e=>updateVisuals({zoom:Number(e.target.value)})}/></label>
     <label className="qw-range">Isometric camera angle <b>{Math.round(visuals.orbit)}°</b><input type="range" min="0" max="360" step="5" value={visuals.orbit} onChange={e=>updateVisuals({orbit:Number(e.target.value)})}/></label>
-    {mode==="third-person"&&<label className="qw-range">Walk camera angle <b>{Math.round(((position.current.yaw*180/Math.PI)%360+360)%360)}°</b><input type="range" min="0" max="360" step="1" value={((position.current.yaw*180/Math.PI)%360+360)%360} onChange={e=>{position.current.yaw=Number(e.target.value)*Math.PI/180;}}/></label>}
-    {mode==="third-person"&&<button type="button" className="qw-reset" onClick={()=>{position.current.yaw=0;}}>Reset walk camera</button>}
+    {mode==="third-person"&&<label className="qw-range">Walk camera angle <b>{Math.round(((position.current.yaw*180/Math.PI)%360+360)%360)}°</b><input type="range" min="0" max="360" step="1" value={walkCameraAngle} onChange={e=>{const angle=Number(e.target.value);position.current.yaw=angle*Math.PI/180;setWalkCameraAngle(angle);}}/></label>}
+    {mode==="third-person"&&<button type="button" className="qw-reset" onClick={()=>{position.current.yaw=0;setWalkCameraAngle(0);}}>Reset walk camera</button>}
     <label className="qw-toggle"><input type="checkbox" checked={visuals.labels} onChange={e=>updateVisuals({labels:e.target.checked})}/> Show headquarters labels</label>
     <button type="button" className="qw-reset" onClick={()=>setVisuals(DEFAULT_VISUALS)}>Reset visual settings</button>
    </div>}
