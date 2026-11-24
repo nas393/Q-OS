@@ -48,12 +48,14 @@ export type Project = {
 export type WorkResult = {
   id: string; taskId: string; projectId: string; department: string; authorId: string; kind: string;
   title: string; summary: string; metrics: { label: string; value: string }[]; publishedAt: number; day: number;
+  /* "ai" when a language model reworded the summary; "template" when it was kept as written. Unset = not yet tried. */
+  source?: "ai" | "template";
 };
 export type CompanyKpis = {
   revenueRunRateK: number; grossMarginPct: number; pipelineCoverage: number; onTimePct: number;
   engagement: number; cashRunwayMonths: number; supplierOnTimePct: number; mttrMinutes: number;
 };
-export type Planner = { startedAt: number; counter: number; nextTemplate: Record<string, number> };
+export type Planner = { startedAt: number; counter: number; nextTemplate: Record<string, number>; narrativeAt?: number };
 
 export type SimulationState = {
   worldId: string; version: number; simulatedAt: number; lastWallClockAt: number;
