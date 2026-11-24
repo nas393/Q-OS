@@ -25,11 +25,88 @@ scene.push(cube(0,-.7,0,110,1,88,ground),cube(0,-.1,0,7,.12,86,road),cube(0,-.08
 for(let x=-48;x<=48;x+=12){scene.push(cube(x,-.03,0,.25,.05,86,[.2,.27,.27]));}
 for(let z=-38;z<=38;z+=12){scene.push(cube(0,-.02,z,104,.05,.25,[.2,.27,.27]));}
 function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,number]){
- scene.push(cube(x,h/2,z,w,h,d,c),cube(x,h+.12,z,w+.5,.24,d+.5,dark),cube(x,h*.52,z-d/2-.08,w*.82,h*.55,.12,glass),cube(x,h*.52,z+d/2+.08,w*.82,h*.55,.12,glass),cube(x-w/2-.08,h*.52,z,.12,h*.55,d*.72,glass),cube(x+w/2+.08,h*.52,z,.12,h*.55,d*.72,glass),cube(x,h+.3,z,w*.3,.12,.35,gold));
- for(let yy=2;yy<h-1;yy+=2.3){for(let xx=-w/2+1.2;xx<w/2-1;xx+=2.5){scene.push(cube(x+xx,yy,z-d/2-.16,1.15,1.05,.08,glass));}}
+ const trim:[number,number,number]=[.32,.38,.4],stone:[number,number,number]=[.23,.27,.29],glow:[number,number,number]=[.72,.53,.29];
+ const floors=Math.max(2,Math.floor(h/2.25));
+ // Architectural plinth, layered facade and floating roof line.
+ scene.push(
+  cube(x,.18,z,w+1.7,.36,d+1.7,stone),
+  cube(x,.43,z,w+.8,.14,d+.8,trim),
+  cube(x,h/2,z,w,h,d,c),
+  cube(x,h+.12,z,w+.75,.24,d+.75,dark),
+  cube(x,h+.28,z,w+.25,.1,d+.25,trim),
+  cube(x,h*.52,z-d/2-.08,w*.82,h*.55,.12,glass),
+  cube(x,h*.52,z+d/2+.08,w*.82,h*.55,.12,glass),
+  cube(x-w/2-.08,h*.52,z,.12,h*.55,d*.72,glass),
+  cube(x+w/2+.08,h*.52,z,.12,h*.55,d*.72,glass),
+  cube(x,h+.38,z,w*.34,.12,.38,glow),
+  cube(x,h+.8,z,w*.2,.72,d*.2,stone),
+  cube(x,h+1.2,z,w*.12,.08,d*.12,glow)
+ );
+ // Recessed floor bands and window bays on all four elevations.
+ for(let floor=1;floor<=floors;floor++){
+  const yy=Math.min(h-.65,floor*2.05);
+  scene.push(cube(x,yy,z-d/2-.18,w*.86,.09,.1,trim),cube(x,yy,z+d/2+.18,w*.86,.09,.1,trim));
+  scene.push(cube(x-w/2-.18,yy,z,.1,.09,d*.76,trim),cube(x+w/2+.18,yy,z,.1,.09,d*.76,trim));
+  for(let xx=-w/2+1.05;xx<w/2-.7;xx+=2.05){
+   scene.push(cube(x+xx,yy-.72,z-d/2-.17,.11,1.22,.1,trim),cube(x+xx,yy-.72,z+d/2+.17,.11,1.22,.1,trim));
+  }
+  for(let zz=-d/2+1;zz<d/2-.6;zz+=1.8){
+   scene.push(cube(x-w/2-.17,yy-.72,z+zz,.1,1.22,.1,trim),cube(x+w/2+.17,yy-.72,z+zz,.1,1.22,.1,trim));
+  }
+ }
+ // Distinctive entrance, canopy, illuminated portal and approach steps.
+ scene.push(
+  cube(x,h*.34,z-d/2-.28,w*.34,h*.64,.12,dark),
+  cube(x,h*.34,z-d/2-.38,w*.27,h*.56,.08,glass),
+  cube(x,h*.76,z-d/2-.72,w*.55,.16,1.05,trim),
+  cube(x-w*.29,h*.34,z-d/2-.7,.18,h*.72,.2,glow),
+  cube(x+w*.29,h*.34,z-d/2-.7,.18,h*.72,.2,glow),
+  cube(x,h*.08,z-d/2-1.15,w*.58,.16,1.15,stone),
+  cube(x,h*.035,z-d/2-1.65,w*.72,.12,.72,trim),
+  cube(x,h+.55,z-d/2-.2,w*.42,.3,.12,glow)
+ );
+ // Corner fins create depth and a recognisable premium facade.
+ for(const side of [-1,1]){
+  scene.push(cube(x+side*(w/2+.13),h*.52,z-d/2-.24,.18,h*.92,.22,trim));
+  scene.push(cube(x+side*(w/2+.13),h*.52,z+d/2+.24,.18,h*.92,.22,trim));
+ }
 }
 building(0,0,20,17,13,[.16,.2,.24]);
 for(const u of UNITS.slice(1)){building(u.x,u.z,10,8,7,u.color);}
+// A formal arrival sequence, central executive plaza and district wayfinding.
+scene.push(
+ cube(0,-.02,-12,24,.08,5,[.24,.28,.3]),
+ cube(0,.035,-12,16,.06,2,[.34,.38,.39]),
+ cube(0,.08,-12,7,.08,1.2,gold),
+ cube(0,.12,10,17,.12,10,[.2,.25,.27]),
+ cube(0,.2,10,10,.08,6,[.27,.31,.32]),
+ cube(0,.26,10,3,.08,3,[.66,.48,.27]),
+ cube(0,1.5,-43,24,3,.6,[.12,.17,.2]),
+ cube(-12,1.5,-43,.6,3,1.4,[.68,.5,.28]),
+ cube(12,1.5,-43,.6,3,1.4,[.68,.5,.28]),
+ cube(0,3.1,-43,24,.16,1.8,[.22,.28,.31]),
+ cube(0,2.4,-42.2,8,.7,.08,[.72,.57,.35])
+);
+// Landscaped courtyards: layered planter beds, benches and water basins.
+for(const [x,z] of [[-12,-12],[12,-12],[-12,12],[12,12],[-33,-10],[33,10]] as number[][]){
+ scene.push(
+  cube(x,.12,z,5.2,.24,4.2,[.25,.3,.27]),
+  cube(x,.27,z,4.7,.12,3.7,[.15,.28,.2]),
+  cube(x,.38,z,3.9,.1,2.9,[.12,.34,.23]),
+  cube(x,.46,z,1.4,.06,1.4,[.28,.43,.34])
+ );
+}
+// Parking and service bays are deliberately placed at the campus perimeter.
+for(let i=0;i<8;i++){
+ const x=-35+i*4.2;
+ scene.push(cube(x,.035,37,3.2,.06,7,[.16,.2,.22]),cube(x,.07,33.5,2.8,.035,.12,[.7,.61,.43]));
+}
+// Pedestrian light bollards around the main paths.
+for(let x=-42;x<=42;x+=14){
+ for(const z of [-29,29]){
+  scene.push(cube(x,.8,z,.18,1.6,.18,[.23,.28,.3]),cube(x,1.65,z,.42,.18,.42,[.76,.62,.38]));
+ }
+}
 for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(cube(x,.9,z,.45,1.8,.45,[.31,.25,.18]),cube(x,2.15,z,2.2,2.6,2.2,leaf));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
@@ -49,7 +126,7 @@ function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
 const VS=`attribute vec3 p;attribute vec3 n;uniform mat4 mvp;varying vec3 normal;void main(){normal=n;gl_Position=mvp*vec4(p,1.0);}`;
-const FS=`precision mediump float;uniform vec3 color;uniform float intensity;varying vec3 normal;void main(){float light=.48+max(dot(normalize(normal),normalize(vec3(-.4,.9,.5))),0.0)*.55;gl_FragColor=vec4(color*light*intensity,1.0);}`;
+const FS=`precision mediump float;uniform vec3 color;uniform float intensity;varying vec3 normal;void main(){vec3 n=normalize(normal);vec3 l=normalize(vec3(-.42,.88,.36));float diffuse=max(dot(n,l),0.0);float sky=.42+max(n.y,0.0)*.16;float spec=pow(max(dot(reflect(-l,n),normalize(vec3(.25,.72,.58))),0.0),22.0)*.12;float rim=pow(1.0-max(dot(n,normalize(vec3(.2,.7,.65))),0.0),3.0)*.055;vec3 lit=color*(sky+diffuse*.62)*intensity+vec3(spec+rim);lit=lit/(vec3(1.0)+lit*.12);gl_FragColor=vec4(pow(max(lit,vec3(0.0)),vec3(.92)),1.0);}`;
 function shader(gl:WebGLRenderingContext,type:number,src:string){const s=gl.createShader(type);if(!s)throw Error("WebGL shader unavailable");gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||"Shader compile failed");return s;}
 function translateScale(o:Cube){return [o.sx,0,0,0,0,o.sy,0,0,0,0,o.sz,0,o.x,o.y,o.z,1];}
 
