@@ -41,21 +41,26 @@ function withRequest(s: SimulationState, next: StaffingRequest, rec: Recruitment
 }
 const openCount = (rec: RecruitmentState, dept: string) => rec.requests.filter((r) => r.department === dept && OPEN.includes(r.status)).length;
 
-/** Skills that queued or blocked work needs but no active team member in that department has. */
+/**
+ * Queued work that no single active team member can take. A task needs one person who holds every one of its skills,
+ * the same rule the engine uses, so a need asks for a person with the whole skill set of the highest-priority stuck task.
+ */
 export function staffingNeeds(state: SimulationState): StaffingNeed[] {
   const departments = [...new Set(state.employees.map((e) => e.department))];
   const out: StaffingNeed[] = [];
   for (const department of departments) {
-    const covered = new Set(state.employees.filter((e) => e.department === department && e.status === "active").flatMap((e) => e.skills));
-    const open = state.tasks.filter((t) => t.department === department && (t.status === "queued" || t.status === "blocked"));
-    const missing = [...new Set(open.flatMap((t) => t.requiredSkills.filter((s) => !covered.has(s))))].sort();
-    if (!missing.length) continue;
+    const team = state.employees.filter((e) => e.department === department && e.status === "active");
+    const stuck = state.tasks
+      .filter((t) => t.department === department && (t.status === "queued" || t.status === "blocked") && t.assigneeId === null)
+      .filter((t) => !team.some((e) => t.requiredSkills.every((skill) => e.skills.includes(skill))))
+      .sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    if (!stuck.length) continue;
     out.push({
       department,
       requestedBy: leaderOf(state, department)?.id ?? "ceo",
       roleTitle: `${department} specialist`,
-      skills: missing.slice(0, 4),
-      taskTitles: open.filter((t) => t.requiredSkills.some((s) => missing.includes(s))).map((t) => t.title).slice(0, 3),
+      skills: [...new Set(stuck[0].requiredSkills)].slice(0, 4),
+      taskTitles: stuck.slice(0, 3).map((t) => t.title),
     });
   }
   return out;

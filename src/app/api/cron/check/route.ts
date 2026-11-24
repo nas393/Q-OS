@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {timingSafeEqual,createHash} from "node:crypto";
 import {runChecks} from "@/lib/alerts";
 import {jsonError} from "@/lib/http";
+import {advanceStoredWorld} from "@/lib/office/world-store";
 
 export const runtime="nodejs",dynamic="force-dynamic",maxDuration=60;
 
@@ -23,7 +24,10 @@ async function handle(request:Request){
   if(!authorized(request.headers.get("authorization")))return jsonError(401,"Unauthorized");
   try{
     const r=await runChecks(false);
-    return NextResponse.json({ok:true,skipped:r.skipped,events:r.events.length,errors:r.errors?.length??0},{headers:{"Cache-Control":"no-store"}});
+    /* The fictional executive world keeps working between visits. A failure here never affects the checks above. */
+    let world:"ok"|"failed"="ok";
+    try{await advanceStoredWorld(Date.now());}catch(e){world="failed";console.error("cron_world_failed",{error:e instanceof Error?e.name:"unknown"});}
+    return NextResponse.json({ok:true,skipped:r.skipped,events:r.events.length,errors:r.errors?.length??0,world},{headers:{"Cache-Control":"no-store"}});
   }catch(e){
     console.error("cron_check_failed",{error:e instanceof Error?e.name:"unknown"});
     return jsonError(500,"Checks failed");

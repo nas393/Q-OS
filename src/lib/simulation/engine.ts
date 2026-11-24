@@ -35,6 +35,7 @@ export function tickSimulation(state: SimulationState, elapsedMs: number): Simul
   for (const employee of employees) {
     if (!isOnShift(employee, hour)) {
       employee.activity = "idle";
+      employee.energy = clamp(employee.energy + simulatedDelta / 60000 * 0.25); // rest outside working hours
       continue;
     }
     if (employee.destination) {
@@ -49,6 +50,9 @@ export function tickSimulation(state: SimulationState, elapsedMs: number): Simul
       continue;
     }
     if (hour === employee.schedule.breakAtHour && employee.activity !== "break") {
+      /* A break interrupts work. Return the task to the queue, or nobody can pick it up again. */
+      const interrupted = employee.currentTaskId ? tasks.find((t) => t.id === employee.currentTaskId) : undefined;
+      if (interrupted && interrupted.status === "in-progress") { interrupted.status = "queued"; interrupted.assigneeId = null; }
       employee.activity = "break"; employee.currentTaskId = null;
       employee.energy = clamp(employee.energy + 8); employee.stress = clamp(employee.stress - 7);
       emit({ type: "employee.started_break", employeeId: employee.id, message: employee.name + " took a scheduled break." });
@@ -62,12 +66,12 @@ export function tickSimulation(state: SimulationState, elapsedMs: number): Simul
         task.assigneeId = employee.id; task.status = "in-progress"; employee.currentTaskId = task.id; employee.activity = "working";
         emit({ type: "employee.started_task", employeeId: employee.id, taskId: task.id, message: employee.name + " started: " + task.title + "." });
       } else {
-        employee.activity = "idle"; employee.energy = clamp(employee.energy - 0.2); continue;
+        employee.activity = "idle"; employee.energy = clamp(employee.energy + simulatedDelta / 60000 * 0.25); continue;
       }
     }
     const efficiency = Math.max(0.2, employee.focus / 100) * Math.max(0.25, employee.energy / 100);
     task.effortRemaining = Math.max(0, task.effortRemaining - simulatedDelta / 60000 * efficiency);
-    employee.energy = clamp(employee.energy - simulatedDelta / 60000 * 0.45);
+    employee.energy = clamp(employee.energy - simulatedDelta / 60000 * 0.15);
     employee.stress = clamp(employee.stress + (task.priority >= 4 ? 0.08 : 0.02));
     if (task.effortRemaining === 0) {
       task.status = "completed"; employee.currentTaskId = null; employee.activity = "idle";
