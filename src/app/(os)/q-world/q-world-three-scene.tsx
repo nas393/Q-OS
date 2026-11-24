@@ -23,7 +23,7 @@ const units: Unit[] = [
 
 export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalkAngleChange}:Props) {
  const host=useRef<HTMLDivElement>(null);
- const api=useRef<{setMode:(m:string)=>void;setOrbit:(n:number)=>void;setWalkAngle:(n:number)=>void;move:(dx:number,dz:number)=>void}|null>(null);
+ const api=useRef<{setMode:(m:string)=>void;setOrbit:(n:number)=>void;setWalkAngle:(n:number)=>void;setSelected:(id:string)=>void;move:(dx:number,dz:number)=>void}|null>(null);
  useEffect(()=>{
   const root=host.current;if(!root)return;
   let renderer:any,controls:any,frame=0,observer:any,disposed=false;
@@ -127,7 +127,7 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
   const groundMat=mat(visuals.environment==="daylight"?0x66727a:visuals.environment==="sunset"?0x27242a:0x111820,.95);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),groundMat);ground.rotation.x=-Math.PI/2;ground.position.y=-1.42;ground.receiveShadow=true;scene.add(ground);
   controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.075;controls.minDistance=25;controls.maxDistance=95;controls.maxPolarAngle=Math.PI*.47;controls.target.set(0,1.2,0);controls.minPolarAngle=.12;
-  const walk={x:0,z:8,yaw:0};
+  const walk={x:0,z:8,yaw:0};\n  const setSelected=(id:string)=>{const u=units.find(v=>v.id===id)??units[0];if(u.id==="q"){walk.x=0;walk.z=5.2;setWalkAngle(0);}else if(u.x<0){walk.x=-6.2;walk.z=u.z;setWalkAngle(-90);}else if(u.x>0){walk.x=6.2;walk.z=u.z;setWalkAngle(90);}else if(u.z>0){walk.x=0;walk.z=4.8;setWalkAngle(180);}else{walk.x=0;walk.z=-4.8;setWalkAngle(0);}};
   const setMode=(m:string)=>{if(m==="isometric"){controls.enabled=true;camera.position.set(Math.sin(visuals.orbit*Math.PI/180)*48,32,Math.cos(visuals.orbit*Math.PI/180)*48);controls.target.set(0,1,0);controls.update();}else{controls.enabled=false;camera.position.set(walk.x-Math.sin(walk.yaw)*6,3.2,walk.z+Math.cos(walk.yaw)*6);camera.lookAt(walk.x,1.6,walk.z);}};
   const setOrbit=(angle:number)=>{if(mode==="isometric"){const distance=56/visuals.zoom;camera.position.set(Math.sin(angle*Math.PI/180)*distance,35/visuals.zoom,Math.cos(angle*Math.PI/180)*distance);controls.target.set(0,1,0);controls.update();}};
   const setWalkAngle=(angle:number)=>{walk.yaw=angle*Math.PI/180;camera.position.set(walk.x-Math.sin(walk.yaw)*6,3.2,walk.z+Math.cos(walk.yaw)*6);camera.lookAt(walk.x,1.6,walk.z);};
@@ -146,6 +146,6 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
  },[]);
  useEffect(()=>{api.current?.setMode(mode);},[mode]);
  useEffect(()=>{api.current?.setOrbit(visuals.orbit);},[visuals.orbit,visuals.zoom]);
- useEffect(()=>{api.current?.setWalkAngle(walkAngle);},[walkAngle]);
- return <div className="qw-three-host" ref={host} />;
+ useEffect(()=>{api.current?.setWalkAngle(walkAngle);},[walkAngle]);\n useEffect(()=>{api.current?.setSelected(selected);},[selected]);
+ return <div className="qw-three-host" ref={host}>{mode==="third-person"&&<div className="qw-three-pad" aria-label="Walk controls"><button type="button" onClick={()=>api.current?.move(0,-1)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>api.current?.move(-1,0)} aria-label="Move left">←</button><button type="button" onClick={()=>api.current?.move(1,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>api.current?.move(0,1)} aria-label="Move backward">↓</button></div>}</div>;
 }
