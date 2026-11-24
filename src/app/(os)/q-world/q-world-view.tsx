@@ -71,6 +71,25 @@ function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,
   scene.push(cube(x+side*(w/2+.13),h*.52,z-d/2-.24,.18,h*.92,.22,trim));
   scene.push(cube(x+side*(w/2+.13),h*.52,z+d/2+.24,.18,h*.92,.22,trim));
  }
+ // Sculpted entrance columns and illuminated canopy supports.
+ for(const side of [-1,1]){
+  scene.push(primitive("cylinder",x+side*w*.34,h*.35,z-d/2-.82,.28,h*.7,.28,trim));
+  scene.push(primitive("cylinder",x+side*w*.34,h*.35,z-d/2-.82,.13,h*.68,.13,glow));
+  scene.push(primitive("sphere",x+side*w*.34,h*.72,z-d/2-.82,.38,.24,.38,glow));
+ }
+ // Rooftop mechanical housings and a raised architectural crown.
+ scene.push(
+  cube(x-w*.28,h+.72,z+d*.18,w*.18,.65,d*.22,stone),
+  cube(x+w*.28,h+.72,z+d*.18,w*.18,.65,d*.22,stone),
+  cube(x-w*.28,h+1.08,z+d*.18,w*.2,.08,d*.24,trim),
+  cube(x+w*.28,h+1.08,z+d*.18,w*.2,.08,d*.24,trim),
+  primitive("cylinder",x,h+.95,z,.18,.55,.18,glow),
+  primitive("sphere",x,h+1.28,z,.34,.34,.34,glow)
+ );
+ // Low illuminated bollards define the public entrance without blocking movement.
+ for(const side of [-1,1]){
+  scene.push(primitive("cylinder",x+side*w*.43,.48,z-d/2-2.15,.16,.9,.16,trim),primitive("sphere",x+side*w*.43,.98,z-d/2-2.15,.28,.22,.28,glow));
+ }
 }
 building(0,0,20,17,13,[.16,.2,.24]);
 for(const u of UNITS.slice(1)){building(u.x,u.z,10,8,7,u.color);}
@@ -105,13 +124,13 @@ for(let i=0;i<8;i++){
 // Pedestrian light bollards around the main paths.
 for(let x=-42;x<=42;x+=14){
  for(const z of [-29,29]){
-  scene.push(cube(x,.8,z,.18,1.6,.18,[.23,.28,.3]),cube(x,1.65,z,.42,.18,.42,[.76,.62,.38]));
+  scene.push(primitive("cylinder",x,.8,z,.14,1.6,.14,[.23,.28,.3]),primitive("sphere",x,1.68,z,.42,.28,.42,[.76,.62,.38]));
  }
 }
 for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(primitive("cylinder",x,.9,z,.34,1.8,.34,[.31,.25,.18]),primitive("cone",x,2.25,z,2.5,2.9,2.5,leaf),primitive("cone",x,3.05,z,1.8,2.1,1.8,[.16,.39,.26]));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
-for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(primitive("cylinder",x,1.35,z,.78,1.05,.46,u.color),primitive("sphere",x,2.18,z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",x-.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x+.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x-.22,.48,z,.3,.88,.34,dark),primitive("cylinder",x+.22,.48,z,.3,.88,.34,dark));}
+for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(primitive("cylinder",x,1.35,z,.78,1.05,.46,u.color),primitive("cylinder",x,1.92,z,.22,.22,.22,[.82,.72,.59]),primitive("sphere",x,2.18,z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",x-.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x+.52,1.38,z,.25,.92,.3,u.color),primitive("sphere",x-.68,.92,z,.24,.24,.24,[.82,.72,.59]),primitive("sphere",x+.68,.92,z,.24,.24,.24,[.82,.72,.59]),primitive("cylinder",x-.22,.48,z,.3,.88,.34,dark),primitive("cylinder",x+.22,.48,z,.3,.88,.34,dark));}
 const OBJECTS=[...scene,...AVATARS];
 const POS:number[]=[];const NOR:number[]=[];
 const faces:[number[][],number[]][]=[
@@ -196,7 +215,7 @@ export function QWorldView(){
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
     for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}
-    if(mode==="third-person"){const pos=position.current,parts=[primitive("cylinder",pos.x,1.35,pos.z,.78,1.05,.46,[.82,.16,.19]),primitive("sphere",pos.x,2.18,pos.z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",pos.x-.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x+.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x-.22,.48,pos.z,.3,.88,.34,dark),primitive("cylinder",pos.x+.22,.48,pos.z,.3,.88,.34,dark)];for(const o of parts){const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}}
+    if(mode==="third-person"){const pos=position.current,parts=[primitive("cylinder",pos.x,1.35,pos.z,.78,1.05,.46,[.82,.16,.19]),primitive("cylinder",pos.x,1.92,pos.z,.22,.22,.22,[.82,.72,.59]),primitive("sphere",pos.x,2.18,pos.z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",pos.x-.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x+.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("sphere",pos.x-.68,.92,pos.z,.24,.24,.24,[.82,.72,.59]),primitive("sphere",pos.x+.68,.92,pos.z,.24,.24,.24,[.82,.72,.59]),primitive("cylinder",pos.x-.22,.48,pos.z,.3,.88,.34,dark),primitive("cylinder",pos.x+.22,.48,pos.z,.3,.88,.34,dark)];for(const o of parts){const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}}
    }raf=window.requestAnimationFrame(render);};
    const observer=new ResizeObserver(resize);observer.observe(el);raf=window.requestAnimationFrame(render);
    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);};
