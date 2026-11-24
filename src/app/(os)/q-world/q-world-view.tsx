@@ -227,7 +227,7 @@ export function QWorldView(){
  const [webgl,setWebgl]=useState(true);
  const [visuals,setVisuals]=useState<VisualSettings>(DEFAULT_VISUALS);
  const [directorOpen,setDirectorOpen]=useState(true);
- const position=useRef({x:0,z:21,yaw:0});
+ const position=useRef({x:0,z:9,yaw:0,floor:0});
  const visualsRef=useRef(visuals);visualsRef.current=visuals;
  useEffect(()=>{try{const saved=localStorage.getItem("q-world.visuals");if(saved){const parsed=JSON.parse(saved) as Partial<VisualSettings>;setVisuals(v=>({...v,...parsed}));}}catch{}},[]);
  useEffect(()=>{try{localStorage.setItem("q-world.visuals",JSON.stringify(visuals));}catch{}},[visuals]);
@@ -253,8 +253,8 @@ export function QWorldView(){
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-16,Math.min(16,p.x));p.z=Math.max(-10,Math.min(21,p.z));}
     const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*84/v.zoom,52/v.zoom,Math.cos(v.orbit*Math.PI/180)*84/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,4.2,position.current.z+Math.cos(position.current.yaw)*7];
-    const target=mode==="isometric"?[0,0,0] :[position.current.x,1.45,position.current.z];
+    const eye=mode==="isometric"?[Math.sin(v.orbit*Math.PI/180)*84/v.zoom,52/v.zoom,Math.cos(v.orbit*Math.PI/180)*84/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,floorY(position.current.floor)+4.2,position.current.z+Math.cos(position.current.yaw)*7];
+    const target=mode==="isometric"?[0,0,0] :[position.current.x,floorY(position.current.floor)+1.45,position.current.z];
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
     for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}
@@ -268,7 +268,7 @@ export function QWorldView(){
  const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-16,Math.min(16,p.x+dx));p.z=Math.max(-10,Math.min(21,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
-  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Third-person walk</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the HQ with W A S D or arrow keys · choose an office below"}</span></div>
+  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected floor with W A S D or arrow keys · choose an office to use the lift"}</span></div>
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with three floors and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The business campus remains accessible in the unit directory.</p></div>}
