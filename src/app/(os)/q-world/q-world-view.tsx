@@ -219,7 +219,7 @@ function buildFrustum(){
   [[-bottom,y0,-bottom],[-top,y1,-top],[top,y1,-top],[bottom,y0,-bottom],[0,0,-1]],
   [[bottom,y0,-bottom],[top,y1,-top],[top,y1,top],[bottom,y0,bottom],[1,0,0]],
   [[bottom,y0,bottom],[top,y1,top],[-top,y1,top],[-bottom,y0,bottom],[0,0,1]],
-  [[-bottom,y0,bottom],[-bottom,y0,-bottom],[-top,y1,-top],[-bottom,y0,-bottom],[-1,0,0]]
+  [[-bottom,y0,bottom],[-top,y1,top],[-top,y1,-top],[-bottom,y0,-bottom],[-1,0,0]]
  ] as [number[],number[],number[],number[],number[]][];
  for(const [a,b,c,d,n] of sides){
   const u=[c[0]-a[0],c[1]-a[1],c[2]-a[2]],v=[d[0]-a[0],d[1]-a[1],d[2]-a[2]];
