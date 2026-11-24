@@ -57,7 +57,7 @@ export function QWorldView(){
  const [mode,setMode]=useState<"isometric"|"third-person">("isometric");
  const [selected,setSelected]=useState("q");
  const [webgl,setWebgl]=useState(true);
- const [position,setPosition]=useState({x:0,z:24,yaw:0});
+ const position=useRef({x:0,z:24,yaw:0});
  const [hint,setHint]=useState("Select a business unit to inspect its campus location.");
  useEffect(()=>{
   const el=canvas.current;if(!el)return;
@@ -81,19 +81,19 @@ export function QWorldView(){
    const keys=new Set<string>();const down=(e:KeyboardEvent)=>{if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());if(mode==="third-person")e.preventDefault();}};const up=(e:KeyboardEvent)=>keys.delete(e.key.toLowerCase());
    window.addEventListener("keydown",down);window.addEventListener("keyup",up);
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
-    if(mode==="third-person"){const step=.18;if(keys.has("a")||keys.has("arrowleft"))setPosition(v=>({...v,yaw:v.yaw+.035}));if(keys.has("d")||keys.has("arrowright"))setPosition(v=>({...v,yaw:v.yaw-.035}));if(keys.has("w")||keys.has("arrowup"))setPosition(v=>({...v,x:v.x+Math.sin(position.yaw)*step,z:v.z-Math.cos(position.yaw)*step}));if(keys.has("s")||keys.has("arrowdown"))setPosition(v=>({...v,x:v.x-Math.sin(position.yaw)*step,z:v.z+Math.cos(position.yaw)*step}));}
+    if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-48,Math.min(48,p.x));p.z=Math.max(-38,Math.min(38,p.z));}
     gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[57,52,62]:[position.x,3.2,position.z];
-    const target=mode==="isometric"?[0,0,0]:[position.x+Math.sin(position.yaw)*14,2.6,position.z-Math.cos(position.yaw)*14];
+    const eye=mode==="isometric"?[57,52,62] :[position.current.x,3.2,position.current.z];
+    const target=mode==="isometric"?[0,0,0] :[position.current.x+Math.sin(position.current.yaw)*14,2.6,position.current.z-Math.cos(position.current.yaw)*14];
     const proj=perspective(mode==="isometric"?.78:1.02,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     for(const o of OBJECTS){gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,36);}
    }raf=window.requestAnimationFrame(render);};
    const observer=new ResizeObserver(resize);observer.observe(el);raf=window.requestAnimationFrame(render);
    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);};
   }catch{setWebgl(false);}
- },[mode,position.x,position.z,position.yaw]);
+ },[mode]);
  const active=UNITS.find(u=>u.id===selected)??UNITS[0];
- const move=(dx:number,dz:number)=>setPosition(p=>({...p,x:Math.max(-48,Math.min(48,p.x+dx)),z:Math.max(-38,Math.min(38,p.z+dz))}));
+ const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-48,Math.min(48,p.x+dx));p.z=Math.max(-38,Math.min(38,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · CAMPUS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> WORLD FOUNDATION · READ ONLY</div></header>
   <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Third-person walk</button></div><span className="qw-hint">{mode==="isometric"?"Campus overview · select a unit below": "Walk with W A S D or arrow keys · select a unit below"}</span></div>
