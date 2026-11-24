@@ -355,7 +355,15 @@ export function QWorldView(){
   }catch{setWebgl(false);}
  },[mode]);
  const active=UNITS.find(u=>u.id===selected)??UNITS[0];
- useEffect(()=>{position.current.x=active.x;position.current.z=active.z+0.8;},[active]);
+ useEffect(()=>{
+  // Place the visitor just outside the selected suite, facing its entrance rather than spawning on the furniture.
+  const p=position.current;
+  if(active.id==="q"){p.x=0;p.z=5.15;p.yaw=0;}
+  else if(active.x<0){p.x=-6.05;p.z=active.z;p.yaw=-Math.PI/2;}
+  else if(active.x>0){p.x=6.05;p.z=active.z;p.yaw=Math.PI/2;}
+  else if(active.z>0){p.x=0;p.z=4.85;p.yaw=Math.PI;}
+  else{p.x=0;p.z=-4.85;p.yaw=0;}
+ },[active]);
  const move=(dx:number,dz:number)=>{const p=position.current;const strafe=dx,forward=-dz;p.x+=Math.cos(p.yaw)*strafe+Math.sin(p.yaw)*forward;p.z+=Math.sin(p.yaw)*strafe-Math.cos(p.yaw)*forward;p.x=Math.max(-16,Math.min(16,p.x));p.z=Math.max(-10,Math.min(21,p.z));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
