@@ -58,7 +58,6 @@ export function QWorldView(){
  const [selected,setSelected]=useState("q");
  const [webgl,setWebgl]=useState(true);
  const position=useRef({x:0,z:24,yaw:0});
- const [hint,setHint]=useState("Select a business unit to inspect its campus location.");
  useEffect(()=>{
   const el=canvas.current;if(!el)return;
   let gl:WebGLRenderingContext|null=null;
@@ -105,6 +104,6 @@ export function QWorldView(){
    </section>
    <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED BUSINESS UNIT</span><h2>{active.name}</h2><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
   </div>
-  <section className="qw-units" aria-labelledby="qw-units-title"><div><span className="qw-kicker">THE COMPANY</span><h2 id="qw-units-title">Business units</h2></div><div className="qw-unit-grid">{UNITS.map(u=><button key={u.id} type="button" className={selected===u.id?"active":""} onClick={()=>{setSelected(u.id);setHint(u.mission);}} aria-pressed={selected===u.id}><span style={{background:`rgb(${u.color.map(v=>Math.round(v*255)).join(",")})`}}/><b>{u.name}</b><small>{u.department}</small></button>)}</div><p className="qw-simulation-note">Illustrative campus layout · no live tasks, revenue or costs are changed. Real KPIs will only appear after verified data connections.</p></section>
+  <section className="qw-units" aria-labelledby="qw-units-title"><div><span className="qw-kicker">THE COMPANY</span><h2 id="qw-units-title">Business units</h2></div><div className="qw-unit-grid">{UNITS.map(u=><button key={u.id} type="button" className={selected===u.id?"active":""} onClick={()=>setSelected(u.id)} aria-pressed={selected===u.id}><span style={{background:`rgb(${u.color.map(v=>Math.round(v*255)).join(",")})`}}/><b>{u.name}</b><small>{u.department}</small></button>)}</div><p className="qw-simulation-note">Illustrative campus layout · no live tasks, revenue or costs are changed. Real KPIs will only appear after verified data connections.</p></section>
  </main>;
 }
