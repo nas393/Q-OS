@@ -2,7 +2,7 @@
 
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Environment, OrbitControls } from "@react-three/drei";
 import { AnimationMixer, Group, MathUtils, Vector3, type AnimationAction } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
@@ -155,30 +155,30 @@ class PeopleErrorBoundary extends Component<{children:ReactNode;fallback:ReactNo
   componentDidCatch(error:Error){console.error("Executive World character assets failed; using local fallback characters.",error);}
   render(){return this.state.failed?this.props.fallback:this.props.children;}
 }
-function CameraRig({mode}:{mode:"CEO"|"FREE"|"CINEMA"}){
+function CameraRig({mode,followPosition}:{mode:"CEO"|"FREE"|"FOLLOW"|"CINEMA";followPosition:{x:number;z:number}}){
   const {camera}=useThree(),elapsed=useRef(0);
-  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,7,15):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(0,0,0);},[camera,mode]);
-  useFrame((_,delta)=>{if(mode!=="CINEMA")return;elapsed.current+=delta;const a=elapsed.current*.075;const target=new Vector3(Math.cos(a)*34,17+Math.sin(a*.7)*2.2,Math.sin(a)*34);camera.position.lerp(target,1-Math.exp(-delta*.65));camera.lookAt(0,1.1,0);});
+  useEffect(()=>{const target=mode==="CEO"?new Vector3(0,9,18):mode==="FOLLOW"?new Vector3(followPosition.x+7,5.5,followPosition.z+8):new Vector3(29,25,31);camera.position.copy(target);camera.lookAt(mode==="FOLLOW"?new Vector3(followPosition.x,1,followPosition.z):new Vector3(0,0,0));},[camera,mode]);
+  useFrame((_,delta)=>{if(mode==="FOLLOW"){const target=new Vector3(followPosition.x+7,5.5,followPosition.z+8);camera.position.lerp(target,1-Math.exp(-delta*2.4));camera.lookAt(followPosition.x,1.1,followPosition.z);return;}if(mode!=="CINEMA")return;elapsed.current+=delta;const a=elapsed.current*.075;const target=new Vector3(Math.cos(a)*34,17+Math.sin(a*.7)*2.2,Math.sin(a)*34);camera.position.lerp(target,1-Math.exp(-delta*.65));camera.lookAt(0,1.1,0);});
   return null;
 }
-function WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"|"CINEMA"}){
-  return <Canvas shadows dpr={[1,1.6]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
+function WorldScene({employees,selected,onSelect,cameraMode}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void;cameraMode:"CEO"|"FREE"|"FOLLOW"|"CINEMA"}){
+  return <Canvas shadows dpr={[1,1.35]} camera={{position:[29,25,31],fov:42,near:.1,far:150}} gl={{antialias:true,alpha:false}}>
     <color attach="background" args={["#101820"]}/>
-    <fog attach="fog" args={["#101820",42,85]}/>
-    <ambientLight intensity={.75}/>
-    <hemisphereLight args={["#dce8f0","#4a4035",1.1]}/>
-    <directionalLight position={[-15,24,10]} intensity={2.2} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
-    <pointLight position={[0,7,0]} intensity={.7} color="#e8c88d"/>
+    <fog attach="fog" args={["#101820",58,112]}/>
+    <ambientLight intensity={1.15}/>
+    <hemisphereLight args={["#eaf4ff","#665744",1.45]}/>
+    <directionalLight position={[-15,24,10]} intensity={2.8} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
+    <pointLight position={[0,7,0]} intensity={1.05} color="#f2d6a0"/><pointLight position={[-14,4,-8]} intensity={.55} color="#8ebbd5"/><pointLight position={[14,4,8]} intensity={.45} color="#d6ad70"/><Environment preset="city" environmentIntensity={0.38}/>
     <Architecture employees={employees}/>
-    <CameraRig mode={cameraMode}/>
+    <CameraRig mode={cameraMode} followPosition={employees.find(e=>e.id===selected)?.position??{x:0,z:0}}/>
     <PeopleErrorBoundary fallback={<FallbackPeople employees={employees} selected={selected} onSelect={onSelect}/> }><Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense></PeopleErrorBoundary>
     <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
 
-    <OrbitControls enabled={cameraMode!=="CINEMA"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
+    <OrbitControls enabled={cameraMode==="FREE"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
   </Canvas>;
 }
 export function ExecutiveWorld3D(){
-  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
+  const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"FOLLOW"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
@@ -192,7 +192,7 @@ export function ExecutiveWorld3D(){
       <span>{working} working · {walking} moving · {world.events.length} events</span>
       <div><button type="button" onClick={()=>setWorld(w=>({...w,paused:!w.paused}))}>{world.paused?"Resume":"Pause"}</button>
         {([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}
-        <button type="button" aria-pressed={camera==="CEO"} onClick={()=>setCamera("CEO")}>CEO</button><button type="button" aria-pressed={camera==="FREE"} onClick={()=>setCamera("FREE")}>Free camera</button><button type="button" aria-pressed={camera==="CINEMA"} onClick={()=>setCamera("CINEMA")}>Cinematic</button>
+        <button type="button" aria-pressed={camera==="CEO"} onClick={()=>setCamera("CEO")}>CEO</button><button type="button" aria-pressed={camera==="FREE"} onClick={()=>setCamera("FREE")}>Free camera</button><button type="button" aria-pressed={camera==="FOLLOW"} onClick={()=>setCamera("FOLLOW")}>Follow</button><button type="button" aria-pressed={camera==="CINEMA"} onClick={()=>setCamera("CINEMA")}>Cinematic</button>
       </div>
     </div>
     <div className="q3d-stage">
@@ -203,7 +203,7 @@ export function ExecutiveWorld3D(){
     </div>
     <div className="q3d-room-selector">
       <div className="q3d-room-tabs" aria-label="Simulation departments">{SIM_DEPARTMENTS.map(name=><button type="button" key={name} aria-pressed={department===name} onClick={()=>setDepartment(name)}>{name}</button>)}</div>
-      <div className="q3d-desks">{world.employees.filter(e=>department==="All"||e.department===department).map(e=><button type="button" key={e.id} onClick={()=>setSelected(e.id)} aria-pressed={selected===e.id}>
+      <div className="q3d-desks">{world.employees.filter(e=>department==="All"||e.department===department).map(e=><button type="button" key={e.id} onClick={()=>{setSelected(e.id);setCamera("FOLLOW")}} aria-pressed={selected===e.id}>
         <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
       </button>)}</div>
       <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Skills: {selectedEmployee.skills.join(" · ")}</span></div>
