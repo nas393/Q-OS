@@ -73,6 +73,40 @@ function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,
 }
 building(0,0,20,17,13,[.16,.2,.24]);
 for(const u of UNITS.slice(1)){building(u.x,u.z,10,8,7,u.color);}
+// A formal arrival sequence, central executive plaza and district wayfinding.
+scene.push(
+ cube(0,-.02,-12,24,.08,5,[.24,.28,.3]),
+ cube(0,.035,-12,16,.06,2,[.34,.38,.39]),
+ cube(0,.08,-12,7,.08,1.2,gold),
+ cube(0,.12,10,17,.12,10,[.2,.25,.27]),
+ cube(0,.2,10,10,.08,6,[.27,.31,.32]),
+ cube(0,.26,10,3,.08,3,[.66,.48,.27]),
+ cube(0,1.5,-43,24,3,.6,[.12,.17,.2]),
+ cube(-12,1.5,-43,.6,3,1.4,[.68,.5,.28]),
+ cube(12,1.5,-43,.6,3,1.4,[.68,.5,.28]),
+ cube(0,3.1,-43,24,.16,1.8,[.22,.28,.31]),
+ cube(0,2.4,-42.2,8,.7,.08,[.72,.57,.35])
+);
+// Landscaped courtyards: layered planter beds, benches and water basins.
+for(const [x,z] of [[-12,-12],[12,-12],[-12,12],[12,12],[-33,-10],[33,10]] as number[][]){
+ scene.push(
+  cube(x,.12,z,5.2,.24,4.2,[.25,.3,.27]),
+  cube(x,.27,z,4.7,.12,3.7,[.15,.28,.2]),
+  cube(x,.38,z,3.9,.1,2.9,[.12,.34,.23]),
+  cube(x,.46,z,1.4,.06,1.4,[.28,.43,.34])
+ );
+}
+// Parking and service bays are deliberately placed at the campus perimeter.
+for(let i=0;i<8;i++){
+ const x=-35+i*4.2;
+ scene.push(cube(x,.035,37,3.2,.06,7,[.16,.2,.22]),cube(x,.07,33.5,2.8,.035,.12,[.7,.61,.43]));
+}
+// Pedestrian light bollards around the main paths.
+for(let x=-42;x<=42;x+=14){
+ for(const z of [-29,29]){
+  scene.push(cube(x,.8,z,.18,1.6,.18,[.23,.28,.3]),cube(x,1.65,z,.42,.18,.42,[.76,.62,.38]));
+ }
+}
 for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(cube(x,.9,z,.45,1.8,.45,[.31,.25,.18]),cube(x,2.15,z,2.2,2.6,2.2,leaf));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
