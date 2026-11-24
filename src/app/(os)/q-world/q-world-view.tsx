@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QWorldThreeScene from "./q-world-three-scene";
 import QWorldSpacePlan from "./q-world-space-plan";
 import "./q-world.css";
