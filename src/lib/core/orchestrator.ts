@@ -3,11 +3,13 @@ import { classifyIntent } from "@/lib/core/intent";
 import { formatServerContext, loadServerContext } from "@/lib/core/context";
 import { QCoreError } from "@/lib/core/errors";
 import type { QIntent, QTurn } from "@/lib/core/contracts";
+import type {ChatWorkspace} from "@/lib/chat-workspace";
 
 export async function orchestrateChat(input: {
   turns: QTurn[];
   clientContext?: string;
   signal?: AbortSignal;
+  workspace?: ChatWorkspace;
 }): Promise<{ intent: QIntent; response: Response }> {
   const turns = input.turns.map(turn => ({ ...turn }));
   const latestUser = [...turns].reverse().find(turn => turn.role === "user");
@@ -25,6 +27,6 @@ export async function orchestrateChat(input: {
   ].filter(Boolean);
 
   latestUser.content = sections.join("\n\n");
-  const response = await createAIStream(turns, input.signal);
+  const response = await createAIStream(turns, input.signal, input.workspace ?? "general");
   return { intent, response };
 }

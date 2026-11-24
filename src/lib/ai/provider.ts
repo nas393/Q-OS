@@ -1,4 +1,5 @@
 import type { AIProvider } from "@/lib/ai/stream";
+import {executiveTwinSystemGuidance, type ChatWorkspace} from "@/lib/chat-workspace";
 
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 export type ProviderConfig = { provider: AIProvider; model: string };
@@ -20,8 +21,9 @@ const SYSTEM_PROMPT = [
   "No HTML. No tables unless asked."
 ].join(" ");
 
-function providerPrompt(provider: AIProvider, model: string): string {
-  return `${SYSTEM_PROMPT}\n\nRuntime identity: You are Q. This response is served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: "Q — AI provider: ${provider.toUpperCase()} (model: ${model})." Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;
+function providerPrompt(provider: AIProvider, model: string, workspace: ChatWorkspace = "general"): string {
+  const workspaceGuidance = workspace === "executive_twin" ? `\n\n${executiveTwinSystemGuidance()}` : "";
+  return `${SYSTEM_PROMPT}${workspaceGuidance}\n\nRuntime identity: You are Q. This response is served by the ${provider.toUpperCase()} API using model ${model}. If asked which AI provider is serving this response, state exactly: "Q — AI provider: ${provider.toUpperCase()} (model: ${model})." Do not claim to be OpenAI or ChatGPT unless the runtime provider is OpenAI.`;
 }
 
 export function getAIConfig(): ProviderConfig {
@@ -59,7 +61,7 @@ function withProviderHeaders(response: Response, provider: AIProvider, model: st
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+async function callGemini(input: ChatTurn[], signal?: AbortSignal, workspace: ChatWorkspace = "general"): Promise<Response> {
   const key = process.env.GEMINI_API_KEY!;
   const model = GEMINI_MODEL;
   const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
@@ -67,7 +69,7 @@ async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Resp
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: providerPrompt("gemini", model) }] },
+      systemInstruction: { parts: [{ text: providerPrompt("gemini", model, workspace) }] },
       contents: input.map(turn => ({ role: turn.role === "assistant" ? "model" : "user", parts: [{ text: turn.content }] })),
       generationConfig: { maxOutputTokens: 1800, temperature: 0.7 }
     }),
@@ -80,7 +82,7 @@ async function callGemini(input: ChatTurn[], signal?: AbortSignal): Promise<Resp
   return withProviderHeaders(upstream, "gemini", model);
 }
 
-async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+async function callGroq(input: ChatTurn[], signal?: AbortSignal, workspace: ChatWorkspace = "general"): Promise<Response> {
   const key = process.env.GROQ_API_KEY!;
   const model = GROQ_MODEL;
   const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(50000)]) : AbortSignal.timeout(50000);
@@ -89,7 +91,7 @@ async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Respon
     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: providerPrompt("groq", model) }, ...input.map(turn => ({ role: turn.role, content: turn.content }))],
+      messages: [{ role: "system", content: providerPrompt("groq", model, workspace) }, ...input.map(turn => ({ role: turn.role, content: turn.content }))],
       max_tokens: 1800,
       temperature: 0.7,
       stream: true
@@ -104,14 +106,14 @@ async function callGroq(input: ChatTurn[], signal?: AbortSignal): Promise<Respon
 }
 
 /* Provider fallback happens before the first token is exposed to the client. */
-export async function createAIStream(input: ChatTurn[], signal?: AbortSignal): Promise<Response> {
+export async function createAIStream(input: ChatTurn[], signal?: AbortSignal, workspace: ChatWorkspace = "general"): Promise<Response> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
   let groqFailure: Response | undefined;
 
   if (groqKey) {
     try {
-      const response = await callGroq(input, signal);
+      const response = await callGroq(input, signal, workspace);
       if (response.ok) return response;
       groqFailure = response;
       const detail = await readError(response.clone());
@@ -126,7 +128,7 @@ export async function createAIStream(input: ChatTurn[], signal?: AbortSignal): P
 
   if (geminiKey) {
     try {
-      const response = await callGemini(input, signal);
+      const response = await callGemini(input, signal, workspace);
       if (response.ok) return response;
       if (groqFailure) {
         const primary = await readError(groqFailure.clone());

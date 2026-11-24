@@ -190,6 +190,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
         </li>)}</ul>}
         {panel==="more"&&<div className="navlist">
           <Link href="/office" onClick={closePanel}><I n="home"/>Office<I n="chev" c="chev"/></Link>
+          <Link href="/executive-twin" onClick={closePanel}><I n="spark"/>Executive Twin<I n="chev" c="chev"/></Link>
           <Link href="/brief" onClick={closePanel}><I n="sunrise"/>Morning brief<I n="chev" c="chev"/></Link>
           <Link href="/iq/q-news" onClick={closePanel}><I n="globe"/>Global Radar<I n="chev" c="chev"/></Link>
           <button onClick={()=>openPanel("apps")}><I n="grid"/>Applications<I n="chev" c="chev"/></button>
