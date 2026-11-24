@@ -140,7 +140,7 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
   api.current={setMode,setOrbit,setWalkAngle,move};
   setMode(mode);setOrbit(visuals.orbit);
   const animate=()=>{if(disposed)return;frame=requestAnimationFrame(animate);if(document.hidden)return;controls.update();renderer.render(scene,camera);};animate();
-  return()=>{disposed=true;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener("keydown",keydown);renderer.domElement.removeEventListener("pointerdown",down);renderer.domElement.removeEventListener("pointermove",movePointer);renderer.domElement.removeEventListener("pointerup",up);renderer.domElement.removeEventListener("pointercancel",up);controls.dispose();scene.traverse((o:any)=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach((m:any)=>m.dispose?.());else o.material?.dispose?.();});renderer.dispose();renderer.domElement.remove();};
+  return()=>{disposed=true;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener("keydown",keydown);renderer.domElement.removeEventListener("pointerdown",down);renderer.domElement.removeEventListener("pointermove",movePointer);renderer.domElement.removeEventListener("pointerup",up);renderer.domElement.removeEventListener("pointercancel",up);controls.dispose();scene.traverse((o:any)=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach((m:any)=>{m.map?.dispose?.();m.dispose?.();});else{o.material?.map?.dispose?.();o.material?.dispose?.();}});renderer.dispose();renderer.domElement.remove();};
  // Renderer lifetime is tied to the mounted HQ viewport; settings are applied by the effect below.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
