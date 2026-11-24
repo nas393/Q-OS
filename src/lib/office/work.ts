@@ -45,6 +45,8 @@ async function makeBody(job:Job):Promise<WorkBody>{
   }
   if(job.id==="queue-plan"){const ap=await loadApprovals();return queuePlan(ap.items.filter(a=>a.app==="dalil"));}
   let evidence="";
+  if(job.id==="architecture-review"||job.id==="security-review"){const [h,alerts,projects]=await Promise.all([systemHealth(),recentAlerts(30),listProjects().catch(()=>[])]);evidence=`Health: ${JSON.stringify(h)}\nApp states: ${JSON.stringify(Object.fromEntries(projects.map(p=>[p.name,p.targets?.production?.readyState??"UNKNOWN"])))}\nAlerts: ${JSON.stringify(alerts.slice(0,20).map(a=>({level:a.level,title:a.title,body:a.body?.slice(0,200)??null})))}`.slice(0,6000);}
+  if(job.id==="content-plan"){const past=(await Promise.all(["week-posts","week-reels","course-promo"].map(id=>jobById(id)).filter((j):j is Job=>j!==null).map(pastTitles))).flat();evidence=`Studio subjects already approved: ${past.join(" | ")||"none yet"}`;}
   if(job.id==="gold-note"){const m=await loadMetrics();evidence=`XAU/USD metrics stored by Q: ${JSON.stringify(m.metrics.xauusd??null).slice(0,3000)}`;}
   if(job.id==="course-promo"){const s=await loadAppStats().catch(()=>null);evidence=`Certigo numbers: ${JSON.stringify(s?.stats?.certigo?.stats??[])}`;}
   if(job.id==="week-posts"||job.id==="week-reels"){const past=await pastTitles(job);evidence=past.length?`Past approved subjects (do not repeat): ${past.join(" | ")}`:"";}

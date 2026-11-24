@@ -14,7 +14,10 @@ export const JOBS:Job[]=[
   {id:"gold-note",staff:"xauusd",label:"Write the weekly gold note",weekly:true,ai:true,what:"A short XAU/USD note from the latest numbers Q has, with no invented figures."},
   {id:"queue-plan",staff:"dalil",label:"Plan the review queue",weekly:false,ai:false,what:"What to review first in Dalil, from the live counts."},
   {id:"health-report",staff:"ops",label:"Write the weekly health report",weekly:true,ai:false,what:"Builds, checks and open alerts across every app this week."},
-  {id:"weekly-review",staff:"q",label:"Prepare my weekly review",weekly:true,ai:false,what:"Tasks done and open, approvals waiting and alerts, in one page."}
+  {id:"weekly-review",staff:"q",label:"Prepare my weekly review",weekly:true,ai:false,what:"Tasks done and open, approvals waiting and alerts, in one page."},
+  {id:"architecture-review",staff:"forge",label:"Review Q OS architecture this week",weekly:true,ai:true,what:"The fragile parts of Q OS this week and the first three fixes, from alerts and deploy states."},
+  {id:"security-review",staff:"shield",label:"Review this week's security signals",weekly:true,ai:true,what:"Security risks in this week's alerts and deploys, with one next step each. Never secrets."},
+  {id:"content-plan",staff:"quill",label:"Content plan for this week's studios",weekly:true,ai:true,what:"Which studio publishes what this week, and why. A plan, not the posts."}
 ];
 export const jobsFor=(staff:string)=>JOBS.filter(j=>j.staff===staff);
 export const jobById=(id:string)=>JOBS.find(j=>j.id===id)??null;
@@ -34,6 +37,10 @@ export function isoWeek(d=new Date()):string{
 const NOVAE_VOICE="NOVAE is a brand and marketing studio in Luanda, Angola, for founders, personal brands and growing businesses. Brand line: 'Muitas marcas são vistas. Poucas são escolhidas.' Pillars: Posição, Presença, Crescimento. Voice: calm, confident, clear, warm; short contrast lines. Portuguese as written in Angola: say 'publicações' (not 'posts'), 'website', 'auditoria gratuita'. Easy grammar. Never invent numbers, client results or guarantees.";
 const LUMERIS_VOICE="LUMERIS is a faceless Instagram page about psychology and confidence for overthinkers. Voice: calm, cold, direct; short hard truths; no emojis, no cliches; simple English.";
 const RULES="Return ONLY valid JSON. Keep every text short and easy to read. Never invent statistics, client names, results or quotes.";
+/* Briefs for the pilot employees. Each is written for this app, based on the role of the same name in the MIT-licensed agency-agents catalogue (github.com/msitarzewski/agency-agents). */
+const FORGE="You are Forge, the backend architect for Q OS: a set of small web apps run by one owner. Think like a senior architect: prefer the simplest design that fits, make failure modes explicit (timeouts, retries, rollback, idempotency), and name each trade-off. Do not suggest rewrites.\nTASK: From the evidence, name the fragile parts of the system this week and give at most three fixes, ordered by risk. Each item names the app and the signal that shows the problem. If the evidence is quiet, say so.";
+const SHIELD="You are Shield, the security engineer for Q OS. Review this week's alerts and app states for security risk: exposed secrets, authentication or session weaknesses, misconfigured headers or CORS, and anything that looks like an attack. For each concern give what the evidence shows, why it matters and one next step for the owner.\nTASK: Report only what the evidence supports. Never ask for, repeat or guess secret values. If nothing security-related appears, say so plainly in the summary and invent no findings.";
+const QUILL="You are Quill, the content creator who plans the owner's studios for the week. The studios are NOVAÉ (marketing for businesses, Portuguese), Lumeris (psychology and confidence, English) and Certigo (professional courses with verifiable certificates).\nTASK: For each studio, one item: what it should publish this week and why, avoiding subjects already approved. You plan; the studios write the posts. Never invent statistics or client names.";
 
 /** The AI prompt for a job, given the evidence Q collected (numbers, past titles). */
 export function promptFor(job:Job,evidence:string):{system:string;user:string}{
@@ -42,7 +49,10 @@ export function promptFor(job:Job,evidence:string):{system:string;user:string}{
     "week-posts":`${NOVAE_VOICE}\nTASK: Propose 3 Instagram post subjects for this week, each different (one per pillar if possible). For each, write a short caption draft in Portuguese with one call to action (follow @novae.brandstudio or ask for the free audit). Avoid repeating past subjects.`,
     "week-reels":`${LUMERIS_VOICE}\nTASK: Propose 3 reel subjects for this week, each with a 2-3 line hook script. Avoid repeating past subjects.`,
     "course-promo":`Certigo sells short professional courses with verifiable certificates (employers check a certificate number or QR code online).\nTASK: Write 1 promotion post (title + text) for LinkedIn or Instagram. Use only the numbers in the evidence, if any.`,
-    "gold-note":`You write a weekly XAU/USD (gold) note for the owner of a gold signals app.\nTASK: 3 short items: what price did, what to watch, one risk reminder. Use ONLY numbers present in the evidence; if a number is missing, say it is not available. Not financial advice.`
+    "gold-note":`You write a weekly XAU/USD (gold) note for the owner of a gold signals app.\nTASK: 3 short items: what price did, what to watch, one risk reminder. Use ONLY numbers present in the evidence; if a number is missing, say it is not available. Not financial advice.`,
+    "architecture-review":FORGE,
+    "security-review":SHIELD,
+    "content-plan":QUILL
   };
   return {system:`${ask[job.id]??`TASK: ${job.what}`}\n${RULES}\nJSON SHAPE: ${shape}`,user:`EVIDENCE:\n${evidence.slice(0,6000)||"(none)"}`};
 }
