@@ -15,10 +15,10 @@ const UNITS:Unit[] = [
  {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-39,z:-18,mission:"Create engaging educational experiences"},
  {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
-type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number]};
+type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"};
 type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
 const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
-const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color});
+const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});\nconst primitive=(shape:Exclude<Cube["shape"],"cube">,x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape});
 const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17], road:[number,number,number]=[.19,.23,.25], glass:[number,number,number]=[.28,.49,.56], dark:[number,number,number]=[.055,.075,.09], leaf:[number,number,number]=[.13,.31,.22], gold:[number,number,number]=[.62,.43,.22];
 scene.push(cube(0,-.7,0,110,1,88,ground),cube(0,-.1,0,7,.12,86,road),cube(0,-.08,0,104,.12,6,road));
@@ -107,10 +107,10 @@ for(let x=-42;x<=42;x+=14){
   scene.push(cube(x,.8,z,.18,1.6,.18,[.23,.28,.3]),cube(x,1.65,z,.42,.18,.42,[.76,.62,.38]));
  }
 }
-for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(cube(x,.9,z,.45,1.8,.45,[.31,.25,.18]),cube(x,2.15,z,2.2,2.6,2.2,leaf));}}
+for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(primitive("cylinder",x,.9,z,.34,1.8,.34,[.31,.25,.18]),primitive("cone",x,2.25,z,2.5,2.9,2.5,leaf),primitive("cone",x,3.05,z,1.8,2.1,1.8,[.16,.39,.26]));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
-for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(cube(x,1.35,z,.78,1.05,.46,u.color),cube(x,2.18,z,.54,.58,.54,[.82,.72,.59]),cube(x-.52,1.38,z,.25,.92,.3,u.color),cube(x+.52,1.38,z,.25,.92,.3,u.color),cube(x-.22,.48,z,.3,.88,.34,dark),cube(x+.22,.48,z,.3,.88,.34,dark));}
+for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(primitive("cylinder",x,1.35,z,.78,1.05,.46,u.color),primitive("sphere",x,2.18,z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",x-.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x+.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x-.22,.48,z,.3,.88,.34,dark),primitive("cylinder",x+.22,.48,z,.3,.88,.34,dark));}
 const OBJECTS=[...scene,...AVATARS];
 const POS:number[]=[];const NOR:number[]=[];
 const faces:[number[][],number[]][]=[
@@ -122,6 +122,33 @@ const faces:[number[][],number[]][]=[
  [[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]],[0,-1,0]]
 ];
 for(const [v,n] of faces){for(const i of [0,1,2,0,2,3]){POS.push(...v[i]);NOR.push(...n);}}
+function buildMesh(shape:"sphere"|"cylinder"|"cone"){
+ const positions:number[]=[],normals:number[]=[];
+ const segments=shape==="sphere"?20:24;
+ if(shape==="sphere"){
+  const rings=12;
+  for(let r=0;r<rings;r++){const a0=-Math.PI/2+r*Math.PI/rings,a1=-Math.PI/2+(r+1)*Math.PI/rings;
+   for(let i=0;i<segments;i++){const t0=i*2*Math.PI/segments,t1=(i+1)*2*Math.PI/segments;
+    const point=(a:number,t:number)=>[Math.cos(a)*Math.cos(t),Math.sin(a),Math.cos(a)*Math.sin(t)];
+    const p00=point(a0,t0),p01=point(a0,t1),p10=point(a1,t0),p11=point(a1,t1);
+    for(const p of [p00,p10,p11,p00,p11,p01]){positions.push(...p);normals.push(...p);}
+   }
+  }
+ }else{
+  for(let i=0;i<segments;i++){
+   const a=i*2*Math.PI/segments,b=(i+1)*2*Math.PI/segments;
+   const p0=[Math.cos(a),-.5,Math.sin(a)],p1=[Math.cos(b),-.5,Math.sin(b)];
+   const top0=shape==="cone"?[0,.5,0] as number[]:[Math.cos(a),.5,Math.sin(a)];
+   const top1=shape==="cone"?[0,.5,0] as number[]:[Math.cos(b),.5,Math.sin(b)];
+   const normal=(x:number,z:number)=>{const l=Math.hypot(x,shape==="cone"?.5:0,z)||1;return [x/l,shape==="cone"?.5/l:0,z/l];};
+   const n0=normal(Math.cos((a+b)/2),Math.sin((a+b)/2));
+   for(const p of [p0,top0,top1,p0,top1,p1]){positions.push(...p);normals.push(...n0);}
+   for(const [p,n] of [[ [0,.5,0],[0,1,0] ],[top1,[0,1,0]],[top0,[0,1,0]],[ [0,-.5,0],[0,-1,0] ],[p0,[0,-1,0]],[p1,[0,-1,0] ]] as [number[],number[]][]) {positions.push(...p);normals.push(...n);}
+  }
+ }
+ return {positions,normals,count:positions.length/3};
+}
+const GEOMETRY={cube:{positions:POS,normals:NOR,count:POS.length/3},sphere:buildMesh("sphere"),cylinder:buildMesh("cylinder"),cone:buildMesh("cone")};
 function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
@@ -153,11 +180,8 @@ export function QWorldView(){
    gl.attachShader(program,shader(gl,gl.VERTEX_SHADER,VS));gl.attachShader(program,shader(gl,gl.FRAGMENT_SHADER,FS));gl.linkProgram(program);
    if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error("WebGL link failed");
    gl.useProgram(program);
-   const pb=gl.createBuffer(),nb=gl.createBuffer();if(!pb||!nb)throw Error("WebGL buffers unavailable");
-   gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(POS),gl.STATIC_DRAW);
-   const p=gl.getAttribLocation(program,"p");gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,0,0);
-   gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(NOR),gl.STATIC_DRAW);
-   const n=gl.getAttribLocation(program,"n");gl.enableVertexAttribArray(n);gl.vertexAttribPointer(n,3,gl.FLOAT,false,0,0);
+   const buffers=Object.fromEntries(Object.entries(GEOMETRY).map(([key,mesh])=>{const pb=gl!.createBuffer(),nb=gl!.createBuffer();if(!pb||!nb)throw Error("WebGL buffers unavailable");gl!.bindBuffer(gl!.ARRAY_BUFFER,pb);gl!.bufferData(gl!.ARRAY_BUFFER,new Float32Array(mesh.positions),gl!.STATIC_DRAW);gl!.bindBuffer(gl!.ARRAY_BUFFER,nb);gl!.bufferData(gl!.ARRAY_BUFFER,new Float32Array(mesh.normals),gl!.STATIC_DRAW);return [key,{pb,nb,count:mesh.count}];})) as Record<string,{pb:WebGLBuffer;nb:WebGLBuffer;count:number}>;
+   const pLoc=gl.getAttribLocation(program,"p"),nLoc=gl.getAttribLocation(program,"n");gl.enableVertexAttribArray(pLoc);gl.enableVertexAttribArray(nLoc);
    const mvp=gl.getUniformLocation(program,"mvp"),color=gl.getUniformLocation(program,"color"),intensity=gl.getUniformLocation(program,"intensity");
    gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.05,.065,1);
    const resize=()=>{const rect=el.getBoundingClientRect(),quality=visualsRef.current.quality,dpr=Math.min(window.devicePixelRatio||1,quality==="high"?1.5:quality==="balanced"?1.25:1),w=Math.max(1,Math.floor(rect.width*dpr)),h=Math.max(1,Math.floor(rect.height*dpr));if(el.width!==w||el.height!==h){el.width=w;el.height=h;gl!.viewport(0,0,w,h);}};
@@ -170,8 +194,8 @@ export function QWorldView(){
     const target=mode==="isometric"?[0,0,0] :[position.current.x,1.45,position.current.z];
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
-    for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,36);}
-    if(mode==="third-person"){const p=position.current,parts=[cube(p.x,1.35,p.z,.78,1.05,.46,[.82,.16,.19]),cube(p.x,2.18,p.z,.54,.58,.54,[.82,.72,.59]),cube(p.x-.52,1.38,p.z,.25,.92,.3,[.82,.16,.19]),cube(p.x+.52,1.38,p.z,.25,.92,.3,[.82,.16,.19]),cube(p.x-.22,.48,p.z,.3,.88,.34,dark),cube(p.x+.22,.48,p.z,.3,.88,.34,dark)];for(const o of parts){gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,36);}}
+    for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}
+    if(mode==="third-person"){const pos=position.current,parts=[primitive("cylinder",pos.x,1.35,pos.z,.78,1.05,.46,[.82,.16,.19]),primitive("sphere",pos.x,2.18,pos.z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",pos.x-.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x+.52,1.38,pos.z,.25,.92,.3,[.82,.16,.19]),primitive("cylinder",pos.x-.22,.48,pos.z,.3,.88,.34,dark),primitive("cylinder",pos.x+.22,.48,pos.z,.3,.88,.34,dark)];for(const o of parts){const mesh=buffers[o.shape??"cube"];gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.pb);gl!.vertexAttribPointer(pLoc,3,gl!.FLOAT,false,0,0);gl!.bindBuffer(gl!.ARRAY_BUFFER,mesh.nb);gl!.vertexAttribPointer(nLoc,3,gl!.FLOAT,false,0,0);gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,mesh.count);}}
    }raf=window.requestAnimationFrame(render);};
    const observer=new ResizeObserver(resize);observer.observe(el);raf=window.requestAnimationFrame(render);
    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);};
