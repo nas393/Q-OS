@@ -66,42 +66,38 @@ scene.push(
 for(const x of [-16.8,-11.2,-5.6,0,5.6,11.2,16.8]){
  scene.push(primitive("cylinder",x,2.45,12.7,.28,4.8,.28,[.52,.57,.57]));
 }
-// Exterior architectural crown and entrance frame; intentionally no roof over the cutaway.
+// Executive facade and single-height glazed entrance.
 scene.push(
- cube(0,17.95,-12.6,37,.55,1.1,dark),
- cube(-18,9.05,-.2,.9,18.1,27,[.19,.24,.27]),
- cube(18,9.05,-.2,.9,18.1,27,[.19,.24,.27]),
- cube(0,18.15,0,37,.3,.5,gold),
+ cube(0,5.65,-13.1,37,.55,1.1,dark),
+ cube(-18,2.8,-.2,.9,5.6,27,[.19,.24,.27]),
+ cube(18,2.8,-.2,.9,5.6,27,[.19,.24,.27]),
+ cube(0,5.9,0,37,.3,.5,gold),
  cube(0,1.1,13.15,15,.28,1.2,dark),
- cube(0,2.7,13.3,12,3.2,.34,[.28,.49,.56]),
+ cube(0,2.7,13.3,12,3.2,.34,glass),
  cube(-6.3,2.7,13.3,.32,3.6,.5,gold),
  cube(6.3,2.7,13.3,.32,3.6,.5,gold),
- cube(0,4.65,13.3,13,.24,.7,gold),
- cube(0,17.0,0,2.4,.3,2.4,gold)
+ cube(0,4.65,13.3,13,.24,.7,gold)
 );
-// Reusable office fit-out: desk, display, chair, storage, lounge seat and a unit-colour floor marker.
+// Individual executive suites: compact, separated furniture layouts on one continuous floor.
 for(const u of UNITS){
  const y=floorY(),x=u.x,z=u.z;
  const accent:[number,number,number]=u.color;
  scene.push(
-  cube(x,y+.31,z,10.8,.08,23.2,[.19,.23,.25]),
-  cube(x,y+.48,z+1.9,4.6,.18,1.6,accent),
-  cube(x,y+.98,z+1.9,4.3,.82,1.35,[.28,.32,.34]),
-  cube(x,y+1.52,z+1.9,2.15,1.18,.14,dark),
-  cube(x,y+1.53,z+1.9,1.92,.94,.08,glass),
-  cube(x,y+.62,z+3.75,2.5,.16,1.3,dark),
-  cube(x,y+1.05,z+3.75,1.1,.8,.95,[.2,.24,.27]),
-  cube(x-4.1,y+1.05,z-5.5,1.8,1.25,1.2,dark),
-  cube(x-4.1,y+1.72,z-5.5,1.9,.12,1.3,accent),
-  cube(x+3.5,y+.75,z-5.6,2.6,.8,1.1,[.24,.28,.3]),
-  cube(x+3.5,y+1.2,z-5.6,2.6,.12,1.1,accent),
-  cube(x,y+2.45,z-10.55,5.2,.18,.12,accent)
- );
- // A subtle office entrance frame and illuminated room marker.
- scene.push(
-  cube(x-5.45,y+1.65,8.5,.16,3.3,.22,gold),
-  cube(x+5.45,y+1.65,8.5,.16,3.3,.22,gold),
-  cube(x,y+3.35,8.5,10.9,.16,.22,accent)
+  cube(x,y+.31,z,10.4,.08,7.35,[.19,.23,.25]),
+  cube(x,y+.48,z+1.0,3.6,.18,1.15,accent),
+  cube(x,y+.98,z+1.0,3.4,.82,1.0,[.28,.32,.34]),
+  cube(x,y+1.52,z+1.0,1.75,1.18,.14,dark),
+  cube(x,y+1.53,z+1.0,1.55,.94,.08,glass),
+  cube(x,y+.62,z+2.25,2.0,.16,.9,dark),
+  cube(x,y+1.05,z+2.25,.9,.8,.7,[.2,.24,.27]),
+  cube(x-3.6,y+1.05,z-1.65,1.5,1.15,.95,dark),
+  cube(x-3.6,y+1.68,z-1.65,1.6,.12,1.05,accent),
+  cube(x+3.35,y+.75,z-1.7,2.0,.8,.9,[.24,.28,.3]),
+  cube(x+3.35,y+1.2,z-1.7,2.0,.12,.9,accent),
+  cube(x,y+2.45,z-3.25,4.6,.18,.12,accent),
+  cube(x-5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
+  cube(x+5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
+  cube(x,y+3.35,z+3.0,10.4,.16,.22,accent)
  );
 }
 // Entrance forecourt is compact and directly connected to the single building.
@@ -275,7 +271,7 @@ export function QWorldView(){
   <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected floor with W A S D or arrow keys · choose an office from the directory"}</span></div>
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
-    {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with three floors and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
+    {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
     {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ONE BUILDING · NINE DEDICATED OFFICES</span></div>}
     {mode==="third-person"&&<div className="qw-pad" aria-label="Walk controls"><button type="button" onClick={()=>move(0,-2)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>move(-2,0)} aria-label="Move left">←</button><button type="button" onClick={()=>move(2,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>move(0,2)} aria-label="Move backward">↓</button></div>}
    </section>
