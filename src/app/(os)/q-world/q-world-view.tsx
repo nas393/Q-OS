@@ -21,7 +21,7 @@ const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",br
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});
 const primitive=(shape:Exclude<Cube["shape"],"cube">,x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape});
 const scene:Cube[]=[];
-const ground:[number,number,number]=[.12,.16,.17],road:[number,number,number]=[.19,.23,.25],glass:[number,number,number]=[.28,.49,.56],dark:[number,number,number]=[.055,.075,.09],leaf:[number,number,number]=[.13,.31,.22],gold:[number,number,number]=[.62,.43,.22];
+const ground:[number,number,number]=[.12,.16,.17],glass:[number,number,number]=[.28,.49,.56],dark:[number,number,number]=[.055,.075,.09],gold:[number,number,number]=[.62,.43,.22];
 const floorY=(floor:number)=>.35+floor*5.8;
 const roomZ=0;
 // A single cutaway headquarters shell: three office floors, open front elevation,
@@ -133,7 +133,7 @@ const faces:[number[][],number[]][]=[
  [[[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5],[-.5,.5,-.5]],[0,1,0]],
  [[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]],[0,-1,0]]
 ];
-for(const [v,n] of faces){for(const i of [0,1,2,0,2,3]){POS.push(...v[i]);NOR.push(...n);}}
+for(const [v] of faces){for(const i of [0,1,2,0,2,3]){POS.push(...v[i]);NOR.push(...n);}}
 function buildMesh(shape:"sphere"|"cylinder"|"cone"){
  const positions:number[]=[],normals:number[]=[];
  const segments=shape==="sphere"?20:24;
