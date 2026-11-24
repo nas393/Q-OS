@@ -133,7 +133,7 @@ const faces:[number[][],number[]][]=[
  [[[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5],[-.5,.5,-.5]],[0,1,0]],
  [[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]],[0,-1,0]]
 ];
-for(const [v] of faces){for(const i of [0,1,2,0,2,3]){POS.push(...v[i]);NOR.push(...n);}}
+for(const [v,n] of faces){for(const i of [0,1,2,0,2,3]){POS.push(...v[i]);NOR.push(...n);}}
 function buildMesh(shape:"sphere"|"cylinder"|"cone"){
  const positions:number[]=[],normals:number[]=[];
  const segments=shape==="sphere"?20:24;
