@@ -15,7 +15,7 @@ const UNITS:Unit[] = [
  {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-39,z:-18,mission:"Create engaging educational experiences"},
  {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
-type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"|"beveled"};
+type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"|"beveled"|"frustum"};
 type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
 const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});
@@ -56,6 +56,8 @@ function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,
    scene.push(cube(x-w/2-.17,yy-.72,z+zz,.1,1.22,.1,trim),cube(x+w/2+.17,yy-.72,z+zz,.1,1.22,.1,trim));
   }
  }
+ // Tapered architectural crown: a shallow sloped roofline above the parapet.
+ scene.push(primitive("frustum",x,h+.43,z,w+.42,.22,d+.42,trim));
  // Distinctive entrance, canopy, illuminated portal and approach steps.
  scene.push(
   cube(x,h*.34,z-d/2-.28,w*.34,h*.64,.12,dark),
@@ -207,7 +209,29 @@ function buildBeveledBox(){
  }
  return {positions,normals,count:positions.length/3};
 }
-const GEOMETRY={cube:{positions:POS,normals:NOR,count:POS.length/3},sphere:buildMesh("sphere"),cylinder:buildMesh("cylinder"),cone:buildMesh("cone"),beveled:buildBeveledBox()};
+function buildFrustum(){
+ const positions:number[]=[],normals:number[]=[];
+ const bottom=.5,top=.37,y0=-.5,y1=.5;
+ const tri=(a:number[],b:number[],c:number[],n:number[])=>{for(const p of [a,b,c]){positions.push(...p);normals.push(...n);}};
+ const quad=(a:number[],b:number[],c:number[],d:number[],n:number[])=>{tri(a,b,c,n);tri(a,c,d,n);};
+ // Four sloped faces with deliberate normals for clean directional lighting.
+ const sides=[
+  [[-bottom,y0,-bottom],[bottom,y0,-bottom],[top,y1,-top],[-top,y1,-top],[0,0,-1]],
+  [[bottom,y0,-bottom],[bottom,y0,bottom],[top,y1,top],[top,y1,-top],[1,0,0]],
+  [[bottom,y0,bottom],[-bottom,y0,bottom],[-top,y1,top],[top,y1,top],[0,0,1]],
+  [[-bottom,y0,bottom],[-bottom,y0,-bottom],[-top,y1,-top],[-top,y1,top],[-1,0,0]]
+ ] as [number[],number[],number[],number[],number[]][];
+ for(const [a,b,c,d,n] of sides){
+  const u=[c[0]-a[0],c[1]-a[1],c[2]-a[2]],v=[d[0]-a[0],d[1]-a[1],d[2]-a[2]];
+  const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  const len=Math.hypot(...normal)||1;const corrected=normal.map(q=>q/len);
+  quad(a,b,c,d,corrected);
+ }
+ quad([-top,y1,-top],[-top,y1,top],[top,y1,top],[top,y1,-top],[0,1,0]);
+ quad([-bottom,y0,-bottom],[bottom,y0,-bottom],[bottom,y0,bottom],[-bottom,y0,bottom],[0,-1,0]);
+ return {positions,normals,count:positions.length/3};
+}
+const GEOMETRY={cube:{positions:POS,normals:NOR,count:POS.length/3},sphere:buildMesh("sphere"),cylinder:buildMesh("cylinder"),cone:buildMesh("cone"),beveled:buildBeveledBox(),frustum:buildFrustum()};
 function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
