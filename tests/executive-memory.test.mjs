@@ -1,4 +1,4 @@
-import test from "node:test";import assert from "node:assert/strict";import {normalizeMemoryText,memoryInputSchema,MEMORY_CATEGORIES} from "../src/lib/executive-memory.ts";
+import test from "node:test";import assert from "node:assert/strict";import {normalizeMemoryText,memoryInputSchema,MEMORY_CATEGORIES} from "../src/lib/executive-memory-contract.ts";
 test("categories are explicit",()=>{assert.ok(MEMORY_CATEGORIES.includes("strategic_objective"));assert.equal(memoryInputSchema.safeParse({category:"other",text:"A useful durable preference"}).success,false);});
 test("JSON memory text is normalized",()=>{assert.equal(normalizeMemoryText({text:"  Keep decisions evidence-led. "}),"Keep decisions evidence-led.");assert.equal(normalizeMemoryText({x:1}),"");});
 test("capture requires meaningful bounded text",()=>{assert.equal(memoryInputSchema.safeParse({category:"working_preference",text:"ok"}).success,false);assert.equal(memoryInputSchema.safeParse({category:"working_preference",text:"A durable preference"}).success,true);assert.equal(memoryInputSchema.safeParse({category:"lesson",text:"x".repeat(2001)}).success,false);});

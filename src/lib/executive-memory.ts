@@ -1,7 +1,6 @@
-import {z} from "zod";import {getDb} from "@/lib/db";
-export const MEMORY_CATEGORIES=["working_preference","strategic_objective","operating_context","decision","commitment","lesson","project_context"] as const;
-export const memoryInputSchema=z.object({category:z.enum(MEMORY_CATEGORIES),text:z.string().trim().min(3).max(2000),confidence:z.number().min(0).max(1).default(1),expiresAt:z.string().datetime().nullable().optional(),supersedesId:z.string().uuid().optional()});
-export function normalizeMemoryText(v:unknown):string{if(typeof v==="string")return v.trim().slice(0,2000);if(v&&typeof v==="object"&&"text" in v&&typeof (v as {text?:unknown}).text==="string")return (v as {text:string}).text.trim().slice(0,2000);return "";}
+import {getDb} from "@/lib/db";
+export {MEMORY_CATEGORIES,memoryInputSchema,normalizeMemoryText} from "@/lib/executive-memory-contract";
+import {normalizeMemoryText} from "@/lib/executive-memory-contract";
 export async function retrieveExecutiveMemory(userId:string,requestText:string):Promise<string>{
  const terms=[...new Set(requestText.toLowerCase().split(/[^a-z0-9À-ÿ]+/i).filter(w=>w.length>=4))].slice(0,6),values:unknown[]=[userId];
  const match=terms.map((term,i)=>{values.push(`%${term}%`);return `content->>'text' ILIKE $${i+2}`;}).join(" OR ");
