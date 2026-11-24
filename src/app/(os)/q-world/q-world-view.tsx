@@ -152,6 +152,33 @@ for(const u of UNITS){
   );
  }
 }
+// Premium office fit-out: layered rugs, executive workstations, display panels, task chairs and biophilic accents.
+for(const u of UNITS.filter(unit=>unit.id!=="q")){
+ const x=u.x,z=u.z,y=floorY(),accent:[number,number,number]=u.color;
+ scene.push(
+  cube(x,z===0?y+.33:y+.33,z,8.8,.035,6.4,[.13,.16,.17]),
+  // Desk top with slim metal legs and a raised display.
+  cube(x+1.25,y+.92,z-1.15,3.25,.16,1.55,[.34,.29,.23]),
+  cube(x-.05,y+.49,z-1.15,.08,.86,.08,[.48,.39,.27]),
+  cube(x+2.55,y+.49,z-1.15,.08,.86,.08,[.48,.39,.27]),
+  cube(x+1.25,y+1.62,z-1.55,1.45,.82,.12,dark),
+  cube(x+1.25,y+1.62,z-1.47,1.3,.66,.035,[.22,.35,.39]),
+  cube(x+1.25,y+1.12,z-.25,.58,.08,.36,[.72,.73,.68]),
+  primitive("cylinder",x+1.25,y+.58,z+.15,.58,.48,.58,[.16,.19,.2]),
+  cube(x+1.25,y+1.0,z+.42,.78,.82,.18,accent),
+  // Visitor chair and lounge seating.
+  cube(x-2.9,y+.55,z+.45,1.8,.68,1.15,[.22,.26,.28]),
+  cube(x-2.9,y+1.0,z+.02,1.8,.72,.2,[.28,.32,.34]),
+  cube(x+3.45,y+.48,z+1.75,1.55,.52,.82,[.25,.29,.3]),
+  cube(x+3.45,y+.86,z+1.42,1.55,.72,.18,[.31,.35,.36]),
+  // Indoor planting and warm corner light.
+  primitive("cylinder",x-4.25,y+.48,z-2.55,.58,.72,.58,[.25,.2,.15]),
+  primitive("sphere",x-4.25,y+1.38,z-2.55,.82,1.05,.82,[.16,.31,.23]),
+  primitive("cylinder",x+4.15,y+1.25,z-2.35,.075,2.1,.075,gold),
+  primitive("sphere",x+4.15,y+2.35,z-2.35,.34,.22,.34,[.88,.69,.42]),
+  cube(x,y+.36,z+3.0,5.2,.035,.055,accent)
+ );
+}
 // A clearly defined central circulation spine connects reception to the executive suites.
 scene.push(
  cube(0,.405,0,3.2,.035,24,[.29,.32,.33]),
