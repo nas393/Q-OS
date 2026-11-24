@@ -16,6 +16,8 @@ const UNITS:Unit[] = [
  {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
 type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number]};
+type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;quality:"performance"|"balanced"|"high";labels:boolean};
+const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,quality:"balanced",labels:true};
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color});
 const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17], road:[number,number,number]=[.19,.23,.25], glass:[number,number,number]=[.28,.49,.56], dark:[number,number,number]=[.055,.075,.09], leaf:[number,number,number]=[.13,.31,.22], gold:[number,number,number]=[.62,.43,.22];
@@ -47,7 +49,7 @@ function mul(a:number[],b:number[]){const o=new Array(16).fill(0);for(let c=0;c<
 function perspective(f:number,aspect:number,n:number,far:number){const t=1/Math.tan(f/2);return [t/aspect,0,0,0,0,t,0,0,0,0,(far+n)/(n-far),-1,0,0,2*far*n/(n-far),0];}
 function lookAt(e:number[],c:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};const sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const z=norm(sub(e,c)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*e[i],0),-y.reduce((s,v,i)=>s+v*e[i],0),-z.reduce((s,v,i)=>s+v*e[i],0),1];}
 const VS=`attribute vec3 p;attribute vec3 n;uniform mat4 mvp;varying vec3 normal;void main(){normal=n;gl_Position=mvp*vec4(p,1.0);}`;
-const FS=`precision mediump float;uniform vec3 color;varying vec3 normal;void main(){float light=.48+max(dot(normalize(normal),normalize(vec3(-.4,.9,.5))),0.0)*.55;gl_FragColor=vec4(color*light,1.0);}`;
+const FS=`precision mediump float;uniform vec3 color;uniform float intensity;varying vec3 normal;void main(){float light=.48+max(dot(normalize(normal),normalize(vec3(-.4,.9,.5))),0.0)*.55;gl_FragColor=vec4(color*light*intensity,1.0);}`;
 function shader(gl:WebGLRenderingContext,type:number,src:string){const s=gl.createShader(type);if(!s)throw Error("WebGL shader unavailable");gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||"Shader compile failed");return s;}
 function translateScale(o:Cube){return [o.sx,0,0,0,0,o.sy,0,0,0,0,o.sz,0,o.x,o.y,o.z,1];}
 
@@ -56,7 +58,13 @@ export function QWorldView(){
  const [mode,setMode]=useState<"isometric"|"third-person">("isometric");
  const [selected,setSelected]=useState("q");
  const [webgl,setWebgl]=useState(true);
+ const [visuals,setVisuals]=useState<VisualSettings>(DEFAULT_VISUALS);
+ const [directorOpen,setDirectorOpen]=useState(true);
  const position=useRef({x:0,z:24,yaw:0});
+ const visualsRef=useRef(visuals);visualsRef.current=visuals;
+ useEffect(()=>{try{const saved=localStorage.getItem("q-world.visuals");if(saved){const parsed=JSON.parse(saved) as Partial<VisualSettings>;setVisuals(v=>({...v,...parsed}));}}catch{}},[]);
+ useEffect(()=>{try{localStorage.setItem("q-world.visuals",JSON.stringify(visuals));}catch{}},[visuals]);
+ const updateVisuals=(patch:Partial<VisualSettings>)=>setVisuals(v=>({...v,...patch}));
  useEffect(()=>{
   const el=canvas.current;if(!el)return;
   let gl:WebGLRenderingContext|null=null;
@@ -73,9 +81,9 @@ export function QWorldView(){
    const p=gl.getAttribLocation(program,"p");gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,0,0);
    gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(NOR),gl.STATIC_DRAW);
    const n=gl.getAttribLocation(program,"n");gl.enableVertexAttribArray(n);gl.vertexAttribPointer(n,3,gl.FLOAT,false,0,0);
-   const mvp=gl.getUniformLocation(program,"mvp"),color=gl.getUniformLocation(program,"color");
+   const mvp=gl.getUniformLocation(program,"mvp"),color=gl.getUniformLocation(program,"color"),intensity=gl.getUniformLocation(program,"intensity");
    gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.035,.05,.065,1);
-   const resize=()=>{const rect=el.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,1.5),w=Math.max(1,Math.floor(rect.width*dpr)),h=Math.max(1,Math.floor(rect.height*dpr));if(el.width!==w||el.height!==h){el.width=w;el.height=h;gl!.viewport(0,0,w,h);}};
+   const resize=()=>{const rect=el.getBoundingClientRect(),quality=visualsRef.current.quality,dpr=Math.min(window.devicePixelRatio||1,quality==="high"?1.5:quality==="balanced"?1.25:1),w=Math.max(1,Math.floor(rect.width*dpr)),h=Math.max(1,Math.floor(rect.height*dpr));if(el.width!==w||el.height!==h){el.width=w;el.height=h;gl!.viewport(0,0,w,h);}};
    const keys=new Set<string>();const down=(e:KeyboardEvent)=>{if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());if(mode==="third-person")e.preventDefault();}};const up=(e:KeyboardEvent)=>keys.delete(e.key.toLowerCase());
    window.addEventListener("keydown",down);window.addEventListener("keyup",up);
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
