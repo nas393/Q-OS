@@ -5,11 +5,11 @@ import "./q-world.css";
 
 type Unit = { id:string; name:string; department:string; role:string; color:[number,number,number]; x:number; z:number; mission:string };
 const UNITS:Unit[] = [
- {id:"q",name:"Q EXECUTIVE OFFICE",department:"Executive",role:"Owner cockpit and company command",color:[.82,.16,.19],x:0,z:8,mission:"Set direction, review priorities and approve consequential company actions"},
+ {id:"q",name:"Q EXECUTIVE OFFICE",department:"Executive",role:"Owner cockpit and company command",color:[.82,.16,.19],x:0,z:0,mission:"Set direction, review priorities and approve consequential company actions"},
  {id:"novae",name:"NOVAÉ",department:"Commercial & Growth",role:"Brand and growth studio",color:[.79,.58,.26],x:-11,z:8,mission:"Acquire clients and deliver brand services"},
  {id:"certigo",name:"CERTIGO",department:"Education",role:"Learning platform",color:[.18,.52,.88],x:11,z:8,mission:"Build and monetise professional learning"},
- {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-11,z:0,mission:"Create engaging educational experiences"},
- {id:"lumeris",name:"LUMERIS",department:"Media & Community",role:"Media and audience business",color:[.82,.19,.22],x:0,z:0,mission:"Grow audience and monetise media"},
+ {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:0,z:8,mission:"Create engaging educational experiences"},
+ {id:"lumeris",name:"LUMERIS",department:"Media & Community",role:"Media and audience business",color:[.82,.19,.22],x:-11,z:0,mission:"Grow audience and monetise media"},
  {id:"radio",name:"RADIO CEDARS",department:"Media & Community",role:"Audio and community media",color:[.54,.38,.78],x:11,z:0,mission:"Build a loyal audience and sponsorship revenue"},
  {id:"lep",name:"LUANDA EDGE PULSE",department:"Intelligence",role:"Market intelligence",color:[.2,.68,.57],x:-11,z:-8,mission:"Turn verified market signals into decisions"},
  {id:"dalil",name:"DALIL AL-BAZOURIEH",department:"Directory & Network",role:"Business directory",color:[.76,.62,.4],x:0,z:-8,mission:"Build a trusted local business discovery network"},
@@ -57,11 +57,8 @@ scene.push(
  cube(5.85,2.45,-.1,.22,4.7,24,[.31,.38,.41]),
  cube(0,2.45,-4.0,35,.18,.22,[.31,.38,.41]),
  cube(0,2.45,4.0,35,.18,.22,[.31,.38,.41]),
- cube(0,.58,5.35,7.8,.28,1.8,[.23,.28,.31]),
- cube(0,1.35,5.35,7.4,1.25,1.5,dark),
- cube(0,2.1,5.35,4.2,.18,.12,gold),
- cube(0,3.0,-12.35,10,.2,.18,gold),
- cube(0,3.75,-12.35,7,.95,.16,glass)
+ cube(0,3.0,-3.65,9.8,.2,.18,gold),
+ cube(0,3.75,-3.65,7,.95,.16,glass)
 );
 for(const x of [-16.8,-11.2,-5.6,0,5.6,11.2,16.8]){
  scene.push(primitive("cylinder",x,2.45,12.7,.28,4.8,.28,[.52,.57,.57]));
@@ -82,23 +79,44 @@ scene.push(
 for(const u of UNITS){
  const y=floorY(),x=u.x,z=u.z;
  const accent:[number,number,number]=u.color;
- scene.push(
-  cube(x,y+.31,z,10.4,.08,7.35,[.19,.23,.25]),
-  cube(x,y+.48,z+1.0,3.6,.18,1.15,accent),
-  cube(x,y+.98,z+1.0,3.4,.82,1.0,[.28,.32,.34]),
-  cube(x,y+1.52,z+1.0,1.75,1.18,.14,dark),
-  cube(x,y+1.53,z+1.0,1.55,.94,.08,glass),
-  cube(x,y+.62,z+2.25,2.0,.16,.9,dark),
-  cube(x,y+1.05,z+2.25,.9,.8,.7,[.2,.24,.27]),
-  cube(x-3.6,y+1.05,z-1.65,1.5,1.15,.95,dark),
-  cube(x-3.6,y+1.68,z-1.65,1.6,.12,1.05,accent),
-  cube(x+3.35,y+.75,z-1.7,2.0,.8,.9,[.24,.28,.3]),
-  cube(x+3.35,y+1.2,z-1.7,2.0,.12,.9,accent),
-  cube(x,y+2.45,z-3.25,4.6,.18,.12,accent),
-  cube(x-5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
-  cube(x+5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
-  cube(x,y+3.35,z+3.0,10.4,.16,.22,accent)
- );
+ if(u.id==="q"){
+  // Private owner suite: reception facing the entrance, boardroom table and executive desk behind it.
+  scene.push(
+   cube(0,y+.31,0,10.8,.08,7.5,[.19,.23,.25]),
+   cube(0,y+.48,2.35,6.6,.18,1.05,gold),
+   cube(0,y+1.02,2.35,6.2,.9,.85,dark),
+   cube(0,y+1.5,2.35,4.6,.12,.08,glass),
+   cube(0,y+.42,-.05,4.4,.16,2.0,[.22,.26,.28]),
+   cube(0,y+.78,-.05,4.0,.55,1.65,[.32,.36,.38]),
+   cube(-2.55,y+.42,-.05,.16,.72,.16,gold),
+   cube(2.55,y+.42,-.05,.16,.72,.16,gold),
+   cube(0,y+.48,-2.45,3.8,.18,1.05,[.82,.16,.19]),
+   cube(0,y+.98,-2.45,3.6,.82,.9,[.28,.32,.34]),
+   cube(0,y+1.52,-2.45,1.9,1.18,.14,dark),
+   cube(0,y+1.53,-2.45,1.7,.94,.08,glass),
+   cube(-5.2,y+1.65,-2.9,.16,3.3,.22,gold),
+   cube(5.2,y+1.65,-2.9,.16,3.3,.22,gold),
+   cube(0,y+3.35,-2.9,10.4,.16,.22,accent)
+  );
+ }else{
+  scene.push(
+   cube(x,y+.31,z,10.4,.08,7.35,[.19,.23,.25]),
+   cube(x,y+.48,z+1.0,3.6,.18,1.15,accent),
+   cube(x,y+.98,z+1.0,3.4,.82,1.0,[.28,.32,.34]),
+   cube(x,y+1.52,z+1.0,1.75,1.18,.14,dark),
+   cube(x,y+1.53,z+1.0,1.55,.94,.08,glass),
+   cube(x,y+.62,z+2.25,2.0,.16,.9,dark),
+   cube(x,y+1.05,z+2.25,.9,.8,.7,[.2,.24,.27]),
+   cube(x-3.6,y+1.05,z-1.65,1.5,1.15,.95,dark),
+   cube(x-3.6,y+1.68,z-1.65,1.6,.12,1.05,accent),
+   cube(x+3.35,y+.75,z-1.7,2.0,.8,.9,[.24,.28,.3]),
+   cube(x+3.35,y+1.2,z-1.7,2.0,.12,.9,accent),
+   cube(x,y+2.45,z-3.25,4.6,.18,.12,accent),
+   cube(x-5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
+   cube(x+5.2,y+1.65,z+3.0,.16,3.3,.22,gold),
+   cube(x,y+3.35,z+3.0,10.4,.16,.22,accent)
+  );
+ }
 }
 // Entrance forecourt is compact and directly connected to the single building.
 scene.push(
@@ -272,7 +290,7 @@ export function QWorldView(){
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
-    {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ONE BUILDING · NINE DEDICATED OFFICES</span></div>}
+    {visuals.labels&&<div className="qw-overlay"><b>Q HEADQUARTERS</b><span>ONE EXECUTIVE HQ · EIGHT BUSINESS UNITS</span></div>}
     {mode==="third-person"&&<div className="qw-pad" aria-label="Walk controls"><button type="button" onClick={()=>move(0,-2)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>move(-2,0)} aria-label="Move left">←</button><button type="button" onClick={()=>move(2,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>move(0,2)} aria-label="Move backward">↓</button></div>}
    </section>
    <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED BUSINESS UNIT</span><h2>{active.name}</h2><div className="qw-floor-tag">SINGLE-LEVEL EXECUTIVE SUITE</div><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
