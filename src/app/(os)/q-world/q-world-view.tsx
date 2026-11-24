@@ -58,6 +58,27 @@ scene.push(
 for(const x of [-16.8,-11.2,-5.6,0,5.6,11.2,16.8]){
  scene.push(primitive("cylinder",x,2.45,12.7,.28,4.8,.28,[.52,.57,.57]));
 }
+// Internal glazed partitions create nine distinct executive suites with clear door openings.
+for(const x of [-5.5,5.5]){
+ for(const [z0,z1] of [[-12,-9.25],[-6.75,-1.25],[1.25,6.75],[9.25,12]] as [number,number][]){
+  const mid=(z0+z1)/2,len=z1-z0;
+  scene.push(
+   cube(x,1.8,mid,.18,3.6,len,[.24,.31,.34]),
+   cube(x,3.85,mid,.12,.32,len,[.3,.48,.52]),
+   cube(x-.13,1.75,z0,.12,3.5,.12,gold),
+   cube(x-.13,1.75,z1,.12,3.5,.12,gold)
+  );
+ }
+}
+// Warm linear ceiling fixtures and discreet perimeter lighting over each office bay.
+for(const u of UNITS){
+ scene.push(
+  cube(u.x,5.22,u.z-2.5,5.8,.12,.22,[.78,.62,.39]),
+  cube(u.x,5.22,u.z+2.5,3.8,.12,.16,[.52,.56,.58]),
+  cube(u.x-4.5,5.12,u.z, .12,.16,3.8,[.62,.48,.3]),
+  cube(u.x+4.5,5.12,u.z, .12,.16,3.8,[.62,.48,.3])
+ );
+}
 // Executive facade and single-height glazed entrance.
 scene.push(
  cube(0,5.65,-13.1,37,.55,1.1,dark),
