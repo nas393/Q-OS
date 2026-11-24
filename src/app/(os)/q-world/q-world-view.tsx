@@ -33,7 +33,7 @@ for(const u of UNITS.slice(1)){building(u.x,u.z,10,8,7,u.color);}
 for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(cube(x,.9,z,.45,1.8,.45,[.31,.25,.18]),cube(x,2.15,z,2.2,2.6,2.2,leaf));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
-for(const u of UNITS){AVATARS.push(cube(u.x+7,.75,u.z+6,.85,1.5,.7,u.color),cube(u.x+7,1.85,u.z+6,.8,.7,.72,[.82,.72,.59]),cube(u.x+7,.1,u.z+6,.6,.2,.55,dark));}
+for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(cube(x,1.35,z,.78,1.05,.46,u.color),cube(x,2.18,z,.54,.58,.54,[.82,.72,.59]),cube(x-.52,1.38,z,.25,.92,.3,u.color),cube(x+.52,1.38,z,.25,.92,.3,u.color),cube(x-.22,.48,z,.3,.88,.34,dark),cube(x+.22,.48,z,.3,.88,.34,dark));}
 const OBJECTS=[...scene,...AVATARS];
 const POS:number[]=[];const NOR:number[]=[];
 const faces:[number[][],number[]][]=[
@@ -89,11 +89,12 @@ export function QWorldView(){
    const render=()=>{if(disposed)return;resize();if(!document.hidden){
     if(mode==="third-person"){const step=.18,p=position.current;if(keys.has("a")||keys.has("arrowleft"))p.yaw+=.035;if(keys.has("d")||keys.has("arrowright"))p.yaw-=.035;if(keys.has("w")||keys.has("arrowup")){p.x+=Math.sin(p.yaw)*step;p.z-=Math.cos(p.yaw)*step;}if(keys.has("s")||keys.has("arrowdown")){p.x-=Math.sin(p.yaw)*step;p.z+=Math.cos(p.yaw)*step;}p.x=Math.max(-48,Math.min(48,p.x));p.z=Math.max(-38,Math.min(38,p.z));}
     const v=visualsRef.current,sky=v.environment==="daylight"?[.28,.39,.47]:v.environment==="sunset"?[.12,.055,.07]:[.035,.05,.065];gl!.clearColor(sky[0],sky[1],sky[2],1);gl!.clear(gl!.COLOR_BUFFER_BIT|gl!.DEPTH_BUFFER_BIT);
-    const eye=mode==="isometric"?[57/v.zoom,52/v.zoom,62/v.zoom] :[position.current.x,3.2,position.current.z];
-    const target=mode==="isometric"?[0,0,0] :[position.current.x+Math.sin(position.current.yaw)*14,2.6,position.current.z-Math.cos(position.current.yaw)*14];
+    const eye=mode==="isometric"?[57/v.zoom,52/v.zoom,62/v.zoom] :[position.current.x-Math.sin(position.current.yaw)*7,4.2,position.current.z+Math.cos(position.current.yaw)*7];
+    const target=mode==="isometric"?[0,0,0] :[position.current.x,1.45,position.current.z];
     const proj=perspective((mode==="isometric"?.78:1.02)/v.zoom,el.width/Math.max(1,el.height),.1,220),view=lookAt(eye,target),vp=mul(proj,view);
     gl!.uniform1f(intensity,v.brightness);
     for(const o of OBJECTS){let rgb=[...o.color];if(v.palette==="monochrome"){const l=rgb[0]*.3+rgb[1]*.59+rgb[2]*.11;rgb=[l*.78,l*.84,l*.9];}else if(v.palette==="vibrant"){const l=(rgb[0]+rgb[1]+rgb[2])/3;rgb=rgb.map(ch=>Math.max(0,Math.min(1,l+(ch-l)*1.45)));}gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(rgb));gl!.drawArrays(gl!.TRIANGLES,0,36);}
+    if(mode==="third-person"){const p=position.current,parts=[cube(p.x,1.35,p.z,.78,1.05,.46,[.82,.16,.19]),cube(p.x,2.18,p.z,.54,.58,.54,[.82,.72,.59]),cube(p.x-.52,1.38,p.z,.25,.92,.3,[.82,.16,.19]),cube(p.x+.52,1.38,p.z,.25,.92,.3,[.82,.16,.19]),cube(p.x-.22,.48,p.z,.3,.88,.34,dark),cube(p.x+.22,.48,p.z,.3,.88,.34,dark)];for(const o of parts){gl!.uniformMatrix4fv(mvp,false,new Float32Array(mul(vp,translateScale(o))));gl!.uniform3fv(color,new Float32Array(o.color));gl!.drawArrays(gl!.TRIANGLES,0,36);}}
    }raf=window.requestAnimationFrame(render);};
    const observer=new ResizeObserver(resize);observer.observe(el);raf=window.requestAnimationFrame(render);
    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);};
