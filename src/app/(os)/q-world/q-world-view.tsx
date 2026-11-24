@@ -18,7 +18,8 @@ const UNITS:Unit[] = [
 type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];shape?:"cube"|"sphere"|"cylinder"|"cone"};
 type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
 const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
-const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});\nconst primitive=(shape:Exclude<Cube["shape"],"cube">,x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape});
+const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape:"cube"});
+const primitive=(shape:Exclude<Cube["shape"],"cube">,x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color,shape});
 const scene:Cube[]=[];
 const ground:[number,number,number]=[.12,.16,.17], road:[number,number,number]=[.19,.23,.25], glass:[number,number,number]=[.28,.49,.56], dark:[number,number,number]=[.055,.075,.09], leaf:[number,number,number]=[.13,.31,.22], gold:[number,number,number]=[.62,.43,.22];
 scene.push(cube(0,-.7,0,110,1,88,ground),cube(0,-.1,0,7,.12,86,road),cube(0,-.08,0,104,.12,6,road));
