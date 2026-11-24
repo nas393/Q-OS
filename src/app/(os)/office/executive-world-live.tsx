@@ -9,6 +9,8 @@ import { clone } from "three/addons/utils/SkeletonUtils.js";
 import { INITIAL_EMPLOYEES } from "@/lib/simulation/seed";
 import { tickSimulation } from "@/lib/simulation/engine";
 import type { EmployeeAgent, SimulationState, SimTask } from "@/lib/simulation/types";
+import { applyRecruitAction, type RecruitAction } from "@/lib/simulation/recruit";
+import { HiringDesk } from "./hiring-desk";
 
 const MODEL_URLS = [
   "https://models.vinish.dev/people/business-man.glb",
@@ -27,7 +29,7 @@ function makeTasks():SimTask[]{
     ["People & Culture","Build talent acquisition shortlist",["talent","recruitment"],3],
     ["People & Culture","Design employee learning pathway",["learning","development"],3],
     ["People & Culture","Analyse employee engagement pulse",["people-ops","analytics"],2],
-    ["Technology","Review platform reliability roadmap",["technology","architecture"],4],
+    ["Technology","Review platform reliability roadmap",["technology","architecture"],4],["Technology","Build the analytics data pipeline",["data-engineering"],3],
     ["Marketing","Prepare brand growth strategy",["brand","marketing"],3],
     ["Legal & Risk","Review enterprise risk register",["risk","governance"],4],
     ["Executive","Set quarterly company priorities",["leadership"],5],
@@ -37,7 +39,7 @@ function makeTasks():SimTask[]{
 function initialWorld():SimulationState{
   const now=Date.UTC(2026,10,23,9);
   return {worldId:"q-executive-world-local",version:0,simulatedAt:now,lastWallClockAt:Date.now(),speed:1,paused:false,
-    employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
+    employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[],recruitment:{requests:[],cursor:0}};
 }
 const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office","People & Culture","Technology","Marketing","Legal & Risk"] as const;
 /* Whether this device can start a WebGL context. Some devices and browsers have WebGL switched off. */
@@ -235,6 +237,11 @@ export function ExecutiveWorld3D(){
   const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"FOLLOW"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
   const [webgl]=useState<boolean>(()=>typeof document==="undefined"||canUseWebGL());
   const [attempt,setAttempt]=useState(0);
+  const [notice,setNotice]=useState<string|null>(null);
+  const worldRef=useRef(world);
+  useEffect(()=>{worldRef.current=world},[world]);
+  /* Hiring actions are simulated: they change only this browser's fictional world, never Q OS records. */
+  const onRecruit=(action:RecruitAction)=>{const result=applyRecruitAction(worldRef.current,action,Date.now());setNotice(result.ok?result.message:result.error);if(result.ok){worldRef.current=result.state;setWorld(result.state)}};
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
@@ -265,6 +272,7 @@ export function ExecutiveWorld3D(){
         <span data-light={e.activity==="working"?"ok":e.activity==="walking"?"watch":"idle"}/><b>{e.name}</b><small>{e.role} · {e.activity} · energy {Math.round(e.energy)}%</small>
       </button>)}</div>
       <div className="q3d-profile"><b>{selectedEmployee.name}</b><span>{selectedEmployee.role} · reports to {manager?.name??"Company owner"}</span><span>Current focus: {currentTask?.title??(selectedEmployee.activity==="walking"?"Moving between work areas":selectedEmployee.activity==="break"?"Scheduled break":"Available for assignment")}</span><span>Energy {Math.round(selectedEmployee.energy)} · morale {Math.round(selectedEmployee.morale)} · stress {Math.round(selectedEmployee.stress)}</span><span>Individual goal: {selectedEmployee.goal??"Deliver assigned outcomes independently"}</span><span>Work mode: {selectedEmployee.autonomyMode??"independent"} · Skills: {selectedEmployee.skills.join(" · ")}</span></div>
+      <HiringDesk world={world} onAction={onRecruit} notice={notice}/>
       <p className="q3d-disclaimer">FICTIONAL WORKFORCE · SIMULATION ONLY · NO LIVE Q OS TASKS OR BUSINESS RECORDS ARE MODIFIED</p>
       <p className="q3d-asset-credit">Character models: vinish.dev · CC BY 4.0 · included in asset credits</p>
     </div>
