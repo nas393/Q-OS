@@ -147,6 +147,24 @@ for(const u of UNITS){
   );
  }
 }
+// A clearly defined central circulation spine connects reception to the executive suites.
+scene.push(
+ cube(0,.405,0,3.2,.035,24,[.29,.32,.33]),
+ cube(-1.62,.43,0,.08,.035,24,gold),
+ cube(1.62,.43,0,.08,.035,24,gold),
+ cube(0,.43,-4.4,11.2,.035,.08,gold),
+ cube(0,.43,4.4,11.2,.035,.08,gold),
+ // Controlled-access glass gate at the transition from reception to private offices.
+ cube(-1.35,.95,6.2,.12,1.05,.12,glass),
+ cube(1.35,.95,6.2,.12,1.05,.12,glass),
+ cube(-1.35,1.52,6.2,.12,.08,.12,gold),
+ cube(1.35,1.52,6.2,.12,.08,.12,gold),
+ cube(0,.92,6.2,2.55,.08,.12,dark),
+ // Reception information wall and brand feature panel.
+ cube(0,2.7,10.8,8.8,2.7,.18,dark),
+ cube(0,2.7,10.68,6.8,1.55,.12,[.19,.25,.29]),
+ cube(0,3.72,10.58,3.6,.08,.08,gold)
+);
 // Entrance forecourt is compact and directly connected to the single building.
 scene.push(
  cube(0,-.05,17.6,22,.16,7,[.2,.24,.26]),
