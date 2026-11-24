@@ -30,6 +30,7 @@ function building(x:number,z:number,w:number,d:number,h:number,c:[number,number,
  const floors=Math.max(2,Math.floor(h/2.25));
  // Architectural plinth, layered facade and floating roof line.
  scene.push(
+  primitive("sphere",x,-.145,z,w+4,.08,d+4,[.035,.045,.052]),
   cube(x,.18,z,w+1.7,.36,d+1.7,stone),
   cube(x,.43,z,w+.8,.14,d+.8,trim),
   cube(x,h/2,z,w,h,d,c),
@@ -116,6 +117,15 @@ for(const [x,z] of [[-12,-12],[12,-12],[-12,12],[12,12],[-33,-10],[33,10]] as nu
   cube(x,.46,z,1.4,.06,1.4,[.28,.43,.34])
  );
 }
+// Walkway pavers, kerb edges and subtle road markings improve scale and orientation.
+for(const side of [-1,1]){
+ scene.push(cube(side*5.35,.015,0,.42,.12,84,[.29,.32,.32]),cube(0,.015,side*5.35,102,.12,.42,[.29,.32,.32]));
+}
+for(let z=-39;z<=39;z+=7){scene.push(cube(0,.045,z,.28,.035,2.4,[.74,.65,.48]));}
+for(let x=-45;x<=45;x+=7){scene.push(cube(x,.045,0,2.4,.035,.28,[.74,.65,.48]));}
+for(let x=-8;x<=8;x+=2){
+ for(let z=-15;z<=-9;z+=2){scene.push(cube(x,.085,z,1.7,.05,1.7,[.25,.29,.3]));}
+}
 // Parking and service bays are deliberately placed at the campus perimeter.
 for(let i=0;i<8;i++){
  const x=-35+i*4.2;
@@ -127,7 +137,7 @@ for(let x=-42;x<=42;x+=14){
   scene.push(primitive("cylinder",x,.8,z,.14,1.6,.14,[.23,.28,.3]),primitive("sphere",x,1.68,z,.42,.28,.42,[.76,.62,.38]));
  }
 }
-for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(primitive("cylinder",x,.9,z,.34,1.8,.34,[.31,.25,.18]),primitive("cone",x,2.25,z,2.5,2.9,2.5,leaf),primitive("cone",x,3.05,z,1.8,2.1,1.8,[.16,.39,.26]));}}
+for(let x=-45;x<=45;x+=9){for(let z=-34;z<=34;z+=11){if(Math.abs(x)<7&&Math.abs(z)<9)continue;scene.push(primitive("sphere",x,-.145,z,3.2,.07,2.8,[.035,.045,.052]),primitive("cylinder",x,.9,z,.34,1.8,.34,[.31,.25,.18]),primitive("cone",x,2.25,z,2.5,2.9,2.5,leaf),primitive("cone",x,3.05,z,1.8,2.1,1.8,[.16,.39,.26]));}}
 for(let x=-45;x<=45;x+=6){scene.push(cube(x,.015,-43,3,.03,.18,gold),cube(x,.015,43,3,.03,.18,gold));}
 const AVATARS:Cube[]=[];
 for(const u of UNITS){const x=u.x+7,z=u.z+6;AVATARS.push(primitive("cylinder",x,1.35,z,.78,1.05,.46,u.color),primitive("cylinder",x,1.92,z,.22,.22,.22,[.82,.72,.59]),primitive("sphere",x,2.18,z,.58,.58,.58,[.82,.72,.59]),primitive("cylinder",x-.52,1.38,z,.25,.92,.3,u.color),primitive("cylinder",x+.52,1.38,z,.25,.92,.3,u.color),primitive("sphere",x-.68,.92,z,.24,.24,.24,[.82,.72,.59]),primitive("sphere",x+.68,.92,z,.24,.24,.24,[.82,.72,.59]),primitive("cylinder",x-.22,.48,z,.3,.88,.34,dark),primitive("cylinder",x+.22,.48,z,.3,.88,.34,dark));}
