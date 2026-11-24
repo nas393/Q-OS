@@ -192,12 +192,12 @@ export function ExecutiveWorld3D(){
       <span>{working} working · {walking} moving · {world.events.length} events</span>
       <div><button type="button" onClick={()=>setWorld(w=>({...w,paused:!w.paused}))}>{world.paused?"Resume":"Pause"}</button>
         {([1,2,4] as const).map(s=><button key={s} type="button" aria-pressed={world.speed===s} onClick={()=>setSpeed(s)}>{s}×</button>)}
-        <button type="button" aria-pressed={camera==="CEO"} onClick={()=>setCamera("CEO")}>CEO</button><button type="button" aria-pressed={camera==="FREE"} onClick={()=>setCamera("FREE")}>Free camera</button><button type="button" aria-pressed={camera==="FOLLOW"} onClick={()=>setCamera("FOLLOW")}>Follow</button><button type="button" aria-pressed={camera==="CINEMA"} onClick={()=>setCamera("CINEMA")}>Cinematic</button>
+        <button type="button" aria-pressed={camera==="CEO"} onClick={()=>setCamera("CEO")}>CEO</button><button type="button" aria-pressed={camera==="FREE"} onClick={()=>setCamera("FREE")}>Explore</button><button type="button" aria-pressed={camera==="FOLLOW"} onClick={()=>setCamera("FOLLOW")}>Follow</button><button type="button" aria-pressed={camera==="CINEMA"} onClick={()=>setCamera("CINEMA")}>Cinematic</button>
       </div>
     </div>
     <div className="q3d-stage">
       <Suspense fallback={<div className="q3d-loading">Loading realistic people and headquarters…</div>}>
-        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("CEO")}} cameraMode={camera}/>
+        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("FOLLOW")}} cameraMode={camera}/>
       </Suspense>
       <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>26 AGENTS · 6 DEPARTMENTS</span></div>
     </div>
