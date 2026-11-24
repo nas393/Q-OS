@@ -50,3 +50,9 @@
 .qw-plan-disclaimer{margin:0;padding:0 3px}
 @media(max-width:900px){.qw-plan-front{grid-template-columns:repeat(2,minmax(0,1fr))}.qw-plan-front .qw-plan-room{grid-column:span 1!important}.qw-plan-functions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.qw-plan-map{padding:8px}.qw-plan-band{padding:8px}.qw-plan-front,.qw-plan-exec,.qw-plan-functions,.qw-score-grid{grid-template-columns:1fr}.qw-plan-metrics{width:100%}.qw-plan-metrics div{flex:1;min-width:0}.qw-plan-room{min-height:unset}.qw-plan-unit-room{flex-basis:100%}}
+
+
+/* Third-person navigation: pointer drag rotates the view; preserve touch gestures on the on-screen pad. */
+.qw-stage canvas{touch-action:none;cursor:grab}
+.qw-stage canvas:active{cursor:grabbing}
+.qw-pad button{user-select:none;-webkit-user-select:none}
