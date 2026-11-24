@@ -282,11 +282,11 @@ export function QWorldView(){
   }catch{setWebgl(false);}
  },[mode]);
  const active=UNITS.find(u=>u.id===selected)??UNITS[0];
- useEffect(()=>{position.current.x=active.x;position.current.z=8.8;},[active]);
+ useEffect(()=>{position.current.x=active.x;position.current.z=active.z+0.8;},[active]);
  const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-16,Math.min(16,p.x+dx));p.z=Math.max(-10,Math.min(21,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
-  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected floor with W A S D or arrow keys · choose an office from the directory"}</span></div>
+  <div className="qw-toolbar"><div className="qw-mode" role="group" aria-label="Camera mode"><button type="button" aria-pressed={mode==="isometric"} onClick={()=>setMode("isometric")}>Isometric management</button><button type="button" aria-pressed={mode==="third-person"} onClick={()=>setMode("third-person")}>Walk inside HQ</button></div><span className="qw-hint">{mode==="isometric"?"Headquarters overview · choose an office below": "Walk the selected floor with W A S D or arrow keys · walk the single floor with W A S D or arrow keys"}</span></div>
   <div className="qw-layout">
    <section className="qw-stage" aria-label="Interactive three-dimensional Q headquarters">
     {webgl?<canvas ref={canvas} aria-label="Three-dimensional Q headquarters with one floor and business-unit offices"/>:<div className="qw-fallback"><b>3D graphics are unavailable on this device.</b><p>The headquarters office directory remains available below.</p></div>}
@@ -296,7 +296,7 @@ export function QWorldView(){
    <aside className="qw-inspector" aria-label="Selected business unit"><span className="qw-kicker">SELECTED BUSINESS UNIT</span><h2>{active.name}</h2><div className="qw-floor-tag">SINGLE-LEVEL EXECUTIVE SUITE</div><p>{active.role}</p><div className="qw-dept">{active.department}</div><p className="qw-mission">{active.mission}</p><small>Live financial KPIs: not connected in this foundation PR.</small><a href="/office">Open existing Office</a></aside>
   </div>
   <section className="qw-director" aria-labelledby="qw-director-title">
-   <div className="qw-director-head"><div><span className="qw-kicker">OWNER CONTROL PANEL</span><h2 id="qw-director-title">Visual Director</h2><p>Change the look and presentation of the Q headquarters.</p></div><button type="button" aria-expanded={directorOpen} onClick={()=>setDirectorOpen(v=>!v)}>{directorOpen?"Hide controls":"Show controls"}</button></div>
+   <div className="qw-director-head"><div><span className="qw-kicker">OWNER CONTROL PANEL</span><h2 id="qw-director-title">Visual Director</h2><p>Change the look and presentation of the Q executive headquarters.</p></div><button type="button" aria-expanded={directorOpen} onClick={()=>setDirectorOpen(v=>!v)}>{directorOpen?"Hide controls":"Show controls"}</button></div>
    {directorOpen&&<div className="qw-control-grid">
     <label>Environment<select value={visuals.environment} onChange={e=>updateVisuals({environment:e.target.value as VisualSettings["environment"]})}><option value="executive">Executive night</option><option value="daylight">Daylight</option><option value="sunset">Sunset</option></select></label>
     <label>Building colour style<select value={visuals.palette} onChange={e=>updateVisuals({palette:e.target.value as VisualSettings["palette"]})}><option value="brand">Brand colours</option><option value="vibrant">Vibrant</option><option value="monochrome">Monochrome</option></select></label>
