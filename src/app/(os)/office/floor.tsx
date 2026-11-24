@@ -2,7 +2,8 @@
 /* The Office, drawn: Q's glass corner office and the rooms where every app works at its desk.
    Each desk shows its status light, one number, its tasks from you and what needs you; tap a desk to open it.
    The inbox lists everything waiting for you across the floor: approvals, late tasks and alerts. */
-import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
+import {Component,useEffect,useMemo,useRef,useState,type FormEvent,type ReactNode} from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
@@ -11,14 +12,23 @@ import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
 import "./office.css";
 import { ExecutiveTeam } from "./executive-team";
-import { ExecutiveWorld3D } from "./executive-world-3d";
+/* The 3D world loads only when the Office needs it, so its code never slows or breaks the rest of the Office. */
+const ExecutiveWorld3D=dynamic(()=>import("./executive-world-live").then(m=>m.ExecutiveWorld3D),{ssr:false,loading:()=><div className="q3d-loading" role="status">Loading the executive world…</div>});
+/* If the 3D world fails for any reason, only its own section shows a message; the Office keeps working. */
+class WorldBoundary extends Component<{children:ReactNode},{failed:boolean}>{
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(error:Error){console.error("Executive World could not start; the rest of the Office still works.",error);}
+  render(){return this.state.failed
+    ?<div className="q3d-unavailable" role="status"><b>Executive World could not start</b><p>The rest of the Office works. Reload the page to try again.</p></div>
+    :this.props.children;}
+}
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
 type Stats=Record<string,{stats:{label:string;value:string}[]}>;
 type WorkRow={id:string;staff:string;job:string;title:string;body:WorkBody;status:"waiting"|"approved"|"discarded";createdAt:string};
 const LIGHT_TEXT={ok:"All good",watch:"Watching",down:"Needs you",idle:"No data"} as const;
 const KIND_TEXT={alert:"Alert",approval:"Your yes",draft:"Draft",task:"Late task"} as const;
-const LAYOUT:Room[]=["corner","studio","academy","markets","community","screens","ops"];
 
 export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvalsFailed,work:initialWork,today}:{alerts:DeskAlert[];stats:Stats;tasks:DeskTask[];approvals:DeskApproval[];approvalsFailed:string[];work:WorkRow[];today:string}){
   const [apps,setApps]=useState<LiveApp[]|null>(null);
@@ -107,20 +117,6 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     :n.kind==="alert"&&n.alertId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>markSeen(n.alertId!)}>Clear</button>
     :n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Open</a>:null;
 
-  const deskBtn=(r:typeof floor[number],big=false)=>{
-    const d=r.staff.id==="q"?qDesk:r.desk;
-    return <button key={r.staff.id} type="button" className={`of-desk${big?" big":""}`} data-light={d.light} onClick={()=>{setMsg("");setOpen(r.staff.id)}}
-      aria-label={`${r.staff.name}, ${r.staff.role}. ${LIGHT_TEXT[d.light]}. ${d.line}${d.open.length?` ${d.open.length} open tasks.`:""}`}>
-      <span className="of-top" aria-hidden="true">
-        <span className="of-screen">{r.staff.id==="q"?<QMark size={big?40:30}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={big?40:30}/>}</span>
-        {d.needs.length>0&&<b className="of-badge">{d.needs.length}</b>}
-        {d.open.length>0&&<i className="of-tray">{d.open.length}</i>}
-      </span>
-      <span className="of-chair" aria-hidden="true"/>
-      <span className="of-plate"><b>{r.staff.name}</b><small>{r.staff.role}</small>{d.headline&&<em>{d.headline}</em>}</span>
-    </button>;
-  };
-
   return <div className="page office">
     <PageHeader title="Office" desc="Q runs the office. Every app works at its desk. Tap a desk to open it or give it a task."
       meta={apps===null?"Checking every desk…":`${team.filter(r=>r.desk.light==="ok").length} of ${team.length} desks all good`}/>
@@ -153,14 +149,14 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     <section className="of-world" aria-labelledby="of-world-title">
       <div className="of-world-head">
         <div><span className="of-world-kicker">Q EXECUTIVE HEADQUARTERS · LIVE FLOOR</span><h2 id="of-world-title">Executive World</h2>
-          <p>A live operational model of the office. Select a desk or room to inspect its real work, tasks and decisions.</p></div>
+          <p>A playable simulation of a fictional company. Explore its people, departments, meetings and simulated decisions — separate from live Q OS operations.</p></div>
         <div className="of-world-controls" aria-label="World view status">
-          <span className="of-world-live"><i/>LIVE DATA</span>
+          <span className="of-world-live"><i/>SIMULATION</span>
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
-      <ExecutiveWorld3D rooms={LAYOUT.map(room=>({id:room,label:ROOMS[room].label,note:ROOMS[room].note,desks:floor.filter(r=>r.staff.room===room).map(r=>({id:r.staff.id,name:r.staff.name,role:r.staff.role,light:r.desk.light,needs:r.desk.needs.length,open:r.desk.open.length}))}))} onSelectDesk={id=>{setMsg("");setOpen(id)}} />
-      <p className="of-world-foot">3D architecture is rendered in the browser. Desk status and work remain connected to live Q OS data.</p>
+      <WorldBoundary><ExecutiveWorld3D /></WorldBoundary>
+      <p className="of-world-foot">The Executive World is a fictional simulation. Live Q OS desks, tasks and business records remain separate and are never changed by simulated activity.</p>
     </section>
 
     <dialog ref={dlg} className="of-sheet" onClose={()=>setOpen(null)} aria-labelledby="of-sh-t">
