@@ -183,12 +183,12 @@ function buildBeveledBox(){
  const tri=(a:number[],b:number[],c:number[],n:number[])=>{for(const p of [a,b,c]){positions.push(...p);normals.push(...n);}};
  const quad=(a:number[],b:number[],c:number[],d:number[],n:number[])=>{tri(a,b,c,n);tri(a,c,d,n);};
  const f=.42;
- quad([-.5,-f,-f],[-.5,f,-f],[-.5,f,f],[-.5,-f,f],[-1,0,0]);
+ quad([-.5,-f,-f],[-.5,-f,f],[-.5,f,f],[-.5,f,-f],[-1,0,0]);
  quad([.5,-f,-f],[.5,f,-f],[.5,f,f],[.5,-f,f],[1,0,0]);
- quad([-f,.5,-f],[f,.5,-f],[f,.5,f],[-f,.5,f],[0,1,0]);
+ quad([-f,.5,-f],[-f,.5,f],[f,.5,f],[f,.5,-f],[0,1,0]);
  quad([-f,-.5,-f],[f,-.5,-f],[f,-.5,f],[-f,-.5,f],[0,-1,0]);
  quad([-f,-f,.5],[f,-f,.5],[f,f,.5],[-f,f,.5],[0,0,1]);
- quad([-f,-f,-.5],[f,-f,-.5],[f,f,-.5],[-f,f,-.5],[0,0,-1]);
+ quad([-f,-f,-.5],[-f,f,-.5],[f,f,-.5],[f,-f,-.5],[0,0,-1]);
  for(const sx of [-1,1])for(const sy of [-1,1]){
   const n=[sx/Math.SQRT2,sy/Math.SQRT2,0];
   quad([sx*.5,sy*f,-f],[sx*f,sy*.5,-f],[sx*f,sy*.5,f],[sx*.5,sy*f,f],n);
