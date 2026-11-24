@@ -59,8 +59,9 @@ No KPI is fabricated. Missing data displays as unavailable. Forecasts and scenar
 
 ### PR 1 — Campus foundation (this PR)
 - Separate `/q-world` route and navigation entry.
-- Responsive 3D campus, isometric and third-person camera modes.
-- Stylised app-unit avatars and department buildings, with accessible selection/inspection.
+- Responsive 3D campus, isometric management and third-person follow-camera modes.
+- Stylised low-poly business-unit avatars and department buildings, with accessible selection/inspection.
+- Owner Visual Director: environment preset, building colour treatment, lighting, camera zoom, graphics quality and campus-label visibility; settings persist locally in the browser.
 - Reduced-motion, WebGL fallback, hidden-tab pause, DPR cap.
 - No persistence, AI autonomy or real-world side effects.
 
@@ -88,5 +89,5 @@ No KPI is fabricated. Missing data displays as unavailable. Forecasts and scenar
 - `npm test`, `npx tsc --noEmit`, `npx eslint .`, production build all pass.
 - axe WCAG 2 A/AA reports zero violations on `/q-world`.
 - Preview is opened and tested at desktop and 390px mobile.
-- WebGL failure, keyboard-only operation, reduced motion and hidden-tab pause are verified.
+- WebGL failure, keyboard-only operation, reduced motion, hidden-tab pause and Visual Director settings persistence are verified.
 - No merge until the preview is accessible and all required checks are green.
