@@ -22,3 +22,6 @@
 .qw-director button:focus-visible,.qw-director select:focus-visible,.qw-director input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:900px){.qw-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.qw-director{padding:14px}.qw-control-grid{grid-template-columns:1fr}.qw-director-head>button{width:100%}}
+
+.qw-floor-tag{align-self:flex-start;border:1px solid var(--card-line);border-radius:7px;padding:6px 9px;color:var(--accent-ink);font-size:10px;font-weight:800;letter-spacing:.1em}
+.qw-unit-grid button small{line-height:1.4}
