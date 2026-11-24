@@ -265,6 +265,7 @@ export function QWorldView(){
   }catch{setWebgl(false);}
  },[mode]);
  const active=UNITS.find(u=>u.id===selected)??UNITS[0];
+ useEffect(()=>{position.current.x=active.x;position.current.z=8.8;position.current.floor=active.floor;},[active]);
  const move=(dx:number,dz:number)=>{const p=position.current;p.x=Math.max(-16,Math.min(16,p.x+dx));p.z=Math.max(-10,Math.min(21,p.z+dz));};
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
