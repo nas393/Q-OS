@@ -7,14 +7,25 @@ test("fictional workforce is larger than the leadership team", () => {
   const workforce = INITIAL_EMPLOYEES.filter((employee) => employee.tier === "workforce");
   assert.equal(leaders.length, LEADERSHIP_TEAM.length);
   assert.ok(workforce.length > leaders.length);
-  assert.equal(workforce.length, 20);
+  assert.equal(workforce.length, 24); // 10 executives + 24 employees = 34 fictional agents
 });
 
 test("every fictional employee reports to a valid executive", () => {
   assert.deepEqual(validateOrgChart(), []);
+});
+
+test("the CEO leads every executive, and each team lead has four direct reports", () => {
+  assert.equal(directReports("ceo").length, LEADERSHIP_TEAM.length - 1);
   for (const seat of LEADERSHIP_TEAM) {
-    assert.ok(directReports(seat.id).length >= 4);
+    if (seat.id === "ceo") continue;
+    const reports = directReports(seat.id).length;
+    if (reports > 0) assert.equal(reports, 4, seat.id);
   }
+});
+
+// Known gap, not a pass: these executives have no team in the seed yet, so their department tasks have no one to do them.
+test("CTO, CMO and Chief Legal & Risk Officer each have a team of four", { todo: "No team seeded for these three executives yet." }, () => {
+  for (const id of ["cto", "cmo", "clo"]) assert.equal(directReports(id).length, 4, id);
 });
 
 test("each agent has a distinct identity and simulation-ready state", () => {

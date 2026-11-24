@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { tickSimulation } from "../src/lib/simulation/engine.ts";
-import type { SimulationState } from "../src/lib/simulation/types.ts";
 
-const base = (): SimulationState => ({
+/** @returns {import("../src/lib/simulation/types.ts").SimulationState} */
+const base = () => ({
   worldId: "q-world", version: 0, simulatedAt: Date.UTC(2026, 10, 23, 9), lastWallClockAt: 0,
   speed: 1, paused: false,
   employees: [{

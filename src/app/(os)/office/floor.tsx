@@ -2,7 +2,8 @@
 /* The Office, drawn: Q's glass corner office and the rooms where every app works at its desk.
    Each desk shows its status light, one number, its tasks from you and what needs you; tap a desk to open it.
    The inbox lists everything waiting for you across the floor: approvals, late tasks and alerts. */
-import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
+import {Component,useEffect,useMemo,useRef,useState,type FormEvent,type ReactNode} from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
@@ -11,7 +12,17 @@ import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
 import "./office.css";
 import { ExecutiveTeam } from "./executive-team";
-import { ExecutiveWorld3D } from "./executive-world-live";
+/* The 3D world loads only when the Office needs it, so its code never slows or breaks the rest of the Office. */
+const ExecutiveWorld3D=dynamic(()=>import("./executive-world-live").then(m=>m.ExecutiveWorld3D),{ssr:false,loading:()=><div className="q3d-loading" role="status">Loading the executive world…</div>});
+/* If the 3D world fails for any reason, only its own section shows a message; the Office keeps working. */
+class WorldBoundary extends Component<{children:ReactNode},{failed:boolean}>{
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(error:Error){console.error("Executive World could not start; the rest of the Office still works.",error);}
+  render(){return this.state.failed
+    ?<div className="q3d-unavailable" role="status"><b>Executive World could not start</b><p>The rest of the Office works. Reload the page to try again.</p></div>
+    :this.props.children;}
+}
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
 type Stats=Record<string,{stats:{label:string;value:string}[]}>;
@@ -144,7 +155,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
         </div>
       </div>
       <div className="of-world-legend"><span><i data-state="ok"/>Operational</span><span><i data-state="watch"/>Attention</span><span><i data-state="down"/>Needs owner</span><span><i data-state="idle"/>No live data</span></div>
-      <ExecutiveWorld3D />
+      <WorldBoundary><ExecutiveWorld3D /></WorldBoundary>
       <p className="of-world-foot">The Executive World is a fictional simulation. Live Q OS desks, tasks and business records remain separate and are never changed by simulated activity.</p>
     </section>
 

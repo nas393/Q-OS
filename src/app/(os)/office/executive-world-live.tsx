@@ -1,8 +1,8 @@
 "use client";
 
-import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { ContactShadows, Environment, OrbitControls } from "@react-three/drei";
+import { Component, Suspense, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { AnimationMixer, Group, MathUtils, Vector3, type AnimationAction } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
@@ -40,9 +40,12 @@ function initialWorld():SimulationState{
     employees:INITIAL_EMPLOYEES.map((e,i)=>({...e,position:{...e.position},destination:i%4===0?{x:e.position.x+(i%2?2.2:-2.2),y:0,z:e.position.z+(i%2?-1.6:1.6)}:null})),tasks:makeTasks(),events:[]};
 }
 const SIM_DEPARTMENTS=["All","Executive","Finance","Commercial","Operations","Strategy","Executive Office","People & Culture","Technology","Marketing","Legal & Risk"] as const;
-function useAssets(){
-  const [businessMan,businessWoman,casualMan,casualWoman]=useLoader(GLTFLoader,MODEL_URLS);
-  return [businessMan,businessWoman,casualMan,casualWoman];
+/* Whether this device can start a WebGL context. Some devices and browsers have WebGL switched off. */
+function canUseWebGL():boolean{
+  try{
+    const c=document.createElement("canvas");
+    return !!(c.getContext("webgl2")||c.getContext("webgl")||c.getContext("experimental-webgl"));
+  }catch{return false}
 }
 function MatBox({position,scale,color,roughness=.65,metalness=0,emissive="#000000",emissiveIntensity=0}:{position:[number,number,number];scale:[number,number,number];color:string;roughness?:number;metalness?:number;emissive?:string;emissiveIntensity?:number}){
   return <mesh position={position} castShadow receiveShadow><boxGeometry args={scale}/><meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity}/></mesh>;
@@ -145,23 +148,62 @@ function Character({employee,asset,onSelect,selected}:{employee:EmployeeAgent;as
     <mesh position={[0,2.12,0]}><sphereGeometry args={[.045,12,12]}/><meshBasicMaterial color={employee.activity==="working"?"#65c18a":employee.activity==="walking"?"#e1bd70":"#7c8793"}/></mesh>
   </group>;
 }
-function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
-  const assets=useAssets();
-  return <>{employees.map((employee,index)=><Character key={employee.id} employee={employee} asset={assets[index%assets.length]} selected={selected===employee.id} onSelect={onSelect}/>)}</>;
+/* Each person's model is loaded once and cached. Loading never throws into React: a failure is only
+   recorded, and that person is shown with a simple figure. Every promise here settles, none is left unhandled. */
+type ModelEntry={status:"pending"|"ok"|"error";value?:GLTF;done:Promise<void>};
+const modelCache=new Map<string,ModelEntry>();
+function startModel(url:string):ModelEntry{
+  const existing=modelCache.get(url);
+  if(existing)return existing;
+  const entry:ModelEntry={status:"pending",done:Promise.resolve()};
+  /* Fetch and parse ourselves so every failure stays inside this chain. */
+  entry.done=fetch(url,{credentials:"omit"})
+    .then(r=>{if(!r.ok)throw new Error(`Model ${url} returned HTTP ${r.status}`);return r.arrayBuffer();})
+    .then(buffer=>new Promise<GLTF>((resolve,reject)=>new GLTFLoader().parse(buffer,"",resolve,reject)))
+    .then(
+      v=>{entry.status="ok";entry.value=v;},
+      err=>{entry.status="error";console.warn("Executive World: a character model could not load; a simple figure is shown instead.",err);});
+  modelCache.set(url,entry);
+  return entry;
 }
-
-function FallbackPeople({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
-  return <>{employees.map(e=><group key={e.id} position={[e.position.x,0,e.position.z]} onClick={event=>{event.stopPropagation();onSelect(e.id)}}>
-    <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.25,.72,5,10]}/><meshStandardMaterial color={e.id==="ceo"?"#b89a68":"#526779"}/></mesh>
+/* Each person has their own model and their own error boundary: if one model fails, only that person
+   is shown as a simple figure. A failed model never takes down the others or the page. */
+function PersonFallback({employee,selected,onSelect}:{employee:EmployeeAgent;selected:boolean;onSelect:(id:string)=>void}){
+  return <group position={[employee.position.x,0,employee.position.z]} onClick={event=>{event.stopPropagation();onSelect(employee.id)}}>
+    <mesh position={[0,1.02,0]} castShadow><capsuleGeometry args={[.25,.72,5,10]}/><meshStandardMaterial color={employee.id==="ceo"?"#b89a68":"#526779"}/></mesh>
     <mesh position={[0,1.72,0]} castShadow><sphereGeometry args={[.19,16,16]}/><meshStandardMaterial color="#bd9274" roughness={.8}/></mesh>
-    {selected===e.id&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,32]}/><meshBasicMaterial color="#e1bd70" /></mesh>}
-  </group>)}</>;
+    {selected&&<mesh position={[0,.025,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.72,.84,32]}/><meshBasicMaterial color="#e1bd70" /></mesh>}
+  </group>;
 }
-class PeopleErrorBoundary extends Component<{children:ReactNode;fallback:ReactNode},{failed:boolean}>{
+function PersonModel({employee,url,selected,onSelect}:{employee:EmployeeAgent;url:string;selected:boolean;onSelect:(id:string)=>void}){
+  const [,rerender]=useReducer((n:number)=>n+1,0);
+  const entry=startModel(url);
+  useEffect(()=>{let live=true;entry.done.then(()=>{if(live)rerender()});return()=>{live=false}},[entry]);
+  if(entry.status!=="ok"||!entry.value)return <PersonFallback employee={employee} selected={selected} onSelect={onSelect}/>;
+  return <Character employee={employee} asset={entry.value} selected={selected} onSelect={onSelect}/>;
+}
+function People({employees,selected,onSelect}:{employees:EmployeeAgent[];selected:string;onSelect:(id:string)=>void}){
+  return <>{employees.map((employee,index)=>{
+    const isSelected=selected===employee.id;
+    const fallback=<PersonFallback employee={employee} selected={isSelected} onSelect={onSelect}/>;
+    return <SceneErrorBoundary key={employee.id} label={`figure for ${employee.name}`} fallback={fallback}>
+      <PersonModel employee={employee} url={MODEL_URLS[index%MODEL_URLS.length]} selected={isSelected} onSelect={onSelect}/>
+    </SceneErrorBoundary>;
+  })}</>;
+}
+/* A boundary for any part of the 3D world: if it fails, the fallback shows and the rest of the page keeps working. */
+class SceneErrorBoundary extends Component<{children:ReactNode;fallback:ReactNode;label?:string},{failed:boolean}>{
   state={failed:false};
   static getDerivedStateFromError(){return {failed:true};}
-  componentDidCatch(error:Error){console.error("Executive World character assets failed; using local fallback characters.",error);}
+  componentDidCatch(error:Error){console.error(`Executive World: ${this.props.label??"part of the 3D view"} failed; showing a fallback.`,error);}
   render(){return this.state.failed?this.props.fallback:this.props.children;}
+}
+function WorldUnavailable({reason,onRetry}:{reason:string;onRetry?:()=>void}){
+  return <div className="q3d-unavailable" role="status">
+    <b>3D view unavailable</b>
+    <p>{reason} The team list below still works: pick a person to see their role, status and current focus.</p>
+    {onRetry&&<button type="button" className="btn ghost" onClick={onRetry}>Try the 3D view again</button>}
+  </div>;
 }
 function CameraRig({mode,followPosition}:{mode:"CEO"|"FREE"|"FOLLOW"|"CINEMA";followPosition:{x:number;z:number}}){
   const {camera}=useThree(),elapsed=useRef(0);
@@ -176,10 +218,14 @@ function WorldScene({employees,selected,onSelect,cameraMode}:{employees:Employee
     <ambientLight intensity={1.15}/>
     <hemisphereLight args={["#eaf4ff","#665744",1.45]}/>
     <directionalLight position={[-15,24,10]} intensity={2.8} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={24} shadow-camera-bottom={-24}/>
-    <pointLight position={[0,7,0]} intensity={1.05} color="#f2d6a0"/><pointLight position={[-14,4,-8]} intensity={.55} color="#8ebbd5"/><pointLight position={[14,4,8]} intensity={.45} color="#d6ad70"/><Environment preset="city" environmentIntensity={0.38}/>
+    <pointLight position={[0,7,0]} intensity={1.05} color="#f2d6a0"/><pointLight position={[-14,4,-8]} intensity={.55} color="#8ebbd5"/><pointLight position={[14,4,8]} intensity={.45} color="#d6ad70"/><Environment resolution={256} environmentIntensity={0.38}>
+      <Lightformer intensity={2.2} position={[0,9,0]} rotation={[-Math.PI/2,0,0]} scale={[30,30,1]} color="#f4e6cc"/>
+      <Lightformer intensity={0.9} position={[-15,5,-10]} scale={[10,6,1]} color="#9fc4d4"/>
+      <Lightformer intensity={0.7} position={[15,5,10]} scale={[10,6,1]} color="#e1bd70"/>
+    </Environment>
     <Architecture employees={employees}/>
     <CameraRig mode={cameraMode} followPosition={employees.find(e=>e.id===selected)?.position??{x:0,z:0}}/>
-    <PeopleErrorBoundary fallback={<FallbackPeople employees={employees} selected={selected} onSelect={onSelect}/> }><Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense></PeopleErrorBoundary>
+    <Suspense fallback={null}><People employees={employees} selected={selected} onSelect={onSelect}/></Suspense>
     <ContactShadows position={[0,-.12,0]} opacity={.28} scale={48} blur={2.6} far={6}/>
 
     <OrbitControls enabled={cameraMode==="FREE"} makeDefault target={[0,0,0]} minDistance={9} maxDistance={58} maxPolarAngle={Math.PI/2.08} minPolarAngle={.18} enableDamping dampingFactor={.08}/>
@@ -187,6 +233,8 @@ function WorldScene({employees,selected,onSelect,cameraMode}:{employees:Employee
 }
 export function ExecutiveWorld3D(){
   const [world,setWorld]=useState<SimulationState>(initialWorld),[selected,setSelected]=useState("ceo"),[camera,setCamera]=useState<"CEO"|"FREE"|"FOLLOW"|"CINEMA">("FREE"),[department,setDepartment]=useState<(typeof SIM_DEPARTMENTS)[number]>("All");
+  const [webgl]=useState<boolean>(()=>typeof document==="undefined"||canUseWebGL());
+  const [attempt,setAttempt]=useState(0);
   
   useEffect(()=>{const timer=window.setInterval(()=>setWorld(w=>{if(w.paused||w.speed===0)return w;const next=tickSimulation(w,10_000).state;return {...next,lastWallClockAt:Date.now()}}),900);return()=>window.clearInterval(timer)},[]);
   const active=world.employees.filter(e=>e.status==="active").length,working=world.employees.filter(e=>e.activity==="working").length,walking=world.employees.filter(e=>e.activity==="walking").length;
@@ -204,9 +252,11 @@ export function ExecutiveWorld3D(){
       </div>
     </div>
     <div className="q3d-stage">
-      <Suspense fallback={<div className="q3d-loading">Loading realistic people and headquarters…</div>}>
-        <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("FOLLOW")}} cameraMode={camera}/>
-      </Suspense>
+      {webgl?<SceneErrorBoundary key={attempt} label="3D view" fallback={<WorldUnavailable reason="The 3D view stopped on this device." onRetry={()=>setAttempt(a=>a+1)}/>}>
+        <Suspense fallback={<div className="q3d-loading">Loading headquarters…</div>}>
+          <WorldScene employees={world.employees} selected={selected} onSelect={id=>{setSelected(id);setCamera("FOLLOW")}} cameraMode={camera}/>
+        </Suspense>
+      </SceneErrorBoundary>:<WorldUnavailable reason="This device cannot start the 3D view (WebGL is switched off or unavailable)."/>}
       <div className="q3d-scene-hud"><span>Q EXECUTIVE CAMPUS</span><span>{world.employees.filter(e=>e.tier==="leadership").length} EXECUTIVES · {world.employees.length} PEOPLE</span></div>
     </div>
     <div className="q3d-room-selector">
