@@ -5,16 +5,15 @@ import "./q-world.css";
 
 type Unit = { id:string; name:string; department:string; role:string; color:[number,number,number]; x:number; z:number; mission:string };
 const UNITS:Unit[] = [
- {id:"q",name:"Q OS",department:"Headquarters",role:"Company operating system",color:[.82,.16,.19],x:0,z:0,mission:"Coordinate the company and its operating systems"},
+ {id:"q",name:"NASSIM AI HQ / Q",department:"Headquarters",role:"Company operating system",color:[.82,.16,.19],x:0,z:0,mission:"Coordinate the company and its operating systems"},
  {id:"certigo",name:"CERTIGO",department:"Education",role:"Learning platform",color:[.18,.52,.88],x:-22,z:-17,mission:"Build and monetise professional learning"},
- {id:"novae",name:"NOVAÉ",department:"Revenue",role:"Brand and growth studio",color:[.79,.58,.26],x:21,z:-17,mission:"Acquire clients and deliver brand services"},
+ {id:"dalil",name:"DALIL AL-BAZOURIEH",department:"Directory",role:"Business directory",color:[.76,.62,.4],x:-39,z:0,mission:"Build a trusted local business discovery network"},
  {id:"lumeris",name:"LUMERIS",department:"Media",role:"Media and audience business",color:[.82,.19,.22],x:22,z:16,mission:"Grow audience and monetise media"},
- {id:"edge",name:"ANGOLA EDGE",department:"Intelligence",role:"Market intelligence",color:[.2,.68,.57],x:-22,z:16,mission:"Turn verified market signals into decisions"},
- {id:"dalil",name:"DALIL",department:"Community",role:"Business directory",color:[.76,.62,.4],x:-39,z:0,mission:"Build a trusted local business discovery network"},
- {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"},
- {id:"counter",name:"COUNTER-TRADER",department:"Investment",role:"Trading research system",color:[.22,.68,.38],x:0,z:31,mission:"Analyse markets; all trades remain owner-controlled"},
- {id:"ali",name:"ALI QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-39,z:-18,mission:"Create engaging educational experiences"},
- {id:"novae-tools",name:"CREATOR TOOLS",department:"Revenue",role:"Creator workflow tools",color:[.84,.38,.22],x:39,z:-18,mission:"Build reusable tools for content production"}
+ {id:"xauusd",name:"XAU/USD TRADING HQ",department:"Trading",role:"Trading research system",color:[.22,.68,.38],x:0,z:31,mission:"Analyse markets; all trades remain owner-controlled"},
+ {id:"novae",name:"NOVAÉ",department:"Agency",role:"Brand and growth studio",color:[.79,.58,.26],x:21,z:-17,mission:"Acquire clients and deliver brand services"},
+ {id:"lep",name:"LUANDA EDGE PULSE",department:"Intelligence",role:"Market intelligence",color:[.2,.68,.57],x:-22,z:16,mission:"Turn verified market signals into decisions"},
+ {id:"ali-quest",name:"ALI-QUEST / CISA QUEST",department:"Education",role:"Learning game",color:[.22,.65,.78],x:-39,z:-18,mission:"Create engaging educational experiences"},
+ {id:"radio",name:"RADIO CEDARS",department:"Media",role:"Audio and community media",color:[.54,.38,.78],x:39,z:0,mission:"Build a loyal audience and sponsorship revenue"}
 ];
 type Cube={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number]};
 const cube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number]):Cube=>({x,y,z,sx,sy,sz,color});
