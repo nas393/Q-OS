@@ -18,7 +18,7 @@ const UNITS:Unit[] = [
  {id:"xauusd",name:"XAU/USD TRADING HQ",department:"Trading & Investment",role:"Trading research system",color:[.22,.68,.38],mission:"Analyse markets; all trades remain owner-controlled"}
 ];
 type VisualSettings={environment:"executive"|"daylight"|"sunset";palette:"brand"|"monochrome"|"vibrant";brightness:number;zoom:number;orbit:number;quality:"performance"|"balanced"|"high";labels:boolean};
-const DEFAULT_VISUALS:VisualSettings={environment:"executive",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
+const DEFAULT_VISUALS:VisualSettings={environment:"daylight",palette:"brand",brightness:1,zoom:1,orbit:42,quality:"balanced",labels:true};
 
 export function QWorldView(){
  const [mode,setMode]=useState<"isometric"|"third-person">("isometric");
