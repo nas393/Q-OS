@@ -14,12 +14,12 @@ export function QMark({size=28,className="",title}:{size?:number;className?:stri
       role={title?"img":undefined} aria-label={title} aria-hidden={title?undefined:true} focusable="false">
       <defs>
         <linearGradient id={ring} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" style={{stopColor:"var(--qm-ring-a,#FF4D5E)"}}/>
-          <stop offset="1" style={{stopColor:"var(--qm-ring-b,#C8102E)"}}/>
+          <stop offset="0" style={{stopColor:"var(--qm-ring-a,#E5776C)"}}/>
+          <stop offset="1" style={{stopColor:"var(--qm-ring-b,#B5443A)"}}/>
         </linearGradient>
         <linearGradient id={glyph} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{stopColor:"var(--qm-glyph-a,#FFFFFF)"}}/>
-          <stop offset="1" style={{stopColor:"var(--qm-glyph-b,#AEB3BF)"}}/>
+          <stop offset="0" style={{stopColor:"var(--qm-glyph-a,#F2EDE3)"}}/>
+          <stop offset="1" style={{stopColor:"var(--qm-glyph-b,#CFC7B8)"}}/>
         </linearGradient>
       </defs>
       <circle cx="32" cy="32" r="28.6" fill="none" stroke={`url(#${ring})`} strokeWidth="3.6"/>
