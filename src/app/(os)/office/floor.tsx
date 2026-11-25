@@ -1,6 +1,6 @@
 "use client";
-/* The Office: Q runs the floor. The illustrated plan is the room. Every desk is an app at work: a figure with a
-   speech bubble for its name and status. The rail holds the briefing, the inbox, the workflows and today's focus.
+/* The Office: Q runs the floor. The illustrated plan is the room. Every desk is an app at work: a person or a robot
+   with a speech bubble for its name and status. The rail holds the briefing, the inbox, the workflows and today's focus.
    Tap a figure to open its desk. Nothing here runs without the owner: every action is a button or a form. */
 import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import {AppMark} from "@/components/shell/app-mark";
 import {QMark} from "@/components/shell/q-mark";
 import {jobsFor,type WorkBody} from "@/lib/office/jobs";
 import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Staff} from "@/lib/office/staff";
-import {FloorArt,MAP_H,MAP_W,SEATS,ZONES,place} from "./floor-art";
+import {FloorArt,MAP_H,MAP_W,ROOM_LEGEND,STATIONS,place} from "./floor-art";
 import "./office.css";
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
@@ -29,7 +29,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   const [msg,setMsg]=useState("");
   const dlg=useRef<HTMLDialogElement>(null);
   /* The plan keeps one design size and scales with the window: floor and people scale together. Phones get a
-     floor of at least 62% so the people stay readable, and the stage scrolls sideways instead of shrinking. */
+     plan of at least 62% so the people stay readable, and the stage scrolls sideways instead of shrinking. */
   const stage=useRef<HTMLDivElement>(null);
   const [k,setK]=useState(1);
   useEffect(()=>{const el=stage.current;if(!el)return;
@@ -126,18 +126,16 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     :n.kind==="alert"&&n.alertId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>markSeen(n.alertId!)}>Clear</button>
     :n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Open</a>:null;
 
-  /* A figure on the floor: the app's mark as its head, a torso, and a bubble with its name and status. */
+  /* A figure on the plan: the drawing is in the SVG; this is the speech bubble and the hit area over it. */
   const figure=(r:typeof floor[number])=>{
-    const seat=SEATS[r.staff.id];
+    const st=STATIONS.find(s=>s.id===r.staff.id)!;
     const d=r.staff.id==="q"?qDesk:r.desk;
-    const at=seat.desk?place(seat.x,seat.y+0.3,9):place(seat.x,seat.y,0);
+    const at=place(st.x,st.y,st.standing?0:9);
     return <button key={r.staff.id} type="button" className={`of-char${r.staff.id==="q"?" is-q":""}`} data-light={d.light} style={at}
       onClick={()=>{setMsg("");setOpen(r.staff.id)}}
       aria-label={`${r.staff.name}, ${r.staff.role}. ${LIGHT_TEXT[d.light]}. ${d.line}${d.open.length?` ${d.open.length} open tasks.`:""}`}>
       <span className="of-bubble"><b>{r.staff.name}</b><i className="of-pill">{LIGHT_TEXT[d.light]}</i></span>
-      <span className="of-figure" aria-hidden="true">
-        <span className="of-head">{r.staff.id==="q"?<QMark size={34}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={34}/>}</span>
-        <span className="of-torso"/>
+      <span className="of-spacer" aria-hidden="true">
         {d.needs.length>0&&<b className="of-badge">{d.needs.length}</b>}
         {d.open.length>0&&<i className="of-tray">{d.open.length}</i>}
       </span>
@@ -160,16 +158,22 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
 
     <div className="of-grid">
       <section className="of-stage-card" aria-labelledby="of-plan-h">
-        <h2 id="of-plan-h" className="sr">Office floor plan</h2>
-        <form className="of-cmd" onSubmit={command} aria-label="Ask Q or give a task">
-          <label htmlFor="of-cmd-t" className="sr">Ask Q or give a task</label>
-          <input id="of-cmd-t" name="title" maxLength={160} required autoComplete="off" placeholder="Ask Q or give a desk a task…"/>
-          <label htmlFor="of-cmd-d" className="sr">Give it to</label>
-          <select id="of-cmd-d" name="desk" defaultValue="">
-            <option value="">Q (no desk)</option>
-            {STAFF.filter(s=>s.id!=="q").map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <button className="btn primary sm" disabled={busy}>{busy?"Sending…":"Send"}</button>
+        <div className="of-stage-head">
+          <h2 id="of-plan-h">Virtual office floor</h2>
+          <span className="of-muted">Q OS · AI HQ</span>
+        </div>
+        <form className="of-cmd" onSubmit={command} aria-label="CEO command bar">
+          <span className="of-cmd-title">CEO command bar</span>
+          <div className="of-cmd-row">
+            <label htmlFor="of-cmd-t" className="sr">Ask Q or give a task</label>
+            <input id="of-cmd-t" name="title" maxLength={160} required autoComplete="off" placeholder="Ask Q or assign a task…"/>
+            <label htmlFor="of-cmd-d" className="sr">Give it to</label>
+            <select id="of-cmd-d" name="desk" defaultValue="">
+              <option value="">Q (no desk)</option>
+              {STAFF.filter(s=>s.id!=="q").map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <button className="of-send" disabled={busy}>{busy?"Sending…":"Send"}</button>
+          </div>
         </form>
         {msg&&<p className="of-msg" role="status">{msg}</p>}
 
@@ -181,49 +185,57 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
             </div>
           </div>
         </div>
-        <ul className="of-zones" aria-label="Rooms">{ZONES.map(z=><li key={z.id}><i style={{background:z.tint}} aria-hidden="true"/>{z.label}</li>)}</ul>
+        <ul className="of-zones" aria-label="Rooms">{ROOM_LEGEND.map(z=><li key={z.id}>{z.label}</li>)}</ul>
         {approvalsFailed.length>0&&<p className="of-note">Could not reach the review queue of: {approvalsFailed.map(id=>STAFF.find(s=>s.id===id)?.name??id).join(", ")}.</p>}
       </section>
 
       <aside className="of-rail" aria-label="Briefing, inbox, workflows and focus">
-        <section className={`of-card of-standup${meeting.allClear?" clear":""}`} aria-labelledby="of-st">
-          <div className="of-st-q"><QMark size={30}/></div>
-          <div>
-            <h2 id="of-st">Executive briefing</h2>
-            <ol>{meeting.lines.map(l=><li key={l}>{l}</li>)}</ol>
-            <details><summary>Hear every desk</summary>
-              <ul>{team.map(r=><li key={r.staff.id} data-light={r.desk.light}><b>{r.staff.name}</b> · {r.staff.role}: {r.desk.line}</li>)}</ul>
-            </details>
+        <details className={`of-card of-standup${meeting.allClear?" clear":""}`} open>
+          <summary className="of-sum"><span>Executive briefing</span><span className="of-chev" aria-hidden="true"/></summary>
+          <div className="of-sec">
+            <div className="of-st-q"><QMark size={28}/></div>
+            <div>
+              <ol>{meeting.lines.map(l=><li key={l}>{l}</li>)}</ol>
+              <details className="of-hear"><summary>Hear every desk</summary>
+                <ul>{team.map(r=><li key={r.staff.id} data-light={r.desk.light}><b>{r.staff.name}</b> · {r.staff.role}: {r.desk.line}</li>)}</ul>
+              </details>
+            </div>
           </div>
-        </section>
+        </details>
 
-        <section className="of-card" aria-labelledby="of-in">
-          <h2 id="of-in" className="of-h">Your inbox <span className="of-count">{tray.length}</span></h2>
-          {tray.length===0?<p className="of-empty">Nothing waits for you. Approvals, late tasks and alerts land here.</p>
-            :<ul className="of-list">{tray.slice(0,8).map(({staff,need},i)=><li key={`${staff.id}-${need.kind}-${need.taskId??need.alertId??i}`} data-light={need.level==="red"?"down":"watch"}>
-              <span className="of-kind">{KIND_TEXT[need.kind]}</span>
-              <span className="of-what"><b>{staff.name}</b> · {need.title}</span>
-              {needAction(need)}
-            </li>)}</ul>}
-        </section>
+        <details className="of-card" open>
+          <summary className="of-sum"><span>Your inbox</span><span className="of-count">{tray.length}</span></summary>
+          <div className="of-sec">
+            {tray.length===0?<p className="of-empty">Nothing waits for you. Approvals, late tasks and alerts land here.</p>
+              :<ul className="of-list">{tray.slice(0,8).map(({staff,need},i)=><li key={`${staff.id}-${need.kind}-${need.taskId??need.alertId??i}`} data-light={need.level==="red"?"down":"watch"}>
+                <span className="of-kind">{KIND_TEXT[need.kind]}</span>
+                <span className="of-what"><b>{staff.name}</b> · {need.title}</span>
+                {needAction(need)}
+              </li>)}</ul>}
+          </div>
+        </details>
 
-        <section className="of-card" aria-labelledby="of-wf">
-          <h2 id="of-wf" className="of-h">Workflows</h2>
-          {!apps?<p className="of-empty">Checking every app…</p>
-            :<ul className="of-list">{floor.filter(r=>r.staff.id!=="q"&&r.staff.id!=="ops").map(r=>{const s=appState(r);return <li key={r.staff.id}>
-              <span className="of-what">{r.staff.name}</span>
-              <span className={`of-status ${s.cls}`}>{s.label}</span>
-            </li>;})}</ul>}
-        </section>
+        <details className="of-card" open>
+          <summary className="of-sum"><span>Autopilot workflows</span></summary>
+          <div className="of-sec">
+            {!apps?<p className="of-empty">Checking every app…</p>
+              :<ul className="of-list">{floor.filter(r=>r.staff.id!=="q"&&r.staff.id!=="ops").map(r=>{const s=appState(r);return <li key={r.staff.id}>
+                <span className="of-what">{r.staff.name}</span>
+                <span className={`of-status ${s.cls}`}>{s.label}</span>
+              </li>;})}</ul>}
+          </div>
+        </details>
 
-        <section className="of-card" aria-labelledby="of-fc">
-          <h2 id="of-fc" className="of-h">Daily focus</h2>
-          {focus.length===0?<p className="of-empty">Nothing due today or late. Add a task above.</p>
-            :<ul className="of-list">{focus.map(t=>{const late=(t.due??"")<today;return <li key={t.id} data-light={late?"watch":"ok"}>
-              <label className="of-check"><input type="checkbox" onChange={()=>done(t.id)} aria-label={`Mark done: ${t.title}`}/><span className="of-what">{t.title}</span></label>
-              <span className={`of-status ${late?"watch":"idle"}`}>{late?"Late":"Today"}</span>
-            </li>;})}</ul>}
-        </section>
+        <details className="of-card" open>
+          <summary className="of-sum"><span>Daily focus</span></summary>
+          <div className="of-sec">
+            {focus.length===0?<p className="of-empty">Nothing due today or late. Add a task above.</p>
+              :<ul className="of-list">{focus.map(t=>{const late=(t.due??"")<today;return <li key={t.id} data-light={late?"watch":"ok"}>
+                <label className="of-check"><input type="checkbox" onChange={()=>done(t.id)} aria-label={`Mark done: ${t.title}`}/><span className="of-what">{t.title}</span></label>
+                <span className={`of-status ${late?"watch":"idle"}`}>{late?"Late":"Today"}</span>
+              </li>;})}</ul>}
+          </div>
+        </details>
       </aside>
     </div>
 
