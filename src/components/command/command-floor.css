@@ -1,0 +1,114 @@
+/* Command floor. Every colour, size and radius comes from the Q OS tokens (src/styles/tokens.css),
+   so the floor follows the theme and accent the owner chose in Studio. Scoped under .cf. */
+
+.cf{max-width:var(--page-max);margin:0 auto;padding:var(--page-pad);color:var(--text);font-family:var(--sans);font-size:var(--fs-md);line-height:var(--lh-md)}
+.cf *{box-sizing:border-box}
+.cf a,.cf button,.cf input,.cf select{-webkit-tap-highlight-color:transparent}
+.cf a:focus-visible,.cf button:focus-visible,.cf input:focus-visible,.cf select:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+
+.cf-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.cf-eyebrow{font-size:var(--fs-xs);line-height:var(--lh-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.cf-muted{color:var(--muted);font-size:var(--fs-sm);margin:0}
+.cf-empty{margin:0;font-size:var(--fs-sm);color:var(--muted)}
+.cf-error{margin:var(--s-2) 0 0;font-size:var(--fs-sm);color:var(--crit-ink)}
+.cf-warn{margin:var(--s-2) 0 0;font-size:var(--fs-sm);color:var(--watch-ink)}
+.cf-warn-list{margin:var(--s-2) 0 0;padding-left:var(--s-4);font-size:var(--fs-xs);color:var(--watch-ink)}
+
+/* Header */
+.cf-head{margin-bottom:var(--s-5)}
+.cf-title{margin:var(--s-1) 0 0;font-size:var(--fs-3xl);line-height:var(--lh-3xl);font-weight:650;letter-spacing:-.02em}
+.cf-sub{margin:var(--s-2) 0 0;max-width:62ch;font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2)}
+
+/* Command bar: one floating pill */
+.cf-bar{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-2);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-full);box-shadow:var(--shadow-sm);transition:border-color var(--dur-2) var(--ease)}
+.cf-bar:focus-within{border-color:var(--accent-ink)}
+.cf-input{flex:1;min-width:0;height:var(--h-md);padding:0 var(--s-4);border:0;background:transparent;color:var(--text);font:inherit;font-size:var(--fs-md);outline:none}
+.cf-input::placeholder{color:var(--muted)}
+.cf-select{height:var(--h-md);max-width:190px;padding:0 var(--s-3);border:1px solid var(--line-2);border-radius:var(--r-full);background:var(--surface-2);color:var(--text);font:inherit;font-size:var(--fs-sm)}
+.cf-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);height:var(--h-md);padding:0 var(--s-5);border:1px solid transparent;border-radius:var(--r-full);background:var(--accent-solid);color:var(--on-accent);font:inherit;font-size:var(--fs-sm);font-weight:600;cursor:pointer;white-space:nowrap;transition:transform var(--dur-1) var(--ease),opacity var(--dur-1) var(--ease)}
+.cf-btn:active:not(:disabled){transform:scale(.98)}
+.cf-btn:disabled{opacity:.45;cursor:default}
+.cf-btn--ghost{background:transparent;color:var(--text);border-color:var(--line-2)}
+.cf-btn--ghost:hover:not(:disabled){background:var(--hover)}
+.cf-notice{min-height:20px;margin:var(--s-2) var(--s-4) 0;font-size:var(--fs-sm);color:var(--text-2)}
+
+/* Layout: floor on the left, inspector and rail on the right; stacked below 1100px */
+.cf-grid{display:grid;gap:var(--s-5);margin-top:var(--s-4);grid-template-columns:minmax(0,1fr);grid-template-areas:"floor" "inspector" "rail"}
+.cf-floor{grid-area:floor}
+.cf-inspector{grid-area:inspector;align-self:start}
+.cf-rail{grid-area:rail;display:grid;gap:var(--s-5);grid-template-columns:minmax(0,1fr);align-content:start}
+@media (min-width:1100px){
+  .cf-grid{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"floor inspector" "rail inspector";align-items:start}
+  .cf-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.cf-panel{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-lg);padding:var(--s-5);min-width:0}
+.cf-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3);margin-bottom:var(--s-2)}
+.cf-h2s{margin:0;font-size:var(--fs-md);line-height:var(--lh-md);font-weight:650}
+.cf-h2{margin:var(--s-1) 0 0;font-size:var(--fs-2xl);line-height:var(--lh-2xl);font-weight:650;letter-spacing:-.01em}
+.cf-h3{margin:0 0 var(--s-1);font-size:var(--fs-xs);line-height:var(--lh-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* Floor */
+.cf-svg{display:block;width:100%;height:auto;overflow:visible}
+.cf-plate{fill:var(--surface-2);stroke:var(--line-2);stroke-width:1}
+.cf-grid-lines{fill:none;stroke:var(--line);stroke-width:1}
+.cf-face-l{fill:var(--surface-2);stroke:var(--line-2);stroke-width:1}
+.cf-face-r{fill:var(--line-2);stroke:var(--line-2);stroke-width:1}
+.cf-top{fill:var(--elevated);stroke:var(--line-3);stroke-width:1;transition:fill var(--dur-2) var(--ease),stroke var(--dur-2) var(--ease)}
+.cf-desk{cursor:pointer;outline:none;transition:transform var(--dur-1) var(--ease)}
+.cf-desk:hover .cf-top{fill:var(--surface-2)}
+.cf-desk:focus-visible .cf-top,.cf-desk.is-on .cf-top{stroke:var(--accent-ink);stroke-width:2}
+.cf-desk:active{transform:translateY(1px)}
+.cf-lamp{stroke:var(--surface);stroke-width:2}
+.cf-labels{pointer-events:none}
+.cf-label{fill:var(--text);font-family:var(--sans);font-size:15px;font-weight:600;text-anchor:middle}
+.cf-subtext{fill:var(--muted);font-family:var(--sans);font-size:12px;text-anchor:middle}
+.cf-legend{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-4);margin:var(--s-4) 0 0;padding:0;list-style:none;font-size:var(--fs-xs);color:var(--text-2)}
+.cf-legend li{display:inline-flex;align-items:center;gap:var(--s-2)}
+.cf-legend i{display:inline-block;width:8px;height:8px;border-radius:50%}
+
+/* Status colours (SVG lamps use fill, HTML dots use background) */
+.cf-light--ok{fill:var(--ok);background:var(--ok)}
+.cf-light--watch{fill:var(--watch);background:var(--watch)}
+.cf-light--crit{fill:var(--crit);background:var(--crit)}
+.cf-light--info{fill:var(--info);background:var(--info)}
+.cf-light--idle{fill:var(--muted);background:var(--muted)}
+.cf-light--info{animation:cf-pulse 1.6s var(--ease) infinite}
+@keyframes cf-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* Inspector */
+.cf-state{display:flex;align-items:center;gap:var(--s-2);margin-top:var(--s-2);font-size:var(--fs-sm);color:var(--text-2)}
+.cf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.cf-facts{margin:var(--s-4) 0 0;border-top:1px solid var(--line)}
+.cf-facts>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:var(--s-3);padding:var(--s-3) 0;border-bottom:1px solid var(--line);font-size:var(--fs-sm)}
+.cf-facts dt{color:var(--muted)}
+.cf-facts dd{margin:0;color:var(--text);overflow-wrap:anywhere}
+.cf-next{margin-top:var(--s-4)}
+.cf-next p{margin:0;font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2)}
+.cf-links{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-4)}
+.cf-block{margin-top:var(--s-5)}
+.cf-list{list-style:none;margin:var(--s-2) 0 0;padding:0;display:grid;gap:var(--s-1)}
+.cf-row{display:flex;align-items:center;gap:var(--s-3);min-height:var(--row);padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);color:var(--text);font-size:var(--fs-sm);text-decoration:none;cursor:pointer}
+.cf-row:hover{background:var(--hover)}
+.cf-row input[type="checkbox"]{width:16px;height:16px;margin:0;flex:none;accent-color:var(--accent-solid)}
+.cf-grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.cf-count{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text-2)}
+.cf-tag{font-size:var(--fs-xs);line-height:var(--lh-xs);padding:2px var(--s-2);border-radius:var(--r-full);border:1px solid var(--line-2);color:var(--text-2);white-space:nowrap}
+.cf-tag.is-late{border-color:var(--crit);color:var(--crit-ink)}
+.cf-link{font-size:var(--fs-sm);color:var(--accent-ink);text-decoration:none;font-weight:600;padding:var(--s-1) var(--s-2)}
+.cf-link:hover{text-decoration:underline}
+
+/* Motion and motion preference */
+@media (prefers-reduced-motion:reduce){
+  .cf *{animation:none!important;transition:none!important}
+}
+
+/* Phone: the command bar wraps, the floor scales to the width, and the inspector follows */
+@media (max-width:640px){
+  .cf-bar{flex-wrap:wrap;border-radius:var(--r-lg);padding:var(--s-3)}
+  .cf-input{flex-basis:100%;padding:0 var(--s-3)}
+  .cf-select{flex:1;max-width:none;min-width:0}
+  .cf-btn{flex:1}
+  .cf-title{font-size:var(--fs-2xl);line-height:var(--lh-2xl)}
+  .cf-panel{padding:var(--s-4)}
+  .cf-facts>div{grid-template-columns:96px minmax(0,1fr)}
+}

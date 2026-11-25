@@ -1,29 +1,28 @@
-import { getDb } from "@/lib/db";
+import { after } from "next/server";
 import { requireOwner } from "@/lib/auth";
+import { loadApprovals } from "@/lib/approvals";
 import { loadMetrics } from "@/lib/metrics";
 import { collectAppStats, loadAppStats } from "@/lib/app-stats";
-import { after } from "next/server";
-import WebOS from "@/components/web-os";
+import { PORTFOLIO_PROJECTS } from "@/lib/portfolio/registry";
+import CommandFloor from "@/components/command/command-floor";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Command centre" };
 
-/* The Command Center must open even when the database is slow or down: each query falls back on its own. */
-const count = (p: Promise<{ rows: Array<{ count: number }> }>) => p.then(r => r.rows[0]?.count ?? 0).catch(() => null);
-
+/* The floor loads live project, task and check data in the browser, so the server only resolves what
+   needs the server: the owner check, the approvals inbox, and the pushed gold price. */
 export default async function DashboardPage() {
   await requireOwner();
-  let db: ReturnType<typeof getDb> | null = null;
-  try { db = getDb(); } catch { db = null; }
-  const [conversations, activity, metrics, appStats] = await Promise.all([
-    db ? count(db.query("SELECT count(*)::int AS count FROM conversations WHERE user_id=$1", ["owner"])) : Promise.resolve(null),
-    db ? count(db.query("SELECT count(*)::int AS count FROM activity_logs WHERE created_at>now()-interval '24 hours'")) : Promise.resolve(null),
-    loadMetrics().catch(() => ({ metrics: {}, error: "Market data unavailable" })),
+  const [approvals, metrics, appStats] = await Promise.all([
+    loadApprovals(),
+    loadMetrics(),
     loadAppStats().catch(() => null)
   ]);
-  // Numbers older than an hour are refreshed after the page is sent (never delays it).
+  // App stats are still refreshed after the page is sent, as before (never delays it).
   if (!appStats || appStats.stale) after(() => collectAppStats().catch(() => undefined));
-  const dbDown = conversations === null && activity === null;
-  return <WebOS conversationCount={conversations ?? 0} activityCount={activity ?? 0} metrics={metrics.metrics} appStats={appStats?.stats ?? {}}
-    metricsError={dbDown ? "Database offline: showing live project data only." : metrics.error} />;
+
+  const x = metrics.metrics.xauusd;
+  const desks = PORTFOLIO_PROJECTS.map(p => ({ id: p.id, name: p.name, area: p.area, priority: p.priority, next: p.next }));
+  return <CommandFloor desks={desks} approvals={approvals}
+    xauusd={x ? { price: x.value.price, changePct: x.value.changePct, source: x.source, updatedAt: x.updatedAt } : null} />;
 }
