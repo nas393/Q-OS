@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- temporary for first preview; tighten types later */
 declare module "three" {
   const THREE: any;
   export = THREE;
