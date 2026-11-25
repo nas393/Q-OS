@@ -116,7 +116,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
 
       {/* ---------- Rail (desktop) ---------- */}
       <nav className="rail" aria-label="Q OS sections">
-        <Link href="/dashboard" className="rail-brand" aria-label="Q OS, Command centre"><QMark size={30}/><span className="lbl">Q OS</span></Link>
+        <Link href="/dashboard" className="rail-brand" aria-label="Q OS, Command centre"><QMark size={30}/><span className="lbl">Q OS<small>AI HQ</small></span></Link>
         <ul className="rail-list">{SECTIONS.filter(s=>s.rail).map(s=>{const on=s.id===section.id;return <li key={s.id}>
           <Link href={s.href} className="rail-i" aria-current={on?"page":undefined} data-tip={s.label}>
             <I n={s.icon}/><span className="lbl">{s.label}</span>

@@ -16,7 +16,7 @@
 
 /* Header */
 .cf-head{margin-bottom:var(--s-5)}
-.cf-title{margin:var(--s-1) 0 0;font-size:var(--fs-3xl);line-height:var(--lh-3xl);font-weight:650;letter-spacing:-.02em}
+.cf-title{margin:var(--s-1) 0 0;font-family:var(--serif);font-size:var(--fs-3xl);line-height:var(--lh-3xl);font-weight:400;letter-spacing:-.01em}
 .cf-sub{margin:var(--s-2) 0 0;max-width:62ch;font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2)}
 
 /* Command bar: one floating pill */

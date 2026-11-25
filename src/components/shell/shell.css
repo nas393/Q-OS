@@ -14,6 +14,7 @@
   background:var(--surface);border-right:1px solid var(--line-2);transition:width var(--dur-3) var(--ease);overflow:hidden}
 .os .rail-brand{display:flex;align-items:center;gap:12px;height:36px;margin:0 0 14px;padding:0 3px;font-weight:700;font-size:var(--fs-md);letter-spacing:.02em;white-space:nowrap}
 .os .rail-brand :is(img,.qmark){width:30px;height:30px;flex:none}
+.os .rail-brand small{display:block;margin-top:1px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .os .rail-list{display:grid;gap:2px}
 .os .rail-i{position:relative;display:flex;align-items:center;gap:12px;width:100%;height:42px;padding:0 12px;border-radius:10px;color:var(--text-2);font-size:var(--fs-sm);font-weight:500;white-space:nowrap;text-align:left}
 .os .rail-i svg.i{width:19px;height:19px}

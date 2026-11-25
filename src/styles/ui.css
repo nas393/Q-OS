@@ -104,7 +104,8 @@
 .os .page.wide{max-width:1440px}
 .os .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s-4);flex-wrap:wrap;margin-bottom:var(--s-6)}
 .os .ph-t{min-width:0;flex:1 1 320px}
-.os .ph h1{font-size:var(--fs-2xl);line-height:var(--lh-2xl);font-weight:600;letter-spacing:-.015em;color:var(--text)}
+.os h1,.os .ph h1{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;color:var(--text)}
+.os .ph h1{font-size:var(--fs-3xl);line-height:var(--lh-3xl)}
 .os .ph p{margin-top:var(--s-1);font-size:var(--fs-md);line-height:var(--lh-md);color:var(--text-2);max-width:72ch}
 .os .ph-acts{display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center}
 .os .ph-meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:var(--s-2);font-size:var(--fs-xs);color:var(--muted)}

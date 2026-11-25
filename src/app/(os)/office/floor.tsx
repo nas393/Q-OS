@@ -1,14 +1,15 @@
 "use client";
-/* The Office, drawn: Q's glass corner office and the rooms where every app works at its desk.
-   Each desk shows its status light, one number, its tasks from you and what needs you; tap a desk to open it.
-   The inbox lists everything waiting for you across the floor: approvals, late tasks and alerts. */
+/* The Office: Q runs the floor. The illustrated plan is the room. Every desk is an app at work: a figure with a
+   speech bubble for its name and status. The rail holds the briefing, the inbox, the workflows and today's focus.
+   Tap a figure to open its desk. Nothing here runs without the owner: every action is a button or a form. */
 import {useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import Link from "next/link";
 import {PageHeader} from "@/components/shell/page";
 import {AppMark} from "@/components/shell/app-mark";
 import {QMark} from "@/components/shell/q-mark";
 import {jobsFor,type WorkBody} from "@/lib/office/jobs";
-import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Room,type Staff} from "@/lib/office/staff";
+import {ROOMS,STAFF,assigneeOf,deskFor,inbox,opsDesk,ownerOf,standup,type Desk,type DeskAlert,type DeskApproval,type DeskTask,type Need,type Staff} from "@/lib/office/staff";
+import {FloorArt,MAP_H,MAP_W,SEATS,ZONES,place} from "./floor-art";
 import "./office.css";
 
 type LiveApp={id:string;name:string;url:string|null;state:string;pages:{label:string;url:string}[];icon?:string|null};
@@ -16,7 +17,6 @@ type Stats=Record<string,{stats:{label:string;value:string}[]}>;
 type WorkRow={id:string;staff:string;job:string;title:string;body:WorkBody;status:"waiting"|"approved"|"discarded";createdAt:string};
 const LIGHT_TEXT={ok:"All good",watch:"Watching",down:"Needs you",idle:"No data"} as const;
 const KIND_TEXT={alert:"Alert",approval:"Your yes",draft:"Draft",task:"Late task"} as const;
-const LAYOUT:Room[]=["corner","studio","academy","markets","community","screens","ops"];
 
 export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvalsFailed,work:initialWork,today}:{alerts:DeskAlert[];stats:Stats;tasks:DeskTask[];approvals:DeskApproval[];approvalsFailed:string[];work:WorkRow[];today:string}){
   const [apps,setApps]=useState<LiveApp[]|null>(null);
@@ -28,6 +28,13 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState("");
   const dlg=useRef<HTMLDialogElement>(null);
+  /* The plan keeps one design size and scales with the window: floor and people scale together. Phones get a
+     floor of at least 62% so the people stay readable, and the stage scrolls sideways instead of shrinking. */
+  const stage=useRef<HTMLDivElement>(null);
+  const [k,setK]=useState(1);
+  useEffect(()=>{const el=stage.current;if(!el)return;
+    const fit=()=>setK(Math.max(0.62,Math.min(1,el.clientWidth/MAP_W)));
+    fit();const ro=new ResizeObserver(fit);ro.observe(el);return()=>ro.disconnect();},[]);
 
   useEffect(()=>{
     let stop=false;
@@ -60,6 +67,9 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
   const qDesk:Desk={...q.desk,light:meeting.allClear?q.desk.light:floor.some(r=>r.desk.light==="down")?"down":"watch",line:meeting.lines[0]};
   const tray=inbox(floor.filter(r=>r.staff.id!=="ops"||r.desk.needs.length));
   const sel=floor.find(r=>r.staff.id===open)??null;
+  const nameOf=(id:string)=>STAFF.find(s=>s.id===id)?.name??id;
+  const focus=tasks.filter(t=>!t.done&&t.due!==null&&t.due<=today).sort((a,b)=>(a.due??"").localeCompare(b.due??""));
+  const waiting=tray.length;
 
   useEffect(()=>{const d=dlg.current;if(!d)return;if(open&&!d.open)d.showModal();if(!open&&d.open)d.close()},[open]);
 
@@ -98,6 +108,17 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
       setMsg(s.id==="q"?"Task added. Q will follow it up.":`Given to ${s.name}. Q will follow it up.`)}
     catch(err){setMsg((err as Error).message)}finally{setBusy(false)}
   }
+  /* The command bar: one line to Q, or to a named desk. */
+  async function command(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();const f=new FormData(e.currentTarget),title=String(f.get("title")??"").trim(),desk=String(f.get("desk")??"");
+    if(!title)return;
+    const name=desk?nameOf(desk):"";
+    setBusy(true);setMsg("");
+    try{const d=await send("/api/tasks","POST",{title,...(name?{project:name}:{})});
+      const t=d.task as DeskTask;setTasks(ts=>[...ts,{id:t.id,title:t.title,project:t.project,due:t.due,done:false}]);(e.target as HTMLFormElement).reset();
+      setMsg(name?`Given to ${name}. Q will follow it up.`:"Task added. Q will follow it up.")}
+    catch(err){setMsg((err as Error).message)}finally{setBusy(false)}
+  }
 
   const needAction=(n:Need)=>n.kind==="approval"&&n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Review</a>
     :n.kind==="task"&&n.taskId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>done(n.taskId!)}>Done</button>
@@ -105,56 +126,105 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     :n.kind==="alert"&&n.alertId?<button type="button" className="btn ghost sm" disabled={busy} onClick={()=>markSeen(n.alertId!)}>Clear</button>
     :n.url?<a className="btn ghost sm" href={n.url} target="_blank" rel="noreferrer">Open</a>:null;
 
-  const deskBtn=(r:typeof floor[number],big=false)=>{
+  /* A figure on the floor: the app's mark as its head, a torso, and a bubble with its name and status. */
+  const figure=(r:typeof floor[number])=>{
+    const seat=SEATS[r.staff.id];
     const d=r.staff.id==="q"?qDesk:r.desk;
-    return <button key={r.staff.id} type="button" className={`of-desk${big?" big":""}`} data-light={d.light} onClick={()=>{setMsg("");setOpen(r.staff.id)}}
+    const at=seat.desk?place(seat.x,seat.y+0.3,9):place(seat.x,seat.y,0);
+    return <button key={r.staff.id} type="button" className={`of-char${r.staff.id==="q"?" is-q":""}`} data-light={d.light} style={at}
+      onClick={()=>{setMsg("");setOpen(r.staff.id)}}
       aria-label={`${r.staff.name}, ${r.staff.role}. ${LIGHT_TEXT[d.light]}. ${d.line}${d.open.length?` ${d.open.length} open tasks.`:""}`}>
-      <span className="of-top" aria-hidden="true">
-        <span className="of-seat">{r.staff.id==="q"?<QMark size={big?40:30}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={big?40:30}/>}</span>
+      <span className="of-bubble"><b>{r.staff.name}</b><i className="of-pill">{LIGHT_TEXT[d.light]}</i></span>
+      <span className="of-figure" aria-hidden="true">
+        <span className="of-head">{r.staff.id==="q"?<QMark size={34}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={34}/>}</span>
+        <span className="of-torso"/>
         {d.needs.length>0&&<b className="of-badge">{d.needs.length}</b>}
         {d.open.length>0&&<i className="of-tray">{d.open.length}</i>}
       </span>
-      <span className="of-chair" aria-hidden="true"/>
-      <span className="of-plate"><b>{r.staff.name}</b><small>{r.staff.role}</small>{d.headline&&<em>{d.headline}</em>}</span>
     </button>;
   };
 
+  const appState=(r:typeof floor[number])=>{
+    const s=r.app?.state;
+    if(!apps)return {label:"Checking",cls:"idle"};
+    if(!r.app)return {label:"No address",cls:"idle"};
+    if(s==="READY"||s==="EXTERNAL")return {label:"Live",cls:"ok"};
+    if(s==="BUILDING"||s==="QUEUED"||s==="INITIALIZING")return {label:"Deploying",cls:"info"};
+    if(s==="ERROR"||s==="CANCELED")return {label:"Failed",cls:"down"};
+    return {label:"Checking",cls:"idle"};
+  };
+
   return <div className="page office">
-    <PageHeader title="Office" desc="Q runs the office. Every app works at its desk. Tap a desk to open it or give it a task."
-      meta={apps===null?"Checking every desk…":`${team.filter(r=>r.desk.light==="ok").length} of ${team.length} desks all good`}/>
+    <PageHeader title="Office" desc="Q runs the office. Every app works at its desk. Tap a figure to open its desk, or give it a task."
+      meta={apps===null?"Checking every desk…":`${team.filter(r=>r.desk.light==="ok").length} of ${team.length} desks all good · ${waiting} waiting for you`}/>
 
-    <section className={`of-standup${meeting.allClear?" clear":""}`} aria-labelledby="of-st">
-      <div className="of-st-q"><QMark size={34}/></div>
-      <div>
-        <h2 id="of-st">Morning stand-up</h2>
-        <ol>{meeting.lines.map(l=><li key={l}>{l}</li>)}</ol>
-        <details><summary>Hear every desk</summary>
-          <ul>{team.map(r=><li key={r.staff.id} data-light={r.desk.light}><b>{r.staff.name}</b> · {r.staff.role}: {r.desk.line}</li>)}</ul>
-        </details>
-      </div>
-    </section>
+    <div className="of-grid">
+      <section className="of-stage-card" aria-labelledby="of-plan-h">
+        <h2 id="of-plan-h" className="sr">Office floor plan</h2>
+        <form className="of-cmd" onSubmit={command} aria-label="Ask Q or give a task">
+          <label htmlFor="of-cmd-t" className="sr">Ask Q or give a task</label>
+          <input id="of-cmd-t" name="title" maxLength={160} required autoComplete="off" placeholder="Ask Q or give a desk a task…"/>
+          <label htmlFor="of-cmd-d" className="sr">Give it to</label>
+          <select id="of-cmd-d" name="desk" defaultValue="">
+            <option value="">Q (no desk)</option>
+            {STAFF.filter(s=>s.id!=="q").map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <button className="btn primary sm" disabled={busy}>{busy?"Sending…":"Send"}</button>
+        </form>
+        {msg&&<p className="of-msg" role="status">{msg}</p>}
 
-    <section className="of-inbox" aria-labelledby="of-in">
-      <h2 id="of-in">Your inbox <span className="of-count">{tray.length}</span></h2>
-      {msg&&<p className="of-msg" role="status">{msg}</p>}
-      {tray.length===0?<p className="of-empty">Nothing waits for you. Approvals, late tasks and alerts land here.</p>
-        :<ul>{tray.slice(0,12).map(({staff,need},i)=><li key={`${staff.id}-${need.kind}-${need.taskId??need.alertId??i}`} data-light={need.level==="red"?"down":"watch"}>
-          <span className="of-kind">{KIND_TEXT[need.kind]}</span>
-          <span className="of-what"><b>{staff.name}</b> · {need.title}</span>
-          {needAction(need)}
-        </li>)}</ul>}
-      {approvalsFailed.length>0&&<p className="of-note">Could not reach the review queue of: {approvalsFailed.map(id=>STAFF.find(s=>s.id===id)?.name??id).join(", ")}.</p>}
-    </section>
+        <div className="of-stage" ref={stage}>
+          <div className="of-fit" style={{width:MAP_W*k,height:MAP_H*k}}>
+            <div className="of-map" style={{width:MAP_W,height:MAP_H,transform:`scale(${k})`}} role="group" aria-label="Office floor plan">
+              <FloorArt/>
+              {floor.map(r=>figure(r))}
+            </div>
+          </div>
+        </div>
+        <ul className="of-zones" aria-label="Rooms">{ZONES.map(z=><li key={z.id}><i style={{background:z.tint}} aria-hidden="true"/>{z.label}</li>)}</ul>
+        {approvalsFailed.length>0&&<p className="of-note">Could not reach the review queue of: {approvalsFailed.map(id=>STAFF.find(s=>s.id===id)?.name??id).join(", ")}.</p>}
+      </section>
 
-    <div className="of-floor" role="group" aria-label="Office floor plan">
-      {LAYOUT.map(room=>{
-        const here=floor.filter(r=>r.staff.room===room);
-        return <section key={room} className={`of-room of-${room}`} aria-label={ROOMS[room].label}>
-          <header className="of-sign"><b>{ROOMS[room].label}</b><small>{ROOMS[room].note}</small></header>
-          <div className="of-desks">{here.map(r=>deskBtn(r,room==="corner"))}</div>
-          <span className="of-plant" aria-hidden="true"/>
-        </section>;
-      })}
+      <aside className="of-rail" aria-label="Briefing, inbox, workflows and focus">
+        <section className={`of-card of-standup${meeting.allClear?" clear":""}`} aria-labelledby="of-st">
+          <div className="of-st-q"><QMark size={30}/></div>
+          <div>
+            <h2 id="of-st">Executive briefing</h2>
+            <ol>{meeting.lines.map(l=><li key={l}>{l}</li>)}</ol>
+            <details><summary>Hear every desk</summary>
+              <ul>{team.map(r=><li key={r.staff.id} data-light={r.desk.light}><b>{r.staff.name}</b> · {r.staff.role}: {r.desk.line}</li>)}</ul>
+            </details>
+          </div>
+        </section>
+
+        <section className="of-card" aria-labelledby="of-in">
+          <h2 id="of-in" className="of-h">Your inbox <span className="of-count">{tray.length}</span></h2>
+          {tray.length===0?<p className="of-empty">Nothing waits for you. Approvals, late tasks and alerts land here.</p>
+            :<ul className="of-list">{tray.slice(0,8).map(({staff,need},i)=><li key={`${staff.id}-${need.kind}-${need.taskId??need.alertId??i}`} data-light={need.level==="red"?"down":"watch"}>
+              <span className="of-kind">{KIND_TEXT[need.kind]}</span>
+              <span className="of-what"><b>{staff.name}</b> · {need.title}</span>
+              {needAction(need)}
+            </li>)}</ul>}
+        </section>
+
+        <section className="of-card" aria-labelledby="of-wf">
+          <h2 id="of-wf" className="of-h">Workflows</h2>
+          {!apps?<p className="of-empty">Checking every app…</p>
+            :<ul className="of-list">{floor.filter(r=>r.staff.id!=="q"&&r.staff.id!=="ops").map(r=>{const s=appState(r);return <li key={r.staff.id}>
+              <span className="of-what">{r.staff.name}</span>
+              <span className={`of-status ${s.cls}`}>{s.label}</span>
+            </li>;})}</ul>}
+        </section>
+
+        <section className="of-card" aria-labelledby="of-fc">
+          <h2 id="of-fc" className="of-h">Daily focus</h2>
+          {focus.length===0?<p className="of-empty">Nothing due today or late. Add a task above.</p>
+            :<ul className="of-list">{focus.map(t=>{const late=(t.due??"")<today;return <li key={t.id} data-light={late?"watch":"ok"}>
+              <label className="of-check"><input type="checkbox" onChange={()=>done(t.id)} aria-label={`Mark done: ${t.title}`}/><span className="of-what">{t.title}</span></label>
+              <span className={`of-status ${late?"watch":"idle"}`}>{late?"Late":"Today"}</span>
+            </li>;})}</ul>}
+        </section>
+      </aside>
     </div>
 
     <dialog ref={dlg} className="of-sheet" onClose={()=>setOpen(null)} aria-labelledby="of-sh-t">

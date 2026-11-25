@@ -1,67 +1,70 @@
 /* =====================================================================
-   Q OS DESIGN SYSTEM: tokens only. Two themes (Paper, Dusk), one accent, colour used for status alone.
-   Principles, taken from Monument Valley and Gather.town:
+   Q OS DESIGN SYSTEM: tokens only. "Q OS, AI HQ": a warm, quiet workplace. Two themes (Paper, Dusk),
+   one accent (clay), and colour used for status alone. Every name below is stable: sections use the names,
+   so a theme or an accent change happens here and nowhere else.
+   Principles, from the Gather.town floor and Monument Valley:
    1. Space before chrome. The page and the floor are the interface; the frame stays thin.
-   2. Flat, tactile planes. Raised things have a lower edge (--edge) and press down when used.
-   3. A warm, quiet palette: ivory or graphite, never blue-black, never neon. No glow, no pure black.
+   2. Objects you can touch have a lower edge (--edge) and sink when pressed.
+   3. Warm light, never blue-black, never neon. No glow, no pure black, no decorative motion.
    4. Colour means state. The accent marks the one primary action or the current place.
-   Every text token is at least 4.5:1 on every surface of its theme; --control-line is at least 3:1.
-   The shell root carries class "os" with data-theme ("paper" | "dusk") and data-motion ("calm" | "off"),
-   set by Studio. Nothing outside this file defines a colour, size or radius that a section could drift from.
+   Every text token is at least 4.5:1 on its surface; --control-line is at least 3:1 on the canvas.
+   The shell root carries class "os" with data-theme ("paper" | "dusk") and data-motion ("calm" | "off").
    ===================================================================== */
 .os{
-  /* Type: one sans family for everything. Modular scale 12-32. */
+  /* Type: a serif for titles, one sans for everything else. Modular scale 12-32. */
   --sans:var(--font-sans),Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
   --serif:var(--font-serif),"Instrument Serif",Georgia,serif;
   --fs-xs:12px;--lh-xs:16px;--fs-sm:13px;--lh-sm:20px;--fs-md:14px;--lh-md:22px;--fs-lg:16px;--lh-lg:24px;
-  --fs-xl:20px;--lh-xl:28px;--fs-2xl:24px;--lh-2xl:32px;--fs-3xl:32px;--lh-3xl:40px;
+  --fs-xl:20px;--lh-xl:28px;--fs-2xl:26px;--lh-2xl:32px;--fs-3xl:34px;--lh-3xl:40px;
   /* Space: 4px grid */
   --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;--s-10:40px;--s-12:48px;
   /* Radius: rounder for the objects you touch */
   --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-xl:24px;--r-full:999px;
   /* Controls and frame */
   --h-sm:32px;--h-md:40px;--h-lg:48px;
-  --rail:64px;--rail-open:232px;--topbar:56px;--tabbar:68px;--page-max:1200px;--page-pad:32px;
+  --rail:64px;--rail-open:236px;--topbar:56px;--tabbar:68px;--page-max:1200px;--page-pad:32px;
   /* Motion: short and soft. Studio's "off" stops every transition. */
   --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.22,1.18,.36,1);--dur-1:.12s;--dur-2:.2s;--dur-3:.32s;
   /* Section rhythm */
   --pad:20px;--gap:16px;--row:46px;
+  /* Depth: the lower edge of anything you can press */
+  --edge-h:4px;
   /* Cards sit on a surface with one hairline; no blur, no glass */
   --card-bg:var(--surface);--card-line:var(--line-2);--card-blur:none;
 }
 @media (max-width:860px){.os{--page-pad:16px}}
 
-/* ---------- Paper (default): warm ivory, daylight on a Monument Valley sky ---------- */
+/* ---------- Paper (default): warm cream daylight ---------- */
 .os{
-  --bg:#F3EFE6;--surface:#FBF9F4;--surface-2:#EDE7DB;--elevated:#FFFFFF;
-  --text:#2B2A27;--text-2:#56524A;--muted:#645E52;
-  --line:rgba(43,42,39,.08);--line-2:rgba(43,42,39,.14);--line-3:rgba(43,42,39,.24);--control-line:rgba(43,42,39,.62);
-  --hover:rgba(43,42,39,.05);--press:rgba(43,42,39,.09);--scrim:rgba(43,38,30,.28);
-  --ok:#6E9168;--ok-ink:#3F6A3C;--watch:#C99A3B;--watch-ink:#7A5612;--crit:#B5443A;--crit-ink:#9A2F27;--info:#5B7A99;--info-ink:#3F5C78;
-  --on-crit:#FFFFFF;--edge:#E0D8C6;
-  --q:#A9562F;--q-ink:#8E4726;
-  --canvas-a:rgba(43,42,39,.025);--canvas-b:rgba(43,42,39,.06);--glass:rgba(251,249,244,.92);
-  --shadow:0 18px 40px -22px rgba(60,45,25,.3);--shadow-sm:0 1px 2px rgba(60,45,25,.08);
-  --node-bg:#FFFFFF;--node-line:rgba(43,42,39,.12);--node-text:#2B2A27;color-scheme:light;
-  --accent:#A9562F;--accent-solid:#A9562F;--on-accent:#FFFFFF;--accent-ink:#8E4726;--accent-rgb:169,86,47;
-  --qm-ring-a:#B5443A;--qm-ring-b:#8E2F27;--qm-glyph-a:#3A362F;--qm-glyph-b:#2B2A27;
+  --bg:#F4EEE2;--surface:#FCF8F0;--surface-2:#EFE6D6;--elevated:#FFFFFF;
+  --text:#2A2622;--text-2:#5A5249;--muted:#6B6358;
+  --line:rgba(42,38,34,.08);--line-2:rgba(42,38,34,.14);--line-3:rgba(42,38,34,.24);--control-line:rgba(42,38,34,.62);
+  --hover:rgba(42,38,34,.05);--press:rgba(42,38,34,.09);--scrim:rgba(42,36,28,.3);
+  --ok:#5F8A5A;--ok-ink:#35603A;--watch:#C98A1E;--watch-ink:#7A5110;--crit:#B0463A;--crit-ink:#963628;--info:#4F7096;--info-ink:#2F5277;
+  --on-crit:#FFFFFF;--edge:#DCD0B9;
+  --q:#A95431;--q-ink:#8C4324;
+  --canvas-a:rgba(42,38,34,.025);--canvas-b:rgba(42,38,34,.06);--glass:rgba(252,248,240,.92);
+  --shadow:0 18px 40px -22px rgba(70,50,25,.3);--shadow-sm:0 1px 2px rgba(70,50,25,.08);
+  --node-bg:#FFFFFF;--node-line:rgba(42,38,34,.12);--node-text:#2A2622;color-scheme:light;
+  --accent:#A95431;--accent-solid:#A95431;--on-accent:#FFFFFF;--accent-ink:#8C4324;--accent-rgb:169,84,49;
+  --qm-fill:#A95431;--qm-glyph:#FCF8F0;
 }
 
-/* ---------- Dusk: warm graphite for low light; no blue-black, no glow ---------- */
+/* ---------- Dusk: warm charcoal for low light ---------- */
 .os[data-theme="dusk"]{
-  --bg:#1F1D1A;--surface:#282622;--surface-2:#302C27;--elevated:#36322C;
-  --text:#F2EDE3;--text-2:#CFC7B8;--muted:#A59D8E;
-  --line:rgba(242,237,227,.08);--line-2:rgba(242,237,227,.14);--line-3:rgba(242,237,227,.24);--control-line:rgba(242,237,227,.6);
-  --hover:rgba(242,237,227,.06);--press:rgba(242,237,227,.1);--scrim:rgba(10,9,8,.6);
-  --ok:#9DBF8F;--ok-ink:#B3D2A5;--watch:#E0B666;--watch-ink:#EBC884;--crit:#E5776C;--crit-ink:#F09A90;--info:#9DB8D3;--info-ink:#B6CCE2;
-  --on-crit:#1F1D1A;--edge:#18160F;
+  --bg:#1B1915;--surface:#25221C;--surface-2:#2F2B24;--elevated:#37332B;
+  --text:#F3EDE1;--text-2:#D2C9B8;--muted:#A89F8E;
+  --line:rgba(243,237,225,.08);--line-2:rgba(243,237,225,.14);--line-3:rgba(243,237,225,.24);--control-line:rgba(243,237,225,.6);
+  --hover:rgba(243,237,225,.06);--press:rgba(243,237,225,.1);--scrim:rgba(8,7,5,.6);
+  --ok:#A3C79A;--ok-ink:#B8D9AC;--watch:#E3B35A;--watch-ink:#EBC884;--crit:#EC8576;--crit-ink:#F4A798;--info:#A9C3DE;--info-ink:#BED3E8;
+  --on-crit:#1B1915;--edge:#14120E;
   --q:#D98A66;--q-ink:#E9A584;
-  --canvas-a:rgba(242,237,227,.03);--canvas-b:rgba(242,237,227,.06);--glass:rgba(40,38,34,.92);
+  --canvas-a:rgba(243,237,225,.03);--canvas-b:rgba(243,237,225,.06);--glass:rgba(37,34,28,.92);
   --shadow:0 18px 40px -22px rgba(0,0,0,.6);--shadow-sm:0 1px 2px rgba(0,0,0,.3);
-  --node-bg:#2E2B26;--node-line:rgba(242,237,227,.12);--node-text:#F2EDE3;color-scheme:dark;
-  --accent:#C9744F;--accent-solid:#C9744F;--on-accent:#1F1D1A;--accent-ink:#E09A78;--accent-rgb:201,116,79;
-  --qm-ring-a:#E5776C;--qm-ring-b:#B5443A;--qm-glyph-a:#F2EDE3;--qm-glyph-b:#CFC7B8;
+  --node-bg:#2E2B26;--node-line:rgba(243,237,225,.12);--node-text:#F3EDE1;color-scheme:dark;
+  --accent:#CC7A52;--accent-solid:#CC7A52;--on-accent:#1B1915;--accent-ink:#E39A74;--accent-rgb:204,122,82;
+  --qm-fill:#CC7A52;--qm-glyph:#1B1915;
 }
 
-/* Q mark (src/components/shell/q-mark.tsx): flat ring and glyph, coloured by the tokens above. */
+/* The Q mark (src/components/shell/q-mark.tsx) is a flat disc with a Q: fill and glyph come from the theme. */
 .qmark{display:block;flex:none;overflow:visible}
