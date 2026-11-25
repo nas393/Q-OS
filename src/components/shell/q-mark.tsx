@@ -3,8 +3,8 @@ import {useId} from "react";
 
 /*
  * The Q mark, drawn as vector so it stays sharp at every size and follows the theme (tokens in tokens.css):
- * red ring and tail always; the Q itself is silver on the dark themes and graphite on Light Executive,
- * with a soft red glow on dark only. Outside the shell (sign-in) the dark defaults below apply.
+ * a brick ring and tail, and a flat glyph in ink (Paper) or warm white (Dusk). No glow in any theme.
+ * Outside the shell (sign-in) the Dusk defaults below apply.
  */
 export function QMark({size=28,className="",title}:{size?:number;className?:string;title?:string}){
   const id=useId().replace(/[^a-zA-Z0-9]/g,"");

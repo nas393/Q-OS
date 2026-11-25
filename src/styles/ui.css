@@ -37,9 +37,8 @@
 .os .btn:active,.os .iq-btn:active{transform:scale(.98)}
 .os .btn.primary,.os .iq-btn.pri,.os .op-btn{background:var(--accent-solid);color:var(--on-accent);border-color:transparent}
 .os .btn.primary:hover,.os .iq-btn.pri:hover,.os .op-btn:hover{filter:brightness(1.06);background:var(--accent-solid)}
-/* Danger is a deeper red than the status red so white text keeps 5:1 contrast. */
-.os .btn.danger{background:#C81D33;color:#fff;border-color:transparent}
-.os .btn.danger:hover{filter:brightness(1.1);background:#C81D33}
+.os .btn.danger{background:var(--crit);color:var(--on-crit);border-color:transparent}
+.os .btn.danger:hover{filter:brightness(1.06)}
 .os .iq-btn.danger{color:var(--crit-ink);border-color:color-mix(in srgb,var(--crit) 40%,transparent);background:transparent}
 .os .btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
 .os .btn.ghost:hover{background:var(--hover);color:var(--text)}
@@ -70,7 +69,7 @@
 .os .tag.ok{color:var(--ok-ink);background:color-mix(in srgb,var(--ok) 14%,transparent)}
 .os .tag.q{color:var(--q-ink);background:color-mix(in srgb,var(--q) 14%,transparent)}
 .os .tag.plain{color:var(--text-2);background:var(--hover)}
-.os .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg);font-variant-numeric:tabular-nums}
+.os .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--crit);color:var(--on-crit);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg);font-variant-numeric:tabular-nums}
 .os .badge.watch{background:var(--watch);color:#1A1003}
 .os .sdot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent);flex:none;display:inline-block}
 .os .sdot.idle,.os .sdot.watch{background:var(--watch);box-shadow:0 0 0 3px color-mix(in srgb,var(--watch) 18%,transparent)}
@@ -133,7 +132,6 @@ a.kpi:hover{border-color:var(--line-3)}
 .os .seg button{flex:1;height:30px;border-radius:8px;font-size:var(--fs-sm);font-weight:500;color:var(--text-2);white-space:nowrap;padding:0 10px}
 .os .seg button:hover{color:var(--text)}
 .os .seg button[aria-pressed="true"],.os .seg button[aria-selected="true"]{background:var(--elevated);color:var(--text);box-shadow:var(--shadow-sm),inset 0 0 0 1px var(--line-2)}
-.os[data-theme="light"] .seg button[aria-pressed="true"],.os[data-theme="light"] .seg button[aria-selected="true"]{background:#fff}
 .os .chips,.os .iq-chips{display:flex;gap:6px;flex-wrap:wrap}
 .os .chip,.os .iq-chip{height:32px;padding:0 12px;border-radius:var(--r-full);font-size:var(--fs-sm);font-weight:500;color:var(--text-2);border:1px solid var(--line-2);background:transparent;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .os .chip:hover,.os .iq-chip:hover{color:var(--text);border-color:var(--line-3)}
@@ -186,10 +184,8 @@ a.kpi:hover{border-color:var(--line-3)}
 /* ---------- Toasts ---------- */
 .os .toasts{position:fixed;left:50%;top:calc(var(--topbar) + 12px);transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .os .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;min-height:44px;border-radius:var(--r-md);background:var(--elevated);border:1px solid var(--line-2);box-shadow:var(--shadow);font-size:var(--fs-sm);animation:os-in .3s var(--ease)}
-.os[data-theme="light"] .toast{background:#15161A;color:#F3F4F6;border-color:transparent}
 .os .toast svg.i{color:var(--ok-ink)}
 .os .toast button{height:30px;padding:0 12px;border-radius:var(--r-sm);font-weight:600;font-size:var(--fs-sm);color:var(--accent-ink);background:rgba(var(--accent-rgb),.12)}
-.os[data-theme="light"] .toast button{color:#F3F4F6;background:rgba(255,255,255,.14)}
 
 /* ---------- Command palette ---------- */
 .os .cmd-back{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:12vh 20px 24px;background:var(--scrim);animation:os-fade .14s ease-out}

@@ -1,77 +1,67 @@
 /* =====================================================================
-   Q OS DESIGN TOKENS: the single source of truth for every section
-   (Command centre, Q Assistant, AngolaIQ, Morning brief, Alerts).
-   The shell root carries class "os" plus data-theme / data-accent / data-cards / data-density / data-motion,
+   Q OS DESIGN SYSTEM: tokens only. Two themes (Paper, Dusk), one accent, colour used for status alone.
+   Principles, taken from Monument Valley and Gather.town:
+   1. Space before chrome. The page and the floor are the interface; the frame stays thin.
+   2. Flat, tactile planes. Raised things have a lower edge (--edge) and press down when used.
+   3. A warm, quiet palette: ivory or graphite, never blue-black, never neon. No glow, no pure black.
+   4. Colour means state. The accent marks the one primary action or the current place.
+   Every text token is at least 4.5:1 on every surface of its theme; --control-line is at least 3:1.
+   The shell root carries class "os" with data-theme ("paper" | "dusk") and data-motion ("calm" | "off"),
    set by Studio. Nothing outside this file defines a colour, size or radius that a section could drift from.
-   Colour discipline: neutral canvas and surfaces; 1px structural borders; the accent only on primary actions
-   and the active item; red / amber / green / blue only for status.
-   Every text token below is at least 4.5:1 on every surface of its theme; --control-line is at least 3:1.
    ===================================================================== */
 .os{
-  /* Type: Inter for everything; Instrument Serif only for the Q briefing headline. Modular scale 12-32. */
+  /* Type: one sans family for everything. Modular scale 12-32. */
   --sans:var(--font-sans),Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
   --serif:var(--font-serif),"Instrument Serif",Georgia,serif;
   --fs-xs:12px;--lh-xs:16px;--fs-sm:13px;--lh-sm:20px;--fs-md:14px;--lh-md:22px;--fs-lg:16px;--lh-lg:24px;
   --fs-xl:20px;--lh-xl:28px;--fs-2xl:24px;--lh-2xl:32px;--fs-3xl:32px;--lh-3xl:40px;
   /* Space: 4px grid */
   --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;--s-10:40px;--s-12:48px;
-  /* Radius */
-  --r-xs:6px;--r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--r-full:999px;
+  /* Radius: rounder for the objects you touch */
+  --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-xl:24px;--r-full:999px;
   /* Controls and frame */
   --h-sm:32px;--h-md:40px;--h-lg:48px;
   --rail:64px;--rail-open:232px;--topbar:56px;--tabbar:68px;--page-max:1200px;--page-pad:32px;
-  /* Motion */
+  /* Motion: short and soft. Studio's "off" stops every transition. */
   --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.22,1.18,.36,1);--dur-1:.12s;--dur-2:.2s;--dur-3:.32s;
-  /* Section rhythm (density) */
+  /* Section rhythm */
   --pad:20px;--gap:16px;--row:46px;
-  /* Back-compat names used by the Command centre */
-  --r-lg-legacy:20px;
+  /* Cards sit on a surface with one hairline; no blur, no glass */
+  --card-bg:var(--surface);--card-line:var(--line-2);--card-blur:none;
 }
 @media (max-width:860px){.os{--page-pad:16px}}
 
-/* ---------- Themes ---------- */
-.os[data-theme="obsidian"]{--bg:#090A0E;--surface:#12141B;--surface-2:#191C25;--elevated:#202431;--text:#F3F4F6;--text-2:#A1A1AA;--muted:#8B90A0;
-  --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.2);--control-line:rgba(255,255,255,.4);--hover:rgba(255,255,255,.05);--press:rgba(255,255,255,.08);--scrim:rgba(4,5,8,.62);
-  --ok:#22C58B;--ok-ink:#3DD69C;--watch:#E9A23B;--watch-ink:#F0B65E;--crit:#F12D43;--crit-ink:#FF6275;--info:#5797E8;--info-ink:#86B4F2;--q:#A855F7;--q-ink:#C49BFA;
-  --canvas-a:rgba(255,255,255,.035);--canvas-b:rgba(255,255,255,.05);--glass:rgba(17,19,26,.78);--shadow:0 24px 60px -24px rgba(0,0,0,.7);--shadow-sm:0 1px 2px rgba(0,0,0,.4);
-  --node-bg:#14161E;--node-line:rgba(255,255,255,.10);--node-text:#F3F4F6;color-scheme:dark}
-.os[data-theme="aurora"]{--bg:#0A0B1D;--surface:#131535;--surface-2:#1A1D45;--elevated:#242858;--text:#F1F2FF;--text-2:#BEC2E8;--muted:#A3A8D6;
-  --line:rgba(170,180,255,.10);--line-2:rgba(170,180,255,.18);--line-3:rgba(170,180,255,.28);--control-line:rgba(190,198,255,.42);--hover:rgba(170,180,255,.07);--press:rgba(170,180,255,.11);--scrim:rgba(5,6,20,.62);
-  --ok:#2BD4A0;--ok-ink:#4FE0B1;--watch:#F0AE4E;--watch-ink:#F5C16F;--crit:#FF3F5E;--crit-ink:#FF7088;--info:#6AA6FF;--info-ink:#93BEFF;--q:#B07CFF;--q-ink:#C9A6FF;
-  --canvas-a:rgba(110,120,255,.10);--canvas-b:rgba(190,140,255,.06);--glass:rgba(20,22,58,.74);--shadow:0 24px 60px -24px rgba(0,0,20,.8);--shadow-sm:0 1px 2px rgba(0,0,20,.5);
-  --node-bg:#171A40;--node-line:rgba(170,180,255,.16);--node-text:#F1F2FF;color-scheme:dark}
-.os[data-theme="graphite"]{--bg:#161718;--surface:#1E1F21;--surface-2:#26272A;--elevated:#2F3034;--text:#F4F4F3;--text-2:#B9B9B6;--muted:#A09F9C;
-  --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);--line-3:rgba(255,255,255,.2);--control-line:rgba(255,255,255,.4);--hover:rgba(255,255,255,.05);--press:rgba(255,255,255,.08);--scrim:rgba(0,0,0,.55);
-  --ok:#3CC48F;--ok-ink:#57D3A2;--watch:#E2A44A;--watch-ink:#EDBB6D;--crit:#EE3A4E;--crit-ink:#FF6E7E;--info:#6E9FE0;--info-ink:#94B9EC;--q:#A77BEA;--q-ink:#C2A3F2;
-  --canvas-a:rgba(255,255,255,.03);--canvas-b:rgba(255,255,255,.05);--glass:rgba(32,33,36,.8);--shadow:0 24px 60px -24px rgba(0,0,0,.65);--shadow-sm:0 1px 2px rgba(0,0,0,.4);
-  --node-bg:#232427;--node-line:rgba(255,255,255,.10);--node-text:#F4F4F3;color-scheme:dark}
-.os[data-theme="light"]{--bg:#F3F1EC;--surface:#FFFFFF;--surface-2:#F7F5F1;--elevated:#FFFFFF;--text:#15161A;--text-2:#454852;--muted:#5D616D;
-  --line:rgba(20,22,30,.08);--line-2:rgba(20,22,30,.13);--line-3:rgba(20,22,30,.22);--control-line:rgba(20,22,30,.55);--hover:rgba(20,22,30,.045);--press:rgba(20,22,30,.08);--scrim:rgba(30,28,24,.32);
-  --ok:#14986A;--ok-ink:#0B7A53;--watch:#C8800F;--watch-ink:#8F5400;--crit:#D11F35;--crit-ink:#B8172C;--info:#2F6FC6;--info-ink:#1F5FB8;--q:#7C3AED;--q-ink:#6D28D9;
-  --canvas-a:rgba(20,22,30,.025);--canvas-b:rgba(20,22,30,.06);--glass:rgba(255,255,255,.8);--shadow:0 24px 50px -28px rgba(40,34,20,.35);--shadow-sm:0 1px 2px rgba(40,34,20,.12);
-  --node-bg:#FFFFFF;--node-line:rgba(20,22,30,.12);--node-text:#15161A;color-scheme:light}
+/* ---------- Paper (default): warm ivory, daylight on a Monument Valley sky ---------- */
+.os{
+  --bg:#F3EFE6;--surface:#FBF9F4;--surface-2:#EDE7DB;--elevated:#FFFFFF;
+  --text:#2B2A27;--text-2:#56524A;--muted:#645E52;
+  --line:rgba(43,42,39,.08);--line-2:rgba(43,42,39,.14);--line-3:rgba(43,42,39,.24);--control-line:rgba(43,42,39,.62);
+  --hover:rgba(43,42,39,.05);--press:rgba(43,42,39,.09);--scrim:rgba(43,38,30,.28);
+  --ok:#6E9168;--ok-ink:#3F6A3C;--watch:#C99A3B;--watch-ink:#7A5612;--crit:#B5443A;--crit-ink:#9A2F27;--info:#5B7A99;--info-ink:#3F5C78;
+  --on-crit:#FFFFFF;--edge:#E0D8C6;
+  --q:#A9562F;--q-ink:#8E4726;
+  --canvas-a:rgba(43,42,39,.025);--canvas-b:rgba(43,42,39,.06);--glass:rgba(251,249,244,.92);
+  --shadow:0 18px 40px -22px rgba(60,45,25,.3);--shadow-sm:0 1px 2px rgba(60,45,25,.08);
+  --node-bg:#FFFFFF;--node-line:rgba(43,42,39,.12);--node-text:#2B2A27;color-scheme:light;
+  --accent:#A9562F;--accent-solid:#A9562F;--on-accent:#FFFFFF;--accent-ink:#8E4726;--accent-rgb:169,86,47;
+  --qm-ring-a:#B5443A;--qm-ring-b:#8E2F27;--qm-glyph-a:#3A362F;--qm-glyph-b:#2B2A27;
+}
 
-/* ---------- Accent: primary actions and the active item only ---------- */
-.os[data-accent="halo"]{--accent:#E9DCC4;--accent-solid:#EADFCB;--on-accent:#17140F;--ai-d:#EADFCB;--ai-l:#6E5530;--as-l:#1B1915;--oa-l:#FBF8F2;--accent-rgb:233,220,196}
-.os[data-accent="red"]{--accent:#F12D43;--accent-solid:#D92038;--on-accent:#FFFFFF;--ai-d:#FF6275;--ai-l:#B8172C;--as-l:#C81D33;--oa-l:#FFFFFF;--accent-rgb:241,45,67}
-.os[data-accent="purple"]{--accent:#A855F7;--accent-solid:#9333EA;--on-accent:#FFFFFF;--ai-d:#C49BFA;--ai-l:#7E22CE;--as-l:#7E22CE;--oa-l:#FFFFFF;--accent-rgb:168,85,247}
-.os[data-accent="blue"]{--accent:#5797E8;--accent-solid:#2F6FC6;--on-accent:#FFFFFF;--ai-d:#86B4F2;--ai-l:#1F5FB8;--as-l:#1F5FB8;--oa-l:#FFFFFF;--accent-rgb:87,151,232}
-.os[data-accent="emerald"]{--accent:#22C58B;--accent-solid:#22C58B;--on-accent:#04140D;--ai-d:#3DD69C;--ai-l:#0B7A53;--as-l:#0B7A53;--oa-l:#FFFFFF;--accent-rgb:34,197,139}
-.os[data-accent="amber"]{--accent:#E9A23B;--accent-solid:#E9A23B;--on-accent:#1A1003;--ai-d:#F0B65E;--ai-l:#8F5400;--as-l:#8F5400;--oa-l:#FFFFFF;--accent-rgb:233,162,59}
-.os[data-accent="rose"]{--accent:#F472B6;--accent-solid:#DB2777;--on-accent:#FFFFFF;--ai-d:#F79BCB;--ai-l:#BE185D;--as-l:#BE185D;--oa-l:#FFFFFF;--accent-rgb:244,114,182}
-.os{--accent-ink:var(--ai-d)}
-.os[data-theme="light"]{--accent-ink:var(--ai-l)}
-.os[data-theme="light"][data-accent]{--accent-solid:var(--as-l);--on-accent:var(--oa-l)}
-.os[data-theme="light"][data-accent="halo"]{--accent:#B89A6A}
+/* ---------- Dusk: warm graphite for low light; no blue-black, no glow ---------- */
+.os[data-theme="dusk"]{
+  --bg:#1F1D1A;--surface:#282622;--surface-2:#302C27;--elevated:#36322C;
+  --text:#F2EDE3;--text-2:#CFC7B8;--muted:#A59D8E;
+  --line:rgba(242,237,227,.08);--line-2:rgba(242,237,227,.14);--line-3:rgba(242,237,227,.24);--control-line:rgba(242,237,227,.6);
+  --hover:rgba(242,237,227,.06);--press:rgba(242,237,227,.1);--scrim:rgba(10,9,8,.6);
+  --ok:#9DBF8F;--ok-ink:#B3D2A5;--watch:#E0B666;--watch-ink:#EBC884;--crit:#E5776C;--crit-ink:#F09A90;--info:#9DB8D3;--info-ink:#B6CCE2;
+  --on-crit:#1F1D1A;--edge:#18160F;
+  --q:#D98A66;--q-ink:#E9A584;
+  --canvas-a:rgba(242,237,227,.03);--canvas-b:rgba(242,237,227,.06);--glass:rgba(40,38,34,.92);
+  --shadow:0 18px 40px -22px rgba(0,0,0,.6);--shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --node-bg:#2E2B26;--node-line:rgba(242,237,227,.12);--node-text:#F2EDE3;color-scheme:dark;
+  --accent:#C9744F;--accent-solid:#C9744F;--on-accent:#1F1D1A;--accent-ink:#E09A78;--accent-rgb:201,116,79;
+  --qm-ring-a:#E5776C;--qm-ring-b:#B5443A;--qm-glyph-a:#F2EDE3;--qm-glyph-b:#CFC7B8;
+}
 
-/* ---------- Cards, density ---------- */
-.os[data-cards="solid"]{--card-bg:var(--surface);--card-line:var(--line-2);--card-blur:none}
-.os[data-cards="glass"]{--card-bg:var(--glass);--card-line:var(--line-2);--card-blur:blur(20px) saturate(140%)}
-.os[data-cards="outline"]{--card-bg:transparent;--card-line:var(--line-3);--card-blur:none}
-.os[data-density="compact"]{--pad:14px;--gap:10px;--row:40px}
-
-/* Q mark (src/components/shell/q-mark.tsx): red ring and tail always; the Q is silver with a soft red glow on the
-   dark themes and graphite without glow on Light Executive, so it stays crisp on light surfaces. */
-.os{--qm-ring-a:#FF4D5E;--qm-ring-b:#C8102E;--qm-glyph-a:#FFFFFF;--qm-glyph-b:#AEB3BF;--qm-glow:rgba(241,45,67,.42)}
-.os[data-theme="light"]{--qm-ring-a:#E8283F;--qm-ring-b:#A50E24;--qm-glyph-a:#3A3F4C;--qm-glyph-b:#12141B;--qm-glow:transparent}
-.qmark{display:block;flex:none;overflow:visible;filter:drop-shadow(0 0 .16em var(--qm-glow,rgba(241,45,67,.42)))}
+/* Q mark (src/components/shell/q-mark.tsx): flat ring and glyph, coloured by the tokens above. */
+.qmark{display:block;flex:none;overflow:visible}

@@ -45,7 +45,7 @@ export default function LoginForm({ initialError = "" }: { initialError?: string
         <div className="lk-emblem" aria-hidden="true">
           <div className="lk-sky"><i className="lk-orbit o1"><b/></i><i className="lk-orbit o2"><b/></i><i className="lk-orbit o3"><b/></i></div>
           <svg viewBox="0 0 120 120" className="lk-ring">
-            <defs><linearGradient id="lk-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F12D43"/><stop offset="1" stopColor="#EADFCB"/></linearGradient></defs>
+            <defs><linearGradient id="lk-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#C9744F"/><stop offset="1" stopColor="#E9D7C2"/></linearGradient></defs>
             <circle cx="60" cy="60" r="56" className="trk"/>
             <circle cx="60" cy="60" r="56" className="arc"/>
           </svg>

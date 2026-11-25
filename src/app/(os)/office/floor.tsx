@@ -110,7 +110,7 @@ export function OfficeFloor({alerts,stats,tasks:initialTasks,approvals,approvals
     return <button key={r.staff.id} type="button" className={`of-desk${big?" big":""}`} data-light={d.light} onClick={()=>{setMsg("");setOpen(r.staff.id)}}
       aria-label={`${r.staff.name}, ${r.staff.role}. ${LIGHT_TEXT[d.light]}. ${d.line}${d.open.length?` ${d.open.length} open tasks.`:""}`}>
       <span className="of-top" aria-hidden="true">
-        <span className="of-screen">{r.staff.id==="q"?<QMark size={big?40:30}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={big?40:30}/>}</span>
+        <span className="of-seat">{r.staff.id==="q"?<QMark size={big?40:30}/>:r.staff.id==="ops"?<span className="of-rack"/>:<AppMark name={r.staff.name} keys={[r.staff.id,...r.staff.keys]} icon={r.app?.icon} size={big?40:30}/>}</span>
         {d.needs.length>0&&<b className="of-badge">{d.needs.length}</b>}
         {d.open.length>0&&<i className="of-tray">{d.open.length}</i>}
       </span>

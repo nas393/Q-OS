@@ -1,15 +1,15 @@
 "use client";
 /*
  * Q OS shell: the frame every section mounts in. It never changes geometry between sections.
- * Desktop: a left rail (sections, applications, Studio) and a 56px top bar (breadcrumb, search, alerts, profile).
+ * Desktop: a left rail (five sections, applications, Studio) and a 56px top bar (breadcrumb, search, alerts, account).
  * Phone: a compact top bar and a bottom tab bar. Global overlays: command palette (Ctrl/Cmd K), Studio,
- * alerts, applications. Studio (theme, accent, cards, motion, density) applies to every section.
+ * alerts, applications. Studio (theme and motion) applies to every section.
  */
 import Link from "next/link";
 import {usePathname,useRouter} from "next/navigation";
 import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {AlertsPanel} from "@/components/alerts-panel";
-import {ACCENTS,DEFAULT_STUDIO,SIG_NAMES,STACK_NAMES,THEMES,loadStudio,saveStudio,type SigType,type Studio} from "@/components/qlive/studio";
+import {DEFAULT_STUDIO,THEMES,loadStudio,saveStudio,type Studio} from "./studio";
 import {AppMark} from "./app-mark";
 import {I} from "./icons";
 import {IQ_PAGES,SECTIONS,crumbsFor,sectionFor} from "./nav";
@@ -24,7 +24,7 @@ type Toast={id:number;msg:string;undo?:()=>void};
 type ShellCtx={
   studio:Studio;setStudio:(p:Partial<Studio>)=>void;openPanel:(p:Panel)=>void;toast:(msg:string,undo?:()=>void)=>void;
   setPageCommands:(cmds:Command[])=>void;setAskHandler:(fn:((q:string)=>void)|null)=>void;
-  weather:{t:number;code:number}|null;apps:ShellApp[];liveApps:LiveApp[]|null;
+  apps:ShellApp[];liveApps:LiveApp[]|null;
 };
 const Ctx=createContext<ShellCtx|null>(null);
 /* In-app confirmation (replaces window.confirm): themed, keyboard-first, Cancel focused by default. */
@@ -35,7 +35,7 @@ export function askConfirm(a:Ask):Promise<boolean>{return openConfirm?openConfir
 /** Shell services for a section: Studio, panels, toasts, palette commands. */
 export function useShell(){const c=useContext(Ctx);if(!c)throw new Error("useShell must be used inside <AppShell>");return c;}
 
-const BG:Record<Studio["theme"],string>={obsidian:"#090A0E",aurora:"#0A0B1D",graphite:"#161718",light:"#F3F1EC"};
+const BG:Record<Studio["theme"],string>={paper:"#F3EFE6",dusk:"#1F1D1A"};
 const RAIL_KEY="os.rail.open";
 
 export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
@@ -49,8 +49,6 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
   const [palette,setPalette]=useState(false);
   const [alerts,setAlerts]=useState<{n:number;red:boolean}>({n:0,red:false});
   const [liveApps,setLiveApps]=useState<LiveApp[]|null>(null);
-  const [weather,setWeather]=useState<{t:number;code:number}|null>(null);
-  const [clock,setClock]=useState<Date|null>(null);
   const [toasts,setToasts]=useState<Toast[]>([]);
   const [pageCmds,setPageCmds]=useState<Command[]>([]);
   const [ask,setAsk]=useState<{a:Ask;done:(v:boolean)=>void}|null>(null);
@@ -66,17 +64,11 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
   const setStudio=useCallback((p:Partial<Studio>)=>setStudioState(s=>{const n={...s,...p};saveStudio(n);return n;}),[]);
   const toggleRail=()=>setRailOpen(o=>{try{localStorage.setItem(RAIL_KEY,o?"0":"1");}catch{}return !o;});
 
-  /* Live context for the top bar: unseen alerts, Luanda weather and time. */
+  /* Live context for the top bar: unseen alerts. */
   const loadAlerts=useCallback(()=>fetch("/api/alerts",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
     const a=(j?.alerts??[]) as {level:string}[];const urgent=a.filter(x=>x.level!=="info");setAlerts({n:urgent.length,red:urgent.some(x=>x.level==="red")});}).catch(()=>{}),[]);
   useEffect(()=>{loadAlerts();const t=window.setInterval(loadAlerts,300000);return()=>window.clearInterval(t);},[loadAlerts]);
-  useEffect(()=>{setClock(new Date());const t=window.setInterval(()=>setClock(new Date()),30000);
-    let wx:{at:number;t:number;code:number}|null=null;try{wx=JSON.parse(sessionStorage.getItem("os-wx")??"null");}catch{}
-    if(wx&&Date.now()-wx.at<18e5)setWeather({t:wx.t,code:wx.code});
-    else fetch("https://api.open-meteo.com/v1/forecast?latitude=-8.84&longitude=13.23&current=temperature_2m,weather_code&timezone=Africa%2FLuanda")
-      .then(r=>r.json()).then(j=>{if(!j?.current)return;const w={t:Math.round(j.current.temperature_2m),code:j.current.weather_code};setWeather(w);try{sessionStorage.setItem("os-wx",JSON.stringify({...w,at:Date.now()}));}catch{}}).catch(()=>{});
-    if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(()=>{});
-    return()=>window.clearInterval(t);},[]);
+  useEffect(()=>{if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(()=>{});},[]);
   const ensureApps=useCallback(()=>{if(liveApps)return;fetch("/api/apps",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>setLiveApps(j?.apps??[])).catch(()=>setLiveApps([]));},[liveApps]);
 
   const toast=useCallback((msg:string,undo?:()=>void)=>{const id=Date.now()+Math.random();setToasts(t=>[...t,{id,msg,undo}]);window.setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),4800);},[]);
@@ -94,8 +86,7 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
     window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);},[palette,panel,menu,openPalette,closePalette,closePanel]);
   useEffect(()=>{setPanel(null);setMenu(false);setPalette(false);},[path]);
 
-  const ctx=useMemo<ShellCtx>(()=>({studio,setStudio,openPanel,toast,setPageCommands:setPageCmds,setAskHandler,weather,apps,liveApps}),[studio,setStudio,openPanel,toast,setAskHandler,weather,apps,liveApps]);
-  const time=clock?clock.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Africa/Luanda"}):"";
+  const ctx=useMemo<ShellCtx>(()=>({studio,setStudio,openPanel,toast,setPageCommands:setPageCmds,setAskHandler,apps,liveApps}),[studio,setStudio,openPanel,toast,setAskHandler,apps,liveApps]);
   const alertLabel=alerts.n?`Alerts: ${alerts.n} need${alerts.n===1?"s":""} attention`:"Alerts: nothing new";
 
   /* Every application: the registry first (real names, areas), then other live apps. */
@@ -113,20 +104,20 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
     ...IQ_PAGES.filter(p=>p.href!=="/iq").map(p=>({id:"iq-"+p.href,group:"AngolaIQ",label:p.label,detail:p.desc,icon:p.icon,keywords:"angolaiq angola iq",run:()=>router.push(p.href)})),
     ...pageCmds.map(c=>({...c,group:c.group??section.label})),
     {id:"new-q",group:"Actions",label:"New conversation with Q",detail:"Open Q Assistant on a blank page",icon:"plus",keywords:"chat ask",run:()=>router.push("/chat?new=1")},
-    {id:"studio",group:"Actions",label:"Open Studio",detail:"Theme, accent, cards, motion, density",icon:"sliders",keywords:"settings theme appearance",run:()=>openPanel("studio")},
-    {id:"theme",group:"Actions",label:studio.theme==="light"?"Switch to dark theme":"Switch to light theme",detail:"Studio theme",icon:studio.theme==="light"?"cloud":"sun",keywords:"dark light mode",run:()=>setStudio({theme:studio.theme==="light"?"obsidian":"light"})},
+    {id:"studio",group:"Actions",label:"Open Studio",detail:"Theme and motion",icon:"sliders",keywords:"settings theme appearance",run:()=>openPanel("studio")},
+    {id:"theme",group:"Actions",label:studio.theme==="paper"?"Switch to dark theme":"Switch to light theme",detail:"Studio theme",icon:studio.theme==="paper"?"cloud":"sun",keywords:"dark light mode",run:()=>setStudio({theme:studio.theme==="paper"?"dusk":"paper"})},
     {id:"apps",group:"Actions",label:"All applications",detail:"Every app with status and links",icon:"grid",run:()=>openPanel("apps")},
     {id:"signout",group:"Actions",label:"Sign out",detail:"End this session on this device",icon:"logout",run:()=>{void signOut();}}
   ],[router,pageCmds,section.label,studio.theme,setStudio,openPanel,signOut]);
 
   return <Ctx.Provider value={ctx}>
-    <div className={`os${railOpen?" rail-open":""}`} data-theme={studio.theme} data-accent={studio.accent} data-cards={studio.cards} data-motion={studio.motion} data-density={studio.density}>
+    <div className={`os${railOpen?" rail-open":""}`} data-theme={studio.theme} data-motion={studio.motion}>
       <a className="skip" href="#main">Skip to content</a>
 
       {/* ---------- Rail (desktop) ---------- */}
       <nav className="rail" aria-label="Q OS sections">
         <Link href="/dashboard" className="rail-brand" aria-label="Q OS, Command centre"><QMark size={30}/><span className="lbl">Q OS</span></Link>
-        <ul className="rail-list">{SECTIONS.map(s=>{const on=s.id===section.id;return <li key={s.id}>
+        <ul className="rail-list">{SECTIONS.filter(s=>s.rail).map(s=>{const on=s.id===section.id;return <li key={s.id}>
           <Link href={s.href} className="rail-i" aria-current={on?"page":undefined} data-tip={s.label}>
             <I n={s.icon}/><span className="lbl">{s.label}</span>
             {s.id==="alerts"&&alerts.n>0&&<b className={`badge${alerts.red?"":" watch"}`} aria-label={`${alerts.n} unseen`}>{alerts.n}</b>}
@@ -148,7 +139,6 @@ export function AppShell({apps,children}:{apps:ShellApp[];children:ReactNode}){
         </ol></nav>
         <button className="tb-search" onClick={openPalette} aria-label="Search or jump to (Ctrl K)" aria-haspopup="dialog"><I n="search"/><span>Search or jump to…</span><kbd className="kbd">Ctrl K</kbd></button>
         <div className="tb-r">
-          {(weather||time)&&<span className="tb-ctx num" title="Luanda">{weather&&<><I n={weather.code<3?"sun":"cloud"}/>{weather.t}° · </>}Luanda {time}</span>}
           <button className="icon-btn tb-only-phone" onClick={openPalette} aria-label="Search or jump to"><I n="search"/></button>
           <button className="icon-btn" onClick={()=>openPanel("alerts")} aria-label={alertLabel} title={alertLabel}><I n="bell"/>{alerts.n>0&&<b className={`badge${alerts.red?"":" watch"}`}>{alerts.n}</b>}</button>
           <div className="tb-menu">
@@ -225,24 +215,15 @@ export function ShellDrawer({open,onClose,title,sub,foot,children}:{open:boolean
   </aside>;
 }
 
+/* Studio: two themes and one motion switch. Nothing else to tune. */
 function StudioPanel({studio,set}:{studio:Studio;set:(p:Partial<Studio>)=>void}){
-  const seg=<K extends "cards"|"motion"|"density">(key:K,opts:[Studio[K],string][],label:string)=><div className="seg" role="group" aria-label={label}>{opts.map(([v,l])=><button key={v} aria-pressed={studio[key]===v} onClick={()=>set({[key]:v} as Partial<Studio>)}>{l}</button>)}</div>;
-  const move=(i:number,d:number)=>{const a=[...studio.stackOrder];[a[i+d],a[i]]=[a[i],a[i+d]];set({stackOrder:a});};
   return <>
     <div className="st-sec"><h4>Theme</h4><div className="themes">{THEMES.map(t=><button key={t.id} className="th" aria-pressed={studio.theme===t.id} onClick={()=>set({theme:t.id})}>
-      <span className="pv" style={{background:t.sw[0]}}><i style={{left:8,top:8,width:"42%",height:14,background:t.sw[1]}}/><i style={{left:8,top:28,width:"62%",height:14,background:t.sw[1]}}/><i style={{right:8,top:8,width:20,height:20,borderRadius:"50%",background:t.sw[2]}}/></span>
+      <span className="pv" style={{background:t.sw[0]}}><i style={{left:8,top:8,width:"42%",height:14,background:t.sw[1]}}/><i style={{left:8,top:28,width:"62%",height:14,background:t.sw[2]}}/></span>
       <b>{t.name}<I n="check"/></b><small>{t.note}</small></button>)}</div></div>
-    <div className="st-sec"><h4>Accent<span className="st-val">{ACCENTS.find(a=>a.id===studio.accent)?.name}</span></h4><div className="swatches">{ACCENTS.map(a=><button key={a.id} className="sw" aria-pressed={studio.accent===a.id} aria-label={`Accent ${a.name}`} onClick={()=>set({accent:a.id})}><i style={{background:a.hex,color:["halo","amber","emerald"].includes(a.id)?"#111":"#fff"}}><I n="check"/></i>{a.name}</button>)}</div>
-      <p className="help" style={{marginTop:10}}>Accent = main buttons. Red, amber, green = status.</p></div>
-    <div className="st-sec"><h4>Cards</h4>{seg("cards",[["solid","Solid"],["glass","Glass"],["outline","Outline"]],"Card style")}</div>
-    <div className="st-sec"><h4>Motion</h4>{seg("motion",[["calm","Calm"],["full","Full"],["off","Off"]],"Motion")}</div>
-    <div className="st-sec"><h4>Density</h4>{seg("density",[["comfortable","Comfortable"],["compact","Compact"]],"Density")}</div>
-    <div className="st-sec"><h4>Command centre · phone cards</h4><div className="ord">{studio.stackOrder.map((k,i)=>{const off=studio.stackHidden.includes(k);return <div key={k} className={`o${off?" off":""}`}><span className="n num">{i+1}</span><span className="nm">{STACK_NAMES[k]}</span>
-      <button aria-label={`Move ${STACK_NAMES[k]} up`} disabled={i===0} onClick={()=>move(i,-1)}><I n="up"/></button>
-      <button aria-label={`Move ${STACK_NAMES[k]} down`} disabled={i===studio.stackOrder.length-1} onClick={()=>move(i,1)}><I n="down"/></button>
-      <button aria-label={`${off?"Show":"Hide"} ${STACK_NAMES[k]}`} aria-pressed={!off} onClick={()=>set({stackHidden:off?studio.stackHidden.filter(x=>x!==k):[...studio.stackHidden,k]})}><I n={off?"eyeoff":"eye"}/></button></div>;})}</div></div>
-    <div className="st-sec"><h4>Command centre · signals</h4><div className="ord">{(Object.keys(SIG_NAMES) as SigType[]).map(k=>{const off=studio.sigHidden.includes(k);return <div key={k} className={`o${off?" off":""}`}><span className="nm">{SIG_NAMES[k]}</span>
-      <button className="switch" role="switch" aria-checked={!off} aria-label={`Show ${SIG_NAMES[k]}`} onClick={()=>set({sigHidden:off?studio.sigHidden.filter(x=>x!==k):[...studio.sigHidden,k]})}/></div>;})}</div></div>
+    <div className="st-sec"><h4>Motion</h4>
+      <div className="seg" role="group" aria-label="Motion">{([["calm","Calm"],["off","Off"]] as const).map(([v,l])=><button key={v} aria-pressed={studio.motion===v} onClick={()=>set({motion:v})}>{l}</button>)}</div>
+      <p className="help" style={{marginTop:10}}>Off stops every transition. Systems that ask for reduced motion start with it off.</p></div>
   </>;
 }
 

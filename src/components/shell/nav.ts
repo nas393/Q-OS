@@ -1,15 +1,16 @@
-/* Q OS information architecture: the sections in the rail and the pages inside AngolaIQ.
-   Pure data, shared by the rail, the breadcrumb, the command palette and the AngolaIQ sub-navigation. */
-export type Section={id:string;href:string;label:string;short:string;icon:string;desc:string};
+/* Q OS information architecture: the sections, the rail, and the pages inside AngolaIQ.
+   Pure data, shared by the rail, the breadcrumb, the command palette and the AngolaIQ sub-navigation.
+   `rail` sets what the rail shows; every section stays in the palette, the More menu and the breadcrumb. */
+export type Section={id:string;href:string;label:string;short:string;icon:string;desc:string;rail:boolean};
 
 export const SECTIONS:Section[]=[
-  {id:"dashboard",href:"/dashboard",label:"Command centre",short:"Today",icon:"orbit",desc:"Ecosystem, briefing, priorities and signals"},
-  {id:"office",href:"/office",label:"Office",short:"Office",icon:"home",desc:"Q and the team: every app at its desk"},
-  {id:"chat",href:"/chat",label:"Q Assistant",short:"Q",icon:"spark",desc:"Conversations with Q on your live data"},
-  {id:"executive-twin",href:"/executive-twin",label:"Executive Twin",short:"Twin",icon:"spark",desc:"Private executive thinking partner and decision room"},
-  {id:"iq",href:"/iq",label:"AngolaIQ",short:"AngolaIQ",icon:"compass",desc:"Angola market intelligence and tools"},
-  {id:"brief",href:"/brief",label:"Morning brief",short:"Brief",icon:"sunrise",desc:"What needs you today, in one page"},
-  {id:"alerts",href:"/alerts",label:"Alerts",short:"Alerts",icon:"bell",desc:"Every alert Q has sent or logged"}
+  {id:"dashboard",href:"/dashboard",label:"Command centre",short:"Today",icon:"orbit",desc:"Your floor: every project desk, tasks and checks",rail:true},
+  {id:"office",href:"/office",label:"Office",short:"Office",icon:"home",desc:"Q and the team: every app at its desk",rail:true},
+  {id:"chat",href:"/chat",label:"Q Assistant",short:"Q",icon:"spark",desc:"Conversations with Q on your live data",rail:true},
+  {id:"iq",href:"/iq",label:"AngolaIQ",short:"AngolaIQ",icon:"compass",desc:"Angola market intelligence and tools",rail:true},
+  {id:"alerts",href:"/alerts",label:"Alerts",short:"Alerts",icon:"bell",desc:"Every alert Q has sent or logged",rail:true},
+  {id:"brief",href:"/brief",label:"Morning brief",short:"Brief",icon:"sunrise",desc:"What needs you today, in one page",rail:false},
+  {id:"executive-twin",href:"/executive-twin",label:"Executive Twin",short:"Twin",icon:"spark",desc:"Private executive thinking partner and decision room",rail:false}
 ];
 
 export type IqPage={href:string;label:string;icon:string;group:"Intelligence"|"Strategy"|"Tools"|"Workspace";desc:string};
