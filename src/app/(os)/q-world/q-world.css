@@ -90,3 +90,15 @@
 .qw-three-fallback{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:10px;padding:28px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#1c2934,#080d12 78%);color:#f3f0e8}
 .qw-three-fallback b{font-size:16px;letter-spacing:.08em}
 .qw-three-fallback p{max-width:340px;margin:0;color:#b9c4cc;font-size:12px;line-height:1.6}
+
+
+/* Live app registry signals in the office directory and selected-office inspector. */
+.qw-unit-grid button{grid-template-rows:auto auto auto}
+.qw-unit-grid button>span:first-child{grid-row:1/4}
+.qw-app-status{grid-column:2;font-style:normal;font-size:9px;line-height:1.35;color:var(--text-2)}
+.qw-app-status[data-state="READY"],.qw-app-live[data-state="READY"] b{color:#58c58a}
+.qw-app-status[data-state="BUILDING"],.qw-app-status[data-state="QUEUED"],.qw-app-status[data-state="INITIALIZING"],.qw-app-live[data-state="BUILDING"] b,.qw-app-live[data-state="QUEUED"] b{color:#d5a75f}
+.qw-app-status[data-state="ERROR"],.qw-app-status[data-state="FAILED"],.qw-app-live[data-state="ERROR"] b{color:#e16d73}
+.qw-app-live{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--card-line);border-radius:10px;background:var(--bg)}
+.qw-app-live b{font-size:12px}
+.qw-app-live small{font-size:10px;color:var(--text-2)}
