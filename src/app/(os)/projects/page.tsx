@@ -1,0 +1,1 @@
+export const metadata={title:"Projects"};export default function ProjectsPage(){return <section className="q-page q-empty"><div className="q-eyebrow">PORTFOLIO CONTROL / 04</div><h1>Projects</h1><p>Portfolio status, priorities, and delivery ownership.</p><div className="q-placeholder">PROJECT CONTROL<br/><span>MODULE IN CONSTRUCTION</span></div></section>;}
