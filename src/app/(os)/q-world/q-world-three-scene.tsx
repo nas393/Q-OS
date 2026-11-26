@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, prefer-const -- temporary for first preview; tighten types later */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -33,7 +33,14 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
   scene.background=new THREE.Color(worldBg);scene.fog=new THREE.Fog(worldBg,65,115);
   const camera=new THREE.PerspectiveCamera(39,1,.1,180);
   camera.position.set(43,31,48);
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:"high-performance"});
+  try{
+   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:"high-performance"});
+  }catch{
+   setWebglUnavailable(true);
+   return;
+  }
+  const onContextLost=(event:Event)=>{event.preventDefault();setWebglUnavailable(true);};
+  renderer.domElement.addEventListener("webglcontextlost",onContextLost);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,visuals.quality==="high"?1.5:visuals.quality==="balanced"?1.25:1));
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
@@ -146,7 +153,7 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
   api.current={setMode,setOrbit,setWalkAngle,setSelected,setVisuals,move};
   setMode(mode);setOrbit(visuals.orbit);
   const animate=()=>{if(disposed)return;frame=requestAnimationFrame(animate);if(document.hidden)return;controls.update();renderer.render(scene,camera);};animate();
-  return()=>{disposed=true;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener("keydown",keydown);renderer.domElement.removeEventListener("pointerdown",down);renderer.domElement.removeEventListener("pointermove",movePointer);renderer.domElement.removeEventListener("pointerup",up);renderer.domElement.removeEventListener("pointercancel",up);controls.dispose();scene.traverse((o:any)=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach((m:any)=>{m.map?.dispose?.();m.dispose?.();});else{o.material?.map?.dispose?.();o.material?.dispose?.();}});renderer.dispose();renderer.domElement.remove();};
+  return()=>{disposed=true;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener("keydown",keydown);renderer.domElement.removeEventListener("pointerdown",down);renderer.domElement.removeEventListener("pointermove",movePointer);renderer.domElement.removeEventListener("pointerup",up);renderer.domElement.removeEventListener("pointercancel",up);renderer.domElement.removeEventListener("webglcontextlost",onContextLost);controls.dispose();scene.traverse((o:any)=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach((m:any)=>{m.map?.dispose?.();m.dispose?.();});else{o.material?.map?.dispose?.();o.material?.dispose?.();}});renderer.dispose();renderer.domElement.remove();};
  // Renderer lifetime is tied to the mounted HQ viewport; settings are applied by the effect below.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
@@ -155,5 +162,5 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
  useEffect(()=>{api.current?.setWalkAngle(walkAngle);},[walkAngle]);
  useEffect(()=>{api.current?.setSelected(selected);},[selected]);
  useEffect(()=>{api.current?.setVisuals(visuals);},[visuals]);
- return <div className="qw-three-host" ref={host}>{mode==="third-person"&&<div className="qw-three-pad" aria-label="Walk controls"><button type="button" onClick={()=>api.current?.move(0,-1)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>api.current?.move(-1,0)} aria-label="Move left">←</button><button type="button" onClick={()=>api.current?.move(1,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>api.current?.move(0,1)} aria-label="Move backward">↓</button></div>}</div>;
+ return <div className="qw-three-host" ref={host}>{webglUnavailable&&<div className="qw-three-fallback" role="status"><b>3D view unavailable</b><p>This device or browser could not keep WebGL running. Use the office directory below to continue in Q OS.</p></div>}{mode==="third-person"&&<div className="qw-three-pad" aria-label="Walk controls"><button type="button" onClick={()=>api.current?.move(0,-1)} aria-label="Move forward">↑</button><div><button type="button" onClick={()=>api.current?.move(-1,0)} aria-label="Move left">←</button><button type="button" onClick={()=>api.current?.move(1,0)} aria-label="Move right">→</button></div><button type="button" onClick={()=>api.current?.move(0,1)} aria-label="Move backward">↓</button></div>}</div>;
 }
