@@ -98,3 +98,15 @@ Avoid polishing or expanding the separate-campus buildings further. Existing dra
 - WebGL failure leaves a usable accessible office directory.
 - No existing Office / Executive Twin regression.
 - No invented live KPIs or unapproved external actions.
+
+
+## Implementation checkpoint — 2026-11-26
+
+The Three.js single-HQ preview is active on branch `office/q-world-executive-hq-expansion`.
+
+- Owner suite is rendered separately from the reusable business-unit office modules; the generic Q module is skipped to prevent duplicate overlapping furniture.
+- WebGL renderer initialization failure now leaves an accessible message in the 3D viewport while the office directory and existing Office link remain available.
+- WebGL context loss is caught and presented as the same fallback instead of leaving an unhandled renderer failure.
+- The branch has a protected Vercel Preview. Latest implementation commit: `3601fcc20dee45aec43435d7f7c73840f88477fa`; build is pending.
+- This is still a visual foundation: office cards use configured identity/mission metadata, not live project telemetry. No owner data, tasks, KPIs, or external actions are changed.
+- Next vertical slice: connect office directory metadata to canonical app registry/status and provide a verified live workspace link per business unit; preserve owner-only access and approval boundaries.
