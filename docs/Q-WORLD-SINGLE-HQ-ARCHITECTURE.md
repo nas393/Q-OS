@@ -98,3 +98,24 @@ Avoid polishing or expanding the separate-campus buildings further. Existing dra
 - WebGL failure leaves a usable accessible office directory.
 - No existing Office / Executive Twin regression.
 - No invented live KPIs or unapproved external actions.
+
+
+## Implementation checkpoint — 2026-11-26
+
+The Three.js single-HQ preview is active on branch `office/q-world-executive-hq-expansion`.
+
+- Owner suite is rendered separately from the reusable business-unit office modules; the generic Q module is skipped to prevent duplicate overlapping furniture.
+- WebGL renderer initialization failure now leaves an accessible message in the 3D viewport while the office directory and existing Office link remain available.
+- WebGL context loss is caught and presented as the same fallback instead of leaving an unhandled renderer failure.
+- The branch has a protected Vercel Preview. Latest implementation commit: `3601fcc20dee45aec43435d7f7c73840f88477fa`; build is pending.
+- This is still a visual foundation: office cards use configured identity/mission metadata, not live project telemetry. No owner data, tasks, KPIs, or external actions are changed.
+- Next vertical slice: connect office directory metadata to canonical app registry/status and provide a verified live workspace link per business unit; preserve owner-only access and approval boundaries.
+
+
+## Live office registry slice — 2026-11-26
+
+- Q WORLD now fetches the existing owner-only `/api/apps` registry with same-origin credentials and no cache.
+- Business-unit directory entries match registry app IDs/names against normalized configured keys (case/punctuation insensitive).
+- The selected office shows its resolved deployment state and direct production app link when a registry match exists. Directory cards show live state or explicit loading/unavailable/unlinked text.
+- No new API, database, auth rule or external write was introduced. Registry failure does not prevent the office directory from rendering.
+- Source commits: `1cadd67` (registry binding) and `d190064` (status presentation). Preview build pending.
