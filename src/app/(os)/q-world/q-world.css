@@ -84,3 +84,9 @@
 .qw-three-pad button{width:42px;height:38px;border:1px solid #ffffff55;border-radius:9px;background:#111d;color:#fff;font-size:19px;touch-action:manipulation;cursor:pointer}
 .qw-three-pad button:focus-visible{outline:2px solid #c99b5d;outline-offset:3px}
 @media(max-width:520px){.qw-scene-caption{left:9px;bottom:9px;padding:9px 11px}.qw-scene-caption b{font-size:11px}.qw-three-pad{right:9px;bottom:9px}}
+
+
+/* Accessible fallback for unsupported or lost WebGL contexts. */
+.qw-three-fallback{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:10px;padding:28px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#1c2934,#080d12 78%);color:#f3f0e8}
+.qw-three-fallback b{font-size:16px;letter-spacing:.08em}
+.qw-three-fallback p{max-width:340px;margin:0;color:#b9c4cc;font-size:12px;line-height:1.6}
