@@ -42,7 +42,8 @@ export function QWorldView(){
   return()=>{stopped=true;};
  },[]);
  const appFor=useMemo(()=> (unit:Unit)=>apps.find(app=>[app.id,app.name].some(value=>unit.keys.some(key=>normalizeAppKey(key)===normalizeAppKey(value))))??null,[apps]);
- const active=UNITS.find(u=>u.id===selected)??UNITS[0];\n const activeApp=appFor(active);
+ const active=UNITS.find(u=>u.id===selected)??UNITS[0];
+ const activeApp=appFor(active);
  const updateVisuals=(patch:Partial<VisualSettings>)=>setVisuals(v=>({...v,...patch}));
  return <main className="qw-shell">
   <header className="qw-header"><div><span className="qw-kicker">Q COMPANY · HEADQUARTERS SIMULATOR</span><h1>Q WORLD</h1><p>One company. Connected businesses. One objective: profitable growth.</p></div><div className="qw-live"><i/> HQ FOUNDATION · READ ONLY</div></header>
