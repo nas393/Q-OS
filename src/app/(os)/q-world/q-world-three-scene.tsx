@@ -88,7 +88,9 @@ export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalk
    for(const sx of [-w*.35,w*.35])for(const sz of [-d*.25,d*.25]){box(group,x+sx,.4,z+sz,.55,.12,.55,dark);box(group,x+sx,.72,z+sz,.55,.6,.12,fabric);}
   }
   // Eight named business-unit suites: executive desk, screen, lounge chairs, storage and identity sign.
+  // Q's owner suite is built separately below; skip its generic module to avoid overlapping duplicate furniture.
   for(const u of units){
+   if(u.id==="q")continue;
    const accent=mat(new THREE.Color(u.color[0],u.color[1],u.color[2]),.38,.28);
    const area=new THREE.Group();area.position.set(u.x,0,u.z);group.add(area);
    box(area,0,.19,0,10.7,.12,7.1,mat(0x343c42,.72));
