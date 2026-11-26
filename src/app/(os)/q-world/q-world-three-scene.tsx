@@ -23,6 +23,7 @@ const units: Unit[] = [
 ];
 
 export default function QWorldThreeScene({mode,selected,visuals,walkAngle,onWalkAngleChange}:Props) {
+ const [webglUnavailable,setWebglUnavailable]=useState(false);
  const host=useRef<HTMLDivElement>(null);
  const api=useRef<{setMode:(m:string)=>void;setOrbit:(n:number)=>void;setWalkAngle:(n:number)=>void;setSelected:(id:string)=>void;setVisuals:(v:Visuals)=>void;move:(dx:number,dz:number)=>void}|null>(null);
  useEffect(()=>{
