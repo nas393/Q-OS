@@ -1,0 +1,1 @@
+export const metadata={title:"Intelligence"};export default function IntelligencePage(){return <section className="q-page q-empty"><div className="q-eyebrow">DECISION SUPPORT / 03</div><h1>Intelligence</h1><p>Signals and context designed to improve executive decisions.</p><div className="q-placeholder">INTELLIGENCE LAYER<br/><span>MODULE IN CONSTRUCTION</span></div></section>;}
