@@ -1,0 +1,1 @@
+export const metadata={title:"Q Assistant"};export default function QPage(){return <section className="q-page q-empty"><div className="q-eyebrow">CORE INTELLIGENCE / 02</div><h1>Q <em>Assistant</em></h1><p>The new Q experience is being built on a clean foundation.</p><div className="q-placeholder">CONVERSATIONAL WORKSPACE<br/><span>MODULE IN CONSTRUCTION</span></div></section>;}
