@@ -1,0 +1,1 @@
+export const metadata={title:"Alerts"};export default function AlertsPage(){return <section className="q-page q-empty"><div className="q-eyebrow">ATTENTION / 06</div><h1>Alerts</h1><p>Important signals that require attention or a decision.</p><div className="q-placeholder">ALERT CENTER<br/><span>MODULE IN CONSTRUCTION</span></div></section>;}
