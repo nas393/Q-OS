@@ -1,18 +1,21 @@
-import {redirect} from "next/navigation";
-import {readSession} from "@/lib/session";
-import LoginForm from "@/components/login-form";
+export const dynamic="force-dynamic";
+export const metadata={title:"Sign in"};
 
-export const dynamic = "force-dynamic";
-
-type LoginPageProps = {
-  searchParams: Promise<{ error?: string | string[] }>;
-};
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const session = await readSession();
-  if (session) redirect("/dashboard");
-  const params = await searchParams;
-  const rawError = Array.isArray(params.error) ? params.error[0] : params.error;
-  const initialError = typeof rawError === "string" ? rawError.slice(0, 180) : "";
-  return <LoginForm initialError={initialError} />;
+/* Owner sign-in. The form posts to the existing login route, which checks the passkey and sets the session. */
+export default async function LoginPage({searchParams}:{searchParams:Promise<{error?:string}>}){
+  const sp=await searchParams;
+  return <main className="signin">
+    <section className="card" aria-labelledby="signin-h">
+      <div>
+        <h1 id="signin-h" className="h1">Q OS</h1>
+        <p className="lede">Owner sign-in.</p>
+      </div>
+      <form method="post" action="/api/auth/login">
+        <label htmlFor="passkey">Passkey</label>
+        <input id="passkey" name="passkey" type="password" autoComplete="current-password" required/>
+        <button type="submit" className="btn primary">Sign in</button>
+      </form>
+      {sp.error&&<p role="alert" className="error">{sp.error}</p>}
+    </section>
+  </main>;
 }
