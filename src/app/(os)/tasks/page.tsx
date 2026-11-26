@@ -1,0 +1,1 @@
+export const metadata={title:"Tasks"};export default function TasksPage(){return <section className="q-page q-empty"><div className="q-eyebrow">EXECUTION SYSTEM / 05</div><h1>Tasks</h1><p>Translate priorities into accountable execution.</p><div className="q-placeholder">TASK MANAGEMENT<br/><span>MODULE IN CONSTRUCTION</span></div></section>;}
