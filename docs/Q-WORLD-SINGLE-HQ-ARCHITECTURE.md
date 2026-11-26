@@ -110,3 +110,12 @@ The Three.js single-HQ preview is active on branch `office/q-world-executive-hq-
 - The branch has a protected Vercel Preview. Latest implementation commit: `3601fcc20dee45aec43435d7f7c73840f88477fa`; build is pending.
 - This is still a visual foundation: office cards use configured identity/mission metadata, not live project telemetry. No owner data, tasks, KPIs, or external actions are changed.
 - Next vertical slice: connect office directory metadata to canonical app registry/status and provide a verified live workspace link per business unit; preserve owner-only access and approval boundaries.
+
+
+## Live office registry slice — 2026-11-26
+
+- Q WORLD now fetches the existing owner-only `/api/apps` registry with same-origin credentials and no cache.
+- Business-unit directory entries match registry app IDs/names against normalized configured keys (case/punctuation insensitive).
+- The selected office shows its resolved deployment state and direct production app link when a registry match exists. Directory cards show live state or explicit loading/unavailable/unlinked text.
+- No new API, database, auth rule or external write was introduced. Registry failure does not prevent the office directory from rendering.
+- Source commits: `1cadd67` (registry binding) and `d190064` (status presentation). Preview build pending.
